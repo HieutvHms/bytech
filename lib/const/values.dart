@@ -1,3 +1,2 @@
-//Device infomation
-const String SERVICE_UUID = '00001f10-0000-1000-8000-00805f9b34fb';
-const String CHARACTICE_UUID = '00001f1f-0000-1000-8000-00805f9b34fb';
+//Device service infomation
+const String SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';

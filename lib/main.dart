@@ -1,8 +1,21 @@
+// ignore_for_file: public_member_api_docs, lines_longer_than_80_chars
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:reintechnik/root.dart';
 
+import 'providers/ble_provider.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(
+    /// Providers are above [MyApp] instead of inside it, so that tests
+    /// can use [MyApp] while mocking the providers
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BLEProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:reintechnik/const/values.dart';
 
@@ -7,46 +9,59 @@ import 'package:reintechnik/const/values.dart';
 
 class BLEService {
   BLEService._();
+
   static final BLEService instance = BLEService._();
 
   FlutterBluePlus flutterBlue = FlutterBluePlus.instance;
 
-  BluetoothDevice? device;
-  BluetoothCharacteristic? characteristic;
-
-  void startScanDevice() async {
-    await flutterBlue.startScan(timeout: const Duration(seconds: 4));
+  Future<List<BluetoothDevice>> startScanDevice() async {
+    List<BluetoothDevice> scanDevices = [];
+    await flutterBlue.startScan(
+      timeout: const Duration(seconds: 4),
+      allowDuplicates: false,
+    );
     //Listen to scan result
-    flutterBlue.scanResults.listen((result) {
-      device = result
-          .firstWhere((result) => result.device.name.contains("deivice name"))
-          .device;
-      //When find a device,connect and stop scan.
-      if (device != null) {
-        //Android need to request MTU size.
-        //IOS always try to negotiate the highest possible MTU.
-        if (Platform.isAndroid) {
-          device!.requestMtu(512);
+    flutterBlue.scanResults.listen((results) {
+      for (ScanResult r in results) {
+        if (!scanDevices.any((device) => device.name == r.device.name)) {
+          scanDevices.add(r.device);
         }
-        device!.connect();
-        flutterBlue.stopScan();
-        return;
       }
     });
     flutterBlue.stopScan();
+    return scanDevices;
   }
 
-  void discoverService() async {
-    List<BluetoothService> services = await device!.discoverServices();
-    for (var service in services) {
-      if (service.uuid.toString() == SERVICE_UUID) {
-        for (var characteristic in service.characteristics) {
-          if (characteristic.uuid.toString() == CHARACTICE_UUID) {
-            characteristic = characteristic;
-            return;
-          }
-        }
-      }
+  void connectToDevice(BluetoothDevice device) {
+    device.connect();
+    if (Platform.isAndroid) {
+      device.requestMtu(512);
     }
   }
+
+  Future<BluetoothCharacteristic?> discoverService(
+      BluetoothDevice device) async {
+    List<BluetoothService> services = await device.discoverServices();
+    try {
+      final service = services
+          .firstWhere((element) => element.uuid.toString() == SERVICE_UUID);
+      return service.characteristics[1];
+    } catch (e) {
+      debugPrint(e.toString());
+      return null;
+    }
+  }
+}
+
+Uint8List int32bytes(int value) =>
+    Uint8List(4)..buffer.asInt32List()[0] = value;
+
+int bytesToInteger(List<int> bytes) {
+  var value = 0;
+
+  for (var i = 0, length = bytes.length; i < length; i++) {
+    value += bytes[i] * pow(256, i).toInt();
+  }
+
+  return value;
 }

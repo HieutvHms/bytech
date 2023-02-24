@@ -27,7 +27,7 @@ void showStatus(
       ),
     );
   });
-  overlayState?.insert(messageOverlay);
+  overlayState.insert(messageOverlay);
 
   // Awaiting for 3 seconds to close this over lay
   await Future.delayed(const Duration(seconds: 3));
