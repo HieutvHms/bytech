@@ -45,6 +45,8 @@ class BLEService {
     try {
       final service = services
           .firstWhere((element) => element.uuid.toString() == SERVICE_UUID);
+      await service.characteristics[1].setNotifyValue(true);
+
       return service.characteristics[1];
     } catch (e) {
       debugPrint(e.toString());
