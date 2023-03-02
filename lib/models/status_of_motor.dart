@@ -18,7 +18,7 @@ class MotorStatus {
   });
 
   String getStatus() {
-    if (status == StatusOfMotorEnum.STOP_STATUS.index) {
+    if (isRunning()) {
       return "Động cơ đang dừng lại";
     } else if (status == StatusOfMotorEnum.MOVE_IN_STATUS.index) {
       return "Động cơ đang đi vào";
@@ -31,15 +31,17 @@ class MotorStatus {
     }
   }
 
-  bool isInnerMost() {
-    return position == 0;
+  bool canMoveIn() {
+    return position <= 100 && position > 0;
   }
 
-  bool isOutside() {
-    return position == 100;
+  bool canMoveOut() {
+    return position >= 0 && position < 100;
   }
 
   bool isRunning() {
-    return status == StatusOfMotorEnum.STOP_STATUS.index;
+    return status == StatusOfMotorEnum.STOP_STATUS.index ||
+        position == 0 ||
+        position == 100;
   }
 }
