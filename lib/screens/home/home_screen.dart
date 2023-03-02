@@ -36,7 +36,9 @@ class HomeScreen extends StatelessWidget {
                 );
               } else if (snapshot.data == BLEStatus.CONNECTED) {
                 return Center(
-                    child: Text("${value.bluetoothDevice?.name} is connected"));
+                  child: Text(
+                      "${value.bluetoothDevice?.name} is connected.Let's Control"),
+                );
               } else {
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,

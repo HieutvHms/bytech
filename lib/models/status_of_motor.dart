@@ -30,4 +30,16 @@ class MotorStatus {
       return "Trạng thái chưa xác định";
     }
   }
+
+  bool isInnerMost() {
+    return position == 0;
+  }
+
+  bool isOutside() {
+    return position == 100;
+  }
+
+  bool isRunning() {
+    return status == StatusOfMotorEnum.STOP_STATUS.index;
+  }
 }

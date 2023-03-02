@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/providers/ble_provider.dart';
 
 class ControllerScreen extends StatelessWidget {
@@ -16,23 +17,35 @@ class ControllerScreen extends StatelessWidget {
             children: [
               Center(
                 child: Text(
-                    snapshot.data?.getStatus() ?? 'Trạng thái chưa xác định'),
+                    snapshot.data?.getStatus() ?? 'Chưa có thiết bị ghép nối'),
+              ),
+              Center(
+                child: Text("${snapshot.data?.position}/100"),
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Provider.of<BLEProvider>(context, listen: false)
+                          .controlMotor(ControlType.GO_IN);
+                    },
                     child: const Icon(Icons.skip_previous),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Provider.of<BLEProvider>(context, listen: false)
+                          .controlMotor(ControlType.STOP);
+                    },
                     child: const Icon(Icons.pause),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Provider.of<BLEProvider>(context, listen: false)
+                          .controlMotor(ControlType.GO_OUT);
+                    },
                     child: const Icon(Icons.skip_next),
                   ),
                 ],
