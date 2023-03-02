@@ -1,9 +1,10 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/values.dart';
+import 'package:reintechnik/utils/get_command.dart';
 
 //Packge BLE use : https://pub.dev/packages/flutter_blue_plus
 
@@ -35,7 +36,7 @@ class BLEService {
   void connectToDevice(BluetoothDevice device) {
     device.connect();
     if (Platform.isAndroid) {
-      device.requestMtu(512);
+      device.requestMtu(96);
     }
   }
 
@@ -45,23 +46,27 @@ class BLEService {
     try {
       final service = services
           .firstWhere((element) => element.uuid.toString() == SERVICE_UUID);
+
+      await service.characteristics[1].setNotifyValue(true);
+
       return service.characteristics[1];
     } catch (e) {
       debugPrint(e.toString());
       return null;
     }
   }
-}
 
-Uint8List int32bytes(int value) =>
-    Uint8List(4)..buffer.asInt32List()[0] = value;
+  //Command Struct: Header + ID + Devider + Control Content+ Footer.
+  void controlMotor(BluetoothCharacteristic c, ControlType controlType) {
+    List<int> command = [];
 
-int bytesToInteger(List<int> bytes) {
-  var value = 0;
+    command.addAll(BLEConst.CONTROL_HEADER);
+    command.addAll(BLEConst.CONTROL_ID);
+    command.addAll(BLEConst.ID_PAYLOAD_DIVIVDER);
+    command.addAll(controlType.getCommand());
 
-  for (var i = 0, length = bytes.length; i < length; i++) {
-    value += bytes[i] * pow(256, i).toInt();
+    command.addAll(BLEConst.FOOTER);
+
+    c.write(command);
   }
-
-  return value;
 }
