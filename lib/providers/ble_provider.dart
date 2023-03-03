@@ -19,7 +19,7 @@ class BLEProvider extends ChangeNotifier {
   final bleStatusStream = BehaviorSubject<BLEStatus>();
   final motorStatus = BehaviorSubject<MotorStatus?>();
 
-  void scanDevice() async {
+  Future<void> scanDevice() async {
     bleStatusStream.add(BLEStatus.INITIAL);
     bleDeviceList = await BLEService.instance.startScanDevice();
     notifyListeners();
