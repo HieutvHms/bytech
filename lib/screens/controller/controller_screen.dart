@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
@@ -57,15 +56,24 @@ class ControllerScreen extends StatelessWidget {
                         style: CustomTextStyle.h4Medium,
                       ),
                       const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.all(15.0),
-                        child: LinearPercentIndicator(
-                          animation: true,
-                          lineHeight: 20.0,
-                          animationDuration: 2000,
-                          percent: (snapshot.data?.position ?? 0) / 100,
-                          progressColor: CustomColor.stateGreen,
-                          barRadius: const Radius.circular(16),
+                      SizedBox(
+                        height: 50,
+                        width: MediaQuery.of(context).size.width - 80,
+                        child: Stack(
+                          children: [
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 500),
+                              left: (((snapshot.data?.position ?? 0) / 100) *
+                                  (MediaQuery.of(context).size.width - 120)),
+                              child: Container(
+                                height: 20,
+                                width: 20,
+                                decoration: BoxDecoration(
+                                    color: CustomColor.stateGreen,
+                                    borderRadius: BorderRadius.circular(16)),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 12),
