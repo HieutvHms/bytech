@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -66,7 +67,13 @@ class BLEService {
     command.addAll(controlType.getCommand());
 
     command.addAll(BLEConst.FOOTER);
+    print('Send data : $command');
+    c.write(command);
+  }
 
+  void scanWifi(BluetoothCharacteristic c) {
+    List<int> command = [];
+    command.addAll(utf8.encode("#3!"));
     c.write(command);
   }
 }

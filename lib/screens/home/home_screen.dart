@@ -30,10 +30,23 @@ class _HomeScreenState extends State<HomeScreen>
               title: "Error when connect try to scan and conenct again",
             );
           } else if (snapshot.data == BLEStatus.CONNECTED) {
-            return Center(
-              child: Text(
-                "${provider.bluetoothDevice?.name} is connected.Let's Control",
-              ),
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Center(
+                  child: Text(
+                    "${provider.bluetoothDevice?.name} is connected.Let's Control",
+                  ),
+                ),
+                const SizedBox(height: 10),
+                CustomButton(
+                  title: 'Scan wifi',
+                  onTap: () {
+                    provider.scanDevice();
+                  },
+                  enable: true,
+                ),
+              ],
             );
           } else {
             return const ScanWidget(

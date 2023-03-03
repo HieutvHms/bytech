@@ -2,6 +2,7 @@ import 'package:reintechnik/models/status_of_motor.dart';
 
 MotorStatus? convertRawData(List<int> rawData) {
   final tranferData = String.fromCharCodes(rawData);
+  print(tranferData);
   final splitStringList = tranferData.split(":");
   final header = splitStringList[0];
   //TODO : THIS is test logic try to remove

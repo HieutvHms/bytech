@@ -63,4 +63,8 @@ class BLEProvider extends ChangeNotifier {
   void controlMotor(ControlType controlType) {
     bleService.controlMotor(bluetoothCharacteristic!, controlType);
   }
+
+  void scanWifi() {
+    bleService.scanWifi(bluetoothCharacteristic!);
+  }
 }
