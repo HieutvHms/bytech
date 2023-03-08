@@ -23,8 +23,9 @@ class BLEProvider extends ChangeNotifier {
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
 
   Future<void> scanDevice() async {
-    bleStatusStream.add(BLEStatus.INITIAL);
+    bleStatusStream.add(BLEStatus.SCANNING);
     bleDeviceList = await BLEService.instance.startScanDevice();
+    bleStatusStream.add(BLEStatus.INITIAL);
     notifyListeners();
   }
 
