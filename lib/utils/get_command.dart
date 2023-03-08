@@ -4,11 +4,11 @@ extension GetCommand on ControlType {
   List<int> getCommand() {
     switch (this) {
       case ControlType.GO_IN:
-        return BLEConst.GO_IN_COMMAND;
+        return BLERequestConst.GO_IN_COMMAND;
       case ControlType.GO_OUT:
-        return BLEConst.GO_OUT_COMMAND;
+        return BLERequestConst.GO_OUT_COMMAND;
       case ControlType.STOP:
-        return BLEConst.STOP_COMMAND;
+        return BLERequestConst.STOP_COMMAND;
     }
   }
 }

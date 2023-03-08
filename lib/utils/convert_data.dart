@@ -1,20 +1,30 @@
-import 'package:reintechnik/models/status_of_motor.dart';
+import 'package:reintechnik/const/ble_const.dart';
+import 'package:reintechnik/models/data_bulletin.dart';
 
-MotorStatus? convertRawData(List<int> rawData) {
+DataBulletTin? getDataBulletin(List<int> rawData) {
   final tranferData = String.fromCharCodes(rawData);
-  print(tranferData);
-  final splitStringList = tranferData.split(":");
-  final header = splitStringList[0];
-  //TODO : THIS is test logic try to remove
-  if (header == "\$2") {
-    final payload = splitStringList[1].substring(0, 4);
 
-    final status = int.parse(payload.substring(0, 1));
-    final postion = int.parse(payload.substring(1, 4));
-
-    final motorStatus = MotorStatus(position: postion, status: status);
-    return motorStatus;
-  } else {
+  if (tranferData.length < 3) {
     return null;
   }
+  final splitStringList = tranferData.split(":");
+
+  final header = splitStringList[0];
+  String payLoad = splitStringList[1];
+  //Get last index of footer !
+  final subIndex = payLoad.lastIndexOf("!");
+  payLoad = payLoad.substring(0, subIndex);
+
+  if (header ==
+      BLERespondConst.RESPOND_HEADER + BLERespondConst.MOTOR_STATUS_ID) {
+    return DataBulletTin.motorStatus(payload: payLoad);
+  } else if (header ==
+      BLERespondConst.RESPOND_HEADER + BLERespondConst.WIFI_STATUS_ID) {
+    return DataBulletTin.wifiStatus(payload: payLoad);
+  } else if (header ==
+      BLERespondConst.RESPOND_HEADER + BLERespondConst.SCAN_WIFI_LIST_ID) {
+    return DataBulletTin.scannedWifiBulletin(payload: payLoad);
+  }
+
+  return null;
 }

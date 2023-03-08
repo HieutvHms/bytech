@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
+import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/providers/ble_provider.dart';
 import 'package:reintechnik/screens/home/widgets/device_listview.dart';
 import 'package:reintechnik/utils/widgets/custom_buttom.dart';
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen>
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const SizedBox(height: 30),
                 Center(
                   child: Text(
                     "${provider.bluetoothDevice?.name} is connected.Let's Control",
@@ -42,10 +44,36 @@ class _HomeScreenState extends State<HomeScreen>
                 CustomButton(
                   title: 'Scan wifi',
                   onTap: () {
-                    provider.scanDevice();
+                    provider.scanWifi();
                   },
                   enable: true,
                 ),
+                Expanded(
+                  child: ListView.separated(
+                    itemBuilder: (ctx, index) => Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(provider.wifiList[index].name),
+                          CustomButton(
+                            title: "Config",
+                            onTap: () {
+                              showDialog(
+                                  context: context,
+                                  builder: (ctx) {
+                                    return ConfigWifiWidget(
+                                      wifi: provider.wifiList[index],
+                                    );
+                                  });
+                            },
+                            enable: true,
+                          )
+                        ]),
+                    itemCount: provider.wifiList.length,
+                    separatorBuilder: (BuildContext context, int index) {
+                      return const Divider();
+                    },
+                  ),
+                )
               ],
             );
           } else {
@@ -88,6 +116,58 @@ class ScanWidget extends StatelessWidget {
           enable: true,
         )
       ],
+    );
+  }
+}
+
+class ConfigWifiWidget extends StatelessWidget {
+  const ConfigWifiWidget({super.key, required this.wifi});
+  final Wifi wifi;
+  @override
+  Widget build(BuildContext context) {
+    final wifiPassTextController = TextEditingController();
+    final provider = Provider.of<BLEProvider>(context);
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Cài đặt mật khẩu cho ${wifi.name}',
+              style: CustomTextStyle.h4Regular,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: wifiPassTextController,
+              decoration: const InputDecoration(
+                  hintText: "Vui lòng nhập mật khẩu cho wifi"),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Spacer(),
+                CustomButton(
+                  title: "Hủy",
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                  enable: true,
+                ),
+                const SizedBox(width: 16),
+                CustomButton(
+                  title: "Xác nhận",
+                  onTap: () {
+                    provider.confiWifi(wifi.copywith(
+                        fillPassword: wifiPassTextController.text));
+                  },
+                  enable: true,
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
     );
   }
 }

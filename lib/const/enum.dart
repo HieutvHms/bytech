@@ -8,3 +8,12 @@ enum BLEStatus {
   ERROR,
   ERROR_NO_DEVICES,
 }
+
+enum WifiStatus {
+  SCANNING,
+  STOP_SCAN,
+  CONNECTING,
+  CONNECTED,
+  NO_WIFI_CONNECTED,
+  ERROR,
+}
