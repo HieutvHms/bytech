@@ -3,7 +3,7 @@ import 'package:reintechnik/models/data_bulletin.dart';
 
 DataBulletTin? getDataBulletin(List<int> rawData) {
   final tranferData = String.fromCharCodes(rawData);
-
+  print(tranferData);
   if (tranferData.length < 3) {
     return null;
   }

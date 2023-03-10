@@ -37,16 +37,15 @@ class BLEService {
 
   Future<BluetoothCharacteristic?> discoverService(
       BluetoothDevice device) async {
-    if (Platform.isAndroid) {
-      await device.requestMtu(96);
-    }
     List<BluetoothService> services = await device.discoverServices();
     try {
       final service = services
           .firstWhere((element) => element.uuid.toString() == SERVICE_UUID);
 
       await service.characteristics[1].setNotifyValue(true);
-
+      if (Platform.isAndroid) {
+        await device.requestMtu(96);
+      }
       return service.characteristics[1];
     } catch (e) {
       debugPrint(e.toString());

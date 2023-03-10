@@ -1,5 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:reintechnik/const/ble_const.dart';
@@ -7,6 +9,7 @@ import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/data_bulletin.dart';
 import 'package:reintechnik/models/status_of_motor.dart';
 import 'package:reintechnik/models/wifi.dart';
+import 'package:reintechnik/models/wifi_status.dart';
 import 'package:reintechnik/service/ble_service.dart';
 import 'package:reintechnik/utils/convert_data.dart';
 import 'package:rxdart/rxdart.dart';
@@ -16,11 +19,15 @@ class BLEProvider extends ChangeNotifier {
   BluetoothDevice? bluetoothDevice;
   List<Wifi> wifiList = [];
   BluetoothCharacteristic? bluetoothCharacteristic;
+
   final bleService = BLEService.instance;
+
+  StreamSubscription<BluetoothDeviceState>? subscription;
 
   final bleStatusStream = BehaviorSubject<BLEStatus>();
   final motorStatus = BehaviorSubject<MotorStatus?>();
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
+  final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
 
   Future<void> scanDevice() async {
     bleStatusStream.add(BLEStatus.SCANNING);
@@ -35,7 +42,8 @@ class BLEProvider extends ChangeNotifier {
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);
       discoveryService(device);
-      device.state.listen((event) {
+      //Listen to disconnect device ,and auto connect
+      subscription = device.state.listen((event) {
         if (event == BluetoothDeviceState.disconnected) {
           connectToDevice(device);
         }
@@ -60,6 +68,8 @@ class BLEProvider extends ChangeNotifier {
       (event) {
         final bulletin = getDataBulletin(event);
         if (bulletin is WifiStatusBulletin) {
+          final wifiStatus = bulletin.getWifiStatus();
+          wifiConnectStatusStream.add(wifiStatus!);
         } else if (bulletin is MotorStatusBulletin) {
           final status = bulletin.getMotorStatus();
           motorStatus.add(status);
@@ -74,6 +84,13 @@ class BLEProvider extends ChangeNotifier {
         }
       },
     );
+  }
+
+  void disconnectDevice() async {
+    subscription?.cancel();
+    await bluetoothDevice!.disconnect();
+    bluetoothDevice = null;
+    bleStatusStream.add(BLEStatus.INITIAL);
   }
 
   void controlMotor(ControlType controlType) {

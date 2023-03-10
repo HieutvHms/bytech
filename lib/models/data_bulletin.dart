@@ -1,6 +1,7 @@
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/models/status_of_motor.dart';
 import 'package:reintechnik/models/wifi.dart';
+import 'package:reintechnik/models/wifi_status.dart';
 
 abstract class DataBulletTin {
   const factory DataBulletTin.wifiStatus({String? payload}) =
@@ -45,7 +46,20 @@ extension GetWifiStatusData on ScannedWifiListBulletin {
   }
 }
 
-extension GetListDataData on WifiStatusBulletin {}
+extension WifiStatusData on WifiStatusBulletin {
+  WifiConnectStatus? getWifiStatus() {
+    if (payload!.length < 4) {
+      return null;
+    } else {
+      final spliStringList = payload!.split("-");
+      final ssidName = spliStringList[0];
+      final status = WifiStatusEnum.values
+          .firstWhere((e) => e.index.toString() == spliStringList[1]);
+      return WifiConnectStatus(
+          ssidNameConnect: ssidName, wifiStatusEnum: status);
+    }
+  }
+}
 
 extension GetMototStatusData on MotorStatusBulletin {
   MotorStatus getMotorStatus() {

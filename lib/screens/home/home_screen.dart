@@ -150,17 +150,42 @@ class WifiListWidget extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         StreamBuilder(
-            stream: provider.wifiStatusStream,
+            stream: provider.wifiConnectStatusStream,
             builder: (context, snapshot) {
-              return CustomButton(
-                title: 'Scan wifi',
-                onTap: () {
-                  provider.scanWifi();
-                },
-                enable: true,
-                isLoading: snapshot.data == WifiStatus.SCANNING,
-              );
+              if (snapshot.data == null) {
+                return const Text('Chưa có wifi kết nối');
+              } else {
+                return Text(
+                  "Đã kết nối với wifi ${snapshot.data?.ssidNameConnect}",
+                );
+              }
             }),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            StreamBuilder(
+                stream: provider.wifiStatusStream,
+                builder: (context, snapshot) {
+                  return CustomButton(
+                    title: 'Scan wifi',
+                    onTap: () {
+                      provider.scanWifi();
+                    },
+                    enable: true,
+                    isLoading: snapshot.data == WifiStatus.SCANNING,
+                  );
+                }),
+            const SizedBox(width: 12),
+            CustomButton(
+              title: 'Disconnect',
+              onTap: () {
+                provider.disconnectDevice();
+              },
+              enable: true,
+            ),
+          ],
+        ),
         Expanded(
           child: ListView.separated(
             itemBuilder: (ctx, index) => Row(
