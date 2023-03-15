@@ -20,28 +20,54 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final provider = Provider.of<BLEProvider>(context);
     return Scaffold(
-      body: StreamBuilder(
-        stream: provider.bleStatusStream,
-        builder: (context, snapshot) {
-          if (snapshot.data == BLEStatus.INITIAL) {
-            return DeviceListView(bleDeviceList: provider.bleDeviceList);
-          } else if (snapshot.data == BLEStatus.SCANNING) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.data == BLEStatus.ERROR &&
-              snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
-            return const ScanWidget(
-              title: "Error when connect try to scan and conenct again",
-            );
-          } else if (snapshot.data == BLEStatus.CONNECTED) {
-            return const WifiListWidget();
-          } else {
-            return const ScanWidget(
-              title: "No device connect try to scan again",
-            );
-          }
-        },
+      body: Column(
+        children: [
+          StreamBuilder(
+            stream: provider.bleStatusStream,
+            builder: (context, snapshot) {
+              if (snapshot.data == BLEStatus.INITIAL) {
+                return DeviceListView(bleDeviceList: provider.bleDeviceList);
+              } else if (snapshot.data == BLEStatus.SCANNING) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.data == BLEStatus.ERROR &&
+                  snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
+                return const ScanWidget(
+                  title: "Error when connect try to scan and conenct again",
+                );
+              } else if (snapshot.data == BLEStatus.CONNECTED) {
+                return const WifiListWidget();
+              } else {
+                return const ScanWidget(
+                  title: "No device connect try to scan again",
+                );
+              }
+            },
+          ),
+          const Text("No device connect try to scan again"),
+          CustomButton(
+            title: "   Scan   ",
+            onTap: () {
+              provider.scanLocalService();
+            },
+            enable: true,
+          ),
+          Consumer<BLEProvider>(
+            builder: (context, value, child) => Column(
+              children: value.localService
+                  .map((e) => Row(children: [
+                        Text(e.name ?? ""),
+                        CustomButton(
+                          title: 'Connect',
+                          onTap: () {},
+                          enable: true,
+                        )
+                      ]))
+                  .toList(),
+            ),
+          )
+        ],
       ),
     );
   }

@@ -11,13 +11,16 @@ import 'package:reintechnik/models/status_of_motor.dart';
 import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/models/wifi_status.dart';
 import 'package:reintechnik/service/ble_service.dart';
+import 'package:reintechnik/service/mdns_service.dart';
 import 'package:reintechnik/utils/convert_data.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:nsd/nsd.dart';
 
 class BLEProvider extends ChangeNotifier {
   List<BluetoothDevice> bleDeviceList = [];
   BluetoothDevice? bluetoothDevice;
   List<Wifi> wifiList = [];
+  List<Service> localService = [];
   BluetoothCharacteristic? bluetoothCharacteristic;
 
   final bleService = BLEService.instance;
@@ -28,6 +31,7 @@ class BLEProvider extends ChangeNotifier {
   final motorStatus = BehaviorSubject<MotorStatus?>();
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
+  final mdnsService = MdnsService();
 
   Future<void> scanDevice() async {
     bleStatusStream.add(BLEStatus.SCANNING);
@@ -35,6 +39,8 @@ class BLEProvider extends ChangeNotifier {
     bleStatusStream.add(BLEStatus.INITIAL);
     notifyListeners();
   }
+
+  void scanLocalDevice() {}
 
   void connectToDevice(BluetoothDevice device) async {
     try {
@@ -104,5 +110,14 @@ class BLEProvider extends ChangeNotifier {
 
   void confiWifi(Wifi wifi) {
     bleService.configWifiForDevice(bluetoothCharacteristic!, wifi);
+  }
+
+  void scanLocalService() async {
+    try {
+      localService = (await mdnsService.startDiscoveryMDNS()).services;
+      notifyListeners();
+    } catch (e) {
+      print(e);
+    }
   }
 }
