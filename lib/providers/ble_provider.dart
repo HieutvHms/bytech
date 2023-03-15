@@ -12,6 +12,7 @@ import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/models/wifi_status.dart';
 import 'package:reintechnik/service/ble_service.dart';
 import 'package:reintechnik/service/mdns_service.dart';
+import 'package:reintechnik/service/socket_service.dart';
 import 'package:reintechnik/utils/convert_data.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:nsd/nsd.dart';
@@ -32,7 +33,7 @@ class BLEProvider extends ChangeNotifier {
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
   final mdnsService = MdnsService();
-
+  final socketService = SocketService();
   Future<void> scanDevice() async {
     bleStatusStream.add(BLEStatus.SCANNING);
     bleDeviceList = await BLEService.instance.startScanDevice();
@@ -114,10 +115,27 @@ class BLEProvider extends ChangeNotifier {
 
   void scanLocalService() async {
     try {
-      localService = (await mdnsService.startDiscoveryMDNS()).services;
+      //remove all old service
+      localService = [];
       notifyListeners();
+      //Start scan new service
+      final discovery = (await mdnsService.startDiscoveryMDNS());
+      discovery.addServiceListener(
+        (service, status) {
+          if (status == ServiceStatus.found) {
+            localService.add(service);
+            notifyListeners();
+          }
+        },
+      );
+    } catch (e) {}
+  }
+
+  void connectSocket(String ip, int port) async {
+    try {
+      await socketService.connect(ip, port);
     } catch (e) {
-      print(e);
+      debugPrint(e.toString());
     }
   }
 }

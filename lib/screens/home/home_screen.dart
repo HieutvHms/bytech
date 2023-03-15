@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nsd/nsd.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
@@ -16,6 +17,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
+  _HomeScreenState() {
+    enableLogging(LogTopic.calls);
+  }
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<BLEProvider>(context);
@@ -56,11 +60,19 @@ class _HomeScreenState extends State<HomeScreen>
           Consumer<BLEProvider>(
             builder: (context, value, child) => Column(
               children: value.localService
-                  .map((e) => Row(children: [
-                        Text(e.name ?? ""),
+                  .map((localService) => Row(children: [
+                        Expanded(
+                          child: Text(
+                            localService.name ?? "",
+                            maxLines: 2,
+                          ),
+                        ),
                         CustomButton(
                           title: 'Connect',
-                          onTap: () {},
+                          onTap: () {
+                            provider.connectSocket(
+                                localService.host!, localService.port!);
+                          },
                           enable: true,
                         )
                       ]))

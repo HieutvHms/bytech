@@ -1,11 +1,13 @@
 import 'dart:io';
 
 class SocketService {
-  void connect(String host, int port) async {
-    ServerSocket.bind(host, port);
+  Future<void> connect(String host, int port) async {
+    await Socket.connect(host, port).then((socket) {
+      listen(socket);
+    });
   }
 
-  void listen(ServerSocket socket) {
+  void listen(Socket socket) {
     socket.listen((event) {});
   }
 }
