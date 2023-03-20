@@ -24,6 +24,9 @@ DataBulletTin? getDataBulletin(List<int> rawData) {
   } else if (header ==
       BLERespondConst.RESPOND_HEADER + BLERespondConst.SCAN_WIFI_LIST_ID) {
     return DataBulletTin.scannedWifiBulletin(payload: payLoad);
+  } else if (header ==
+      BLERespondConst.RESPOND_HEADER + BLERespondConst.TCP_ID) {
+    return DataBulletTin.tcpSocketIp(payload: payLoad);
   }
 
   return null;

@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -17,11 +18,16 @@ import 'package:reintechnik/utils/convert_data.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:nsd/nsd.dart';
 
-class BLEProvider extends ChangeNotifier {
+enum ConnectStatus { BLE, SOCKET }
+
+class AppProvider extends ChangeNotifier {
   List<BluetoothDevice> bleDeviceList = [];
   BluetoothDevice? bluetoothDevice;
+  ConnectStatus? connectStatus;
   List<Wifi> wifiList = [];
   List<Service> localService = [];
+  Socket? socketTCP;
+  String tcpIP = "";
   BluetoothCharacteristic? bluetoothCharacteristic;
 
   final bleService = BLEService.instance;
@@ -33,7 +39,8 @@ class BLEProvider extends ChangeNotifier {
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
   final mdnsService = MdnsService();
-  final socketService = SocketService();
+  final socketService = SocketService.instance;
+
   Future<void> scanDevice() async {
     bleStatusStream.add(BLEStatus.SCANNING);
     bleDeviceList = await BLEService.instance.startScanDevice();
@@ -48,6 +55,7 @@ class BLEProvider extends ChangeNotifier {
       await device.connect();
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);
+      connectStatus = ConnectStatus.BLE;
       discoveryService(device);
       //Listen to disconnect device ,and auto connect
       subscription = device.state.listen((event) {
@@ -73,35 +81,24 @@ class BLEProvider extends ChangeNotifier {
   void listenDataFromBLE(BluetoothCharacteristic? bluetoothCharacteristic) {
     bluetoothCharacteristic?.value.listen(
       (event) {
-        final bulletin = getDataBulletin(event);
-        if (bulletin is WifiStatusBulletin) {
-          final wifiStatus = bulletin.getWifiStatus();
-          wifiConnectStatusStream.add(wifiStatus!);
-        } else if (bulletin is MotorStatusBulletin) {
-          final status = bulletin.getMotorStatus();
-          motorStatus.add(status);
-        } else if (bulletin is ScannedWifiListBulletin) {
-          final wifi = bulletin.getWifiData();
-          if (wifi.name.isEmpty) {
-            wifiStatusStream.add(WifiStatus.STOP_SCAN);
-          } else if (!wifiList.any((element) => wifi.name == element.name)) {
-            wifiList.add(wifi);
-          }
-          notifyListeners();
-        }
+        convertDataToStatus(event);
       },
     );
   }
 
   void disconnectDevice() async {
     subscription?.cancel();
-    await bluetoothDevice!.disconnect();
+    await bluetoothDevice?.disconnect();
     bluetoothDevice = null;
     bleStatusStream.add(BLEStatus.INITIAL);
   }
 
   void controlMotor(ControlType controlType) {
-    bleService.controlMotor(bluetoothCharacteristic!, controlType);
+    if (connectStatus == ConnectStatus.BLE) {
+      bleService.controlMotor(bluetoothCharacteristic!, controlType);
+    } else {
+      socketService.controlDevice(socketTCP!, controlType);
+    }
   }
 
   void scanWifi() {
@@ -133,9 +130,38 @@ class BLEProvider extends ChangeNotifier {
 
   void connectSocket(String ip, int port) async {
     try {
-      await socketService.connect(ip, port);
+      socketTCP = await socketService.connect(
+        ip,
+        port,
+        convertDataToStatus,
+      );
+      //Remove connect to BLE
+      disconnectDevice();
+      connectStatus = ConnectStatus.SOCKET;
+      notifyListeners();
     } catch (e) {
       debugPrint(e.toString());
     }
+  }
+
+  void convertDataToStatus(List<int> event) {
+    final bulletin = getDataBulletin(event);
+    if (bulletin is WifiStatusBulletin) {
+      final wifiStatus = bulletin.getWifiStatus();
+      wifiConnectStatusStream.add(wifiStatus!);
+    } else if (bulletin is MotorStatusBulletin) {
+      final status = bulletin.getMotorStatus();
+      motorStatus.add(status);
+    } else if (bulletin is ScannedWifiListBulletin) {
+      final wifi = bulletin.getWifiData();
+      if (wifi.name.isEmpty) {
+        wifiStatusStream.add(WifiStatus.STOP_SCAN);
+      } else if (!wifiList.any((element) => wifi.name == element.name)) {
+        wifiList.add(wifi);
+      }
+    } else if (bulletin is TcpSocketIpBulletin) {
+      tcpIP = bulletin.getTcpIP() ?? "";
+    }
+    notifyListeners();
   }
 }

@@ -30,4 +30,5 @@ class BLERespondConst {
   static const String WIFI_STATUS_ID = '1';
   static const String MOTOR_STATUS_ID = '2';
   static const String SCAN_WIFI_LIST_ID = '3';
+  static const String TCP_ID = '4';
 }

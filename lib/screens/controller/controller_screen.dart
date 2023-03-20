@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
-import 'package:reintechnik/providers/ble_provider.dart';
+import 'package:reintechnik/providers/app_provider.dart';
 import 'package:reintechnik/utils/widgets/custom_buttom.dart';
 
 class ControllerScreen extends StatelessWidget {
@@ -11,7 +11,7 @@ class ControllerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context, listen: false);
+    final provider = Provider.of<AppProvider>(context, listen: false);
     return Scaffold(
       body: StreamBuilder(
         stream: provider.motorStatus,

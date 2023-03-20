@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/wifi.dart';
-import 'package:reintechnik/providers/ble_provider.dart';
+import 'package:reintechnik/providers/app_provider.dart';
 import 'package:reintechnik/screens/home/widgets/device_listview.dart';
 import 'package:reintechnik/utils/widgets/custom_buttom.dart';
 
@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context);
+    final provider = Provider.of<AppProvider>(context);
     return Scaffold(
       body: Column(
         children: [
@@ -30,7 +30,9 @@ class _HomeScreenState extends State<HomeScreen>
             stream: provider.bleStatusStream,
             builder: (context, snapshot) {
               if (snapshot.data == BLEStatus.INITIAL) {
-                return DeviceListView(bleDeviceList: provider.bleDeviceList);
+                return Expanded(
+                  child: DeviceListView(bleDeviceList: provider.bleDeviceList),
+                );
               } else if (snapshot.data == BLEStatus.SCANNING) {
                 return const Center(
                   child: CircularProgressIndicator(),
@@ -41,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
                   title: "Error when connect try to scan and conenct again",
                 );
               } else if (snapshot.data == BLEStatus.CONNECTED) {
-                return const WifiListWidget();
+                return const Expanded(child: WifiListWidget());
               } else {
                 return const ScanWidget(
                   title: "No device connect try to scan again",
@@ -49,15 +51,15 @@ class _HomeScreenState extends State<HomeScreen>
               }
             },
           ),
-          const Text("No device connect try to scan again"),
+          const Text("No local device connected try to scan"),
           CustomButton(
             title: "   Scan   ",
             onTap: () {
-              provider.scanLocalService();
+              provider.connectSocket(provider.tcpIP, 80);
             },
             enable: true,
           ),
-          Consumer<BLEProvider>(
+          Consumer<AppProvider>(
             builder: (context, value, child) => Column(
               children: value.localService
                   .map((localService) => Row(children: [
@@ -70,8 +72,7 @@ class _HomeScreenState extends State<HomeScreen>
                         CustomButton(
                           title: 'Connect',
                           onTap: () {
-                            provider.connectSocket(
-                                localService.host!, localService.port!);
+                            provider.connectSocket(provider.tcpIP, 80);
                           },
                           enable: true,
                         )
@@ -94,7 +95,7 @@ class ScanWidget extends StatelessWidget {
   final String title;
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context);
+    final provider = Provider.of<AppProvider>(context);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -124,7 +125,7 @@ class ConfigWifiWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wifiPassTextController = TextEditingController();
-    final provider = Provider.of<BLEProvider>(context, listen: false);
+    final provider = Provider.of<AppProvider>(context, listen: false);
     return Dialog(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -176,7 +177,7 @@ class WifiListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context);
+    final provider = Provider.of<AppProvider>(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

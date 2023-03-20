@@ -34,32 +34,34 @@ class _RootState extends State<Root> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: screenList[currentTab],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentTab,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: CustomColor.stateGreen,
-        unselectedItemColor: CustomColor.neutralBlack,
-        onTap: changeTab,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pest_control_rodent_outlined),
-            label: 'Controller',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.screen_share_sharp),
-            label: 'Screne',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Setting',
-          ),
-        ],
+    return SafeArea(
+      child: Scaffold(
+        body: screenList[currentTab],
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: currentTab,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: CustomColor.stateGreen,
+          unselectedItemColor: CustomColor.neutralBlack,
+          onTap: changeTab,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.pest_control_rodent_outlined),
+              label: 'Controller',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.screen_share_sharp),
+              label: 'Screne',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Setting',
+            ),
+          ],
+        ),
       ),
     );
   }

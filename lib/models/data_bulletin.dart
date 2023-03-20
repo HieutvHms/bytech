@@ -10,6 +10,8 @@ abstract class DataBulletTin {
       MotorStatusBulletin;
   const factory DataBulletTin.scannedWifiBulletin({String? payload}) =
       ScannedWifiListBulletin;
+  const factory DataBulletTin.tcpSocketIp({String? payload}) =
+      TcpSocketIpBulletin;
 }
 
 class WifiStatusBulletin implements DataBulletTin {
@@ -40,9 +42,24 @@ class ScannedWifiListBulletin implements DataBulletTin {
   final String? payload;
 }
 
+class TcpSocketIpBulletin implements DataBulletTin {
+  final String header;
+  final String? payload;
+
+  const TcpSocketIpBulletin(
+      {this.header = BLERespondConst.RESPOND_HEADER + BLERespondConst.TCP_ID,
+      this.payload});
+}
+
 extension GetWifiStatusData on ScannedWifiListBulletin {
   Wifi getWifiData() {
     return Wifi(name: payload!);
+  }
+}
+
+extension GetTcpIpData on TcpSocketIpBulletin {
+  String? getTcpIP() {
+    return payload;
   }
 }
 

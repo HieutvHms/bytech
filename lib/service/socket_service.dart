@@ -1,13 +1,28 @@
 import 'dart:io';
 
+import 'package:reintechnik/const/ble_const.dart';
+import 'package:reintechnik/utils/get_command_byte.dart';
+
 class SocketService {
-  Future<void> connect(String host, int port) async {
-    await Socket.connect(host, port).then((socket) {
-      listen(socket);
-    });
+  SocketService._();
+  static final SocketService instance = SocketService._();
+  Future<Socket?> connect(
+      String host, int port, Function(List<int> event) alyticData) async {
+    try {
+      final socket = await Socket.connect(host, port);
+      socket.listen((event) {
+        final listInt = event.toList();
+        alyticData(listInt);
+      });
+      return socket;
+    } catch (e) {
+      return null;
+    }
   }
 
-  void listen(Socket socket) {
-    socket.listen((event) {});
+  void controlDevice(Socket socket, ControlType controlType) {
+    List<int> command = getCommandByte(controlType);
+    final commandString = String.fromCharCodes(command);
+    socket.write(commandString);
   }
 }
