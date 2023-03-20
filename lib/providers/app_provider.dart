@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/enum.dart';
@@ -11,10 +11,12 @@ import 'package:reintechnik/models/data_bulletin.dart';
 import 'package:reintechnik/models/status_of_motor.dart';
 import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/models/wifi_status.dart';
+import 'package:reintechnik/root.dart';
 import 'package:reintechnik/service/ble_service.dart';
 import 'package:reintechnik/service/mdns_service.dart';
 import 'package:reintechnik/service/socket_service.dart';
 import 'package:reintechnik/utils/convert_data.dart';
+import 'package:reintechnik/utils/show_status.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:nsd/nsd.dart';
 
@@ -56,6 +58,7 @@ class AppProvider extends ChangeNotifier {
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);
       connectStatus = ConnectStatus.BLE;
+
       discoveryService(device);
       //Listen to disconnect device ,and auto connect
       subscription = device.state.listen((event) {
@@ -86,11 +89,18 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
-  void disconnectDevice() async {
+  void disconnectBLE() async {
     subscription?.cancel();
     await bluetoothDevice?.disconnect();
     bluetoothDevice = null;
     bleStatusStream.add(BLEStatus.INITIAL);
+    notifyListeners();
+  }
+
+  void disconnectTCP() {
+    socketTCP?.destroy();
+    socketTCP = null;
+    notifyListeners();
   }
 
   void controlMotor(ControlType controlType) {
@@ -128,19 +138,28 @@ class AppProvider extends ChangeNotifier {
     } catch (e) {}
   }
 
-  void connectSocket(String ip, int port) async {
+  void connectSocket(BuildContext context, String ip, int port) async {
     try {
+      //Remove connect to BLE
+      disconnectBLE();
       socketTCP = await socketService.connect(
         ip,
         port,
         convertDataToStatus,
       );
-      //Remove connect to BLE
-      disconnectDevice();
+      showStatus(
+        buildContext: globalKey.currentContext!,
+        message: "Giờ bạn có thể điều khiển thiết bị từ xa",
+        succcess: true,
+      );
       connectStatus = ConnectStatus.SOCKET;
       notifyListeners();
     } catch (e) {
-      debugPrint(e.toString());
+      showStatus(
+        buildContext: globalKey.currentContext!,
+        message: "Kết nối thất bại",
+        succcess: false,
+      );
     }
   }
 

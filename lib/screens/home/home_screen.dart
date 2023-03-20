@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen>
     final provider = Provider.of<AppProvider>(context);
     return Scaffold(
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           StreamBuilder(
             stream: provider.bleStatusStream,
@@ -51,35 +52,35 @@ class _HomeScreenState extends State<HomeScreen>
               }
             },
           ),
-          const Text("No local device connected try to scan"),
-          CustomButton(
-            title: "   Scan   ",
-            onTap: () {
-              provider.connectSocket(provider.tcpIP, 80);
-            },
-            enable: true,
-          ),
-          Consumer<AppProvider>(
-            builder: (context, value, child) => Column(
-              children: value.localService
-                  .map((localService) => Row(children: [
-                        Expanded(
-                          child: Text(
-                            localService.name ?? "",
-                            maxLines: 2,
-                          ),
-                        ),
-                        CustomButton(
-                          title: 'Connect',
-                          onTap: () {
-                            provider.connectSocket(provider.tcpIP, 80);
-                          },
-                          enable: true,
-                        )
-                      ]))
-                  .toList(),
-            ),
-          )
+          // const Text("No local device connected try to scan"),
+          // CustomButton(
+          //   title: "   Scan   ",
+          //   onTap: () {
+          //     provider.connectSocket(provider.tcpIP, 80);
+          //   },
+          //   enable: true,
+          // ),
+          // Consumer<AppProvider>(
+          //   builder: (context, value, child) => Column(
+          //     children: value.localService
+          //         .map((localService) => Row(children: [
+          //               Expanded(
+          //                 child: Text(
+          //                   localService.name ?? "",
+          //                   maxLines: 2,
+          //                 ),
+          //               ),
+          //               CustomButton(
+          //                 title: 'Connect',
+          //                 onTap: () {
+          //                   provider.connectSocket(provider.tcpIP, 80);
+          //                 },
+          //                 enable: true,
+          //               )
+          //             ]))
+          //         .toList(),
+          //   ),
+          // )
         ],
       ),
     );
@@ -219,7 +220,15 @@ class WifiListWidget extends StatelessWidget {
             CustomButton(
               title: 'Disconnect',
               onTap: () {
-                provider.disconnectDevice();
+                provider.disconnectBLE();
+              },
+              enable: true,
+            ),
+            const SizedBox(width: 12),
+            CustomButton(
+              title: 'Connect Socket',
+              onTap: () {
+                provider.connectSocket(context, provider.tcpIP, 80);
               },
               enable: true,
             ),

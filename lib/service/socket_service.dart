@@ -6,18 +6,14 @@ import 'package:reintechnik/utils/get_command_byte.dart';
 class SocketService {
   SocketService._();
   static final SocketService instance = SocketService._();
-  Future<Socket?> connect(
+  Future<Socket> connect(
       String host, int port, Function(List<int> event) alyticData) async {
-    try {
-      final socket = await Socket.connect(host, port);
-      socket.listen((event) {
-        final listInt = event.toList();
-        alyticData(listInt);
-      });
-      return socket;
-    } catch (e) {
-      return null;
-    }
+    final socket = await Socket.connect(host, port);
+    socket.listen((event) {
+      final listInt = event.toList();
+      alyticData(listInt);
+    });
+    return socket;
   }
 
   void controlDevice(Socket socket, ControlType controlType) {

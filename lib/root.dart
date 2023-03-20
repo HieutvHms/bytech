@@ -11,6 +11,7 @@ const screenList = [
   ScreneScreen(),
   SettingScreen()
 ];
+final GlobalKey<NavigatorState> globalKey = GlobalKey<NavigatorState>();
 
 class Root extends StatefulWidget {
   const Root({super.key});
@@ -36,6 +37,7 @@ class _RootState extends State<Root> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        key: globalKey,
         body: screenList[currentTab],
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: currentTab,
