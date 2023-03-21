@@ -6,7 +6,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/values.dart';
 import 'package:reintechnik/models/wifi.dart';
-import 'package:reintechnik/utils/get_command.dart';
+import 'package:reintechnik/utils/get_command_byte.dart';
 
 //Packge BLE use : https://pub.dev/packages/flutter_blue_plus
 
@@ -55,14 +55,7 @@ class BLEService {
 
   //Command Struct: Header + ID + Devider + Control Content+ Footer.
   void controlMotor(BluetoothCharacteristic c, ControlType controlType) {
-    List<int> command = [];
-
-    command.addAll(BLERequestConst.CONTROL_HEADER);
-    command.addAll(BLERequestConst.CONTROL_ID);
-    command.addAll(BLERequestConst.ID_PAYLOAD_DIVIVDER);
-    command.addAll(controlType.getCommand());
-
-    command.addAll(BLERequestConst.FOOTER);
+    List<int> command = getCommandByte(controlType);
     c.write(command);
   }
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:nsd/nsd.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/wifi.dart';
-import 'package:reintechnik/providers/ble_provider.dart';
+import 'package:reintechnik/providers/app_provider.dart';
 import 'package:reintechnik/screens/home/widgets/device_listview.dart';
 import 'package:reintechnik/utils/widgets/custom_buttom.dart';
 
@@ -16,32 +17,71 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
+  _HomeScreenState() {
+    enableLogging(LogTopic.calls);
+  }
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context);
+    final provider = Provider.of<AppProvider>(context);
     return Scaffold(
-      body: StreamBuilder(
-        stream: provider.bleStatusStream,
-        builder: (context, snapshot) {
-          if (snapshot.data == BLEStatus.INITIAL) {
-            return DeviceListView(bleDeviceList: provider.bleDeviceList);
-          } else if (snapshot.data == BLEStatus.SCANNING) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.data == BLEStatus.ERROR &&
-              snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
-            return const ScanWidget(
-              title: "Error when connect try to scan and conenct again",
-            );
-          } else if (snapshot.data == BLEStatus.CONNECTED) {
-            return const WifiListWidget();
-          } else {
-            return const ScanWidget(
-              title: "No device connect try to scan again",
-            );
-          }
-        },
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          StreamBuilder(
+            stream: provider.bleStatusStream,
+            builder: (context, snapshot) {
+              if (snapshot.data == BLEStatus.INITIAL) {
+                return Expanded(
+                  child: DeviceListView(bleDeviceList: provider.bleDeviceList),
+                );
+              } else if (snapshot.data == BLEStatus.SCANNING) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.data == BLEStatus.ERROR &&
+                  snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
+                return const ScanWidget(
+                  title: "Error when connect try to scan and conenct again",
+                );
+              } else if (snapshot.data == BLEStatus.CONNECTED) {
+                return const Expanded(child: WifiListWidget());
+              } else {
+                return const ScanWidget(
+                  title: "No device connect try to scan again",
+                );
+              }
+            },
+          ),
+          // const Text("No local device connected try to scan"),
+          // CustomButton(
+          //   title: "   Scan   ",
+          //   onTap: () {
+          //     provider.connectSocket(provider.tcpIP, 80);
+          //   },
+          //   enable: true,
+          // ),
+          // Consumer<AppProvider>(
+          //   builder: (context, value, child) => Column(
+          //     children: value.localService
+          //         .map((localService) => Row(children: [
+          //               Expanded(
+          //                 child: Text(
+          //                   localService.name ?? "",
+          //                   maxLines: 2,
+          //                 ),
+          //               ),
+          //               CustomButton(
+          //                 title: 'Connect',
+          //                 onTap: () {
+          //                   provider.connectSocket(provider.tcpIP, 80);
+          //                 },
+          //                 enable: true,
+          //               )
+          //             ]))
+          //         .toList(),
+          //   ),
+          // )
+        ],
       ),
     );
   }
@@ -56,7 +96,7 @@ class ScanWidget extends StatelessWidget {
   final String title;
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context);
+    final provider = Provider.of<AppProvider>(context);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -86,7 +126,7 @@ class ConfigWifiWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wifiPassTextController = TextEditingController();
-    final provider = Provider.of<BLEProvider>(context, listen: false);
+    final provider = Provider.of<AppProvider>(context, listen: false);
     return Dialog(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -138,7 +178,7 @@ class WifiListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context);
+    final provider = Provider.of<AppProvider>(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -180,7 +220,15 @@ class WifiListWidget extends StatelessWidget {
             CustomButton(
               title: 'Disconnect',
               onTap: () {
-                provider.disconnectDevice();
+                provider.disconnectBLE();
+              },
+              enable: true,
+            ),
+            const SizedBox(width: 12),
+            CustomButton(
+              title: 'Connect Socket',
+              onTap: () {
+                provider.connectSocket(context, provider.tcpIP, 80);
               },
               enable: true,
             ),

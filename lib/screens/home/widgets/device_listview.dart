@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:reintechnik/providers/ble_provider.dart';
+import 'package:reintechnik/providers/app_provider.dart';
 import 'package:reintechnik/utils/widgets/custom_buttom.dart';
 
 class DeviceListView extends StatelessWidget {
@@ -9,7 +9,7 @@ class DeviceListView extends StatelessWidget {
   final List<BluetoothDevice> bleDeviceList;
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BLEProvider>(context, listen: false);
+    final provider = Provider.of<AppProvider>(context, listen: false);
 
     return RefreshIndicator(
       onRefresh: () async {
