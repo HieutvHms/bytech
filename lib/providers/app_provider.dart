@@ -135,7 +135,9 @@ class AppProvider extends ChangeNotifier {
           }
         },
       );
-    } catch (e) {}
+    } catch (e) {
+      print(e);
+    }
   }
 
   void connectSocket(BuildContext context, String ip, int port) async {
@@ -155,6 +157,7 @@ class AppProvider extends ChangeNotifier {
       connectStatus = ConnectStatus.SOCKET;
       notifyListeners();
     } catch (e) {
+      print(e);
       showStatus(
         buildContext: globalKey.currentContext!,
         message: "Kết nối thất bại",
@@ -167,7 +170,9 @@ class AppProvider extends ChangeNotifier {
     final bulletin = getDataBulletin(event);
     if (bulletin is WifiStatusBulletin) {
       final wifiStatus = bulletin.getWifiStatus();
-      wifiConnectStatusStream.add(wifiStatus!);
+      if (wifiStatus != null) {
+        wifiConnectStatusStream.add(wifiStatus);
+      }
     } else if (bulletin is MotorStatusBulletin) {
       final status = bulletin.getMotorStatus();
       motorStatus.add(status);
@@ -180,6 +185,7 @@ class AppProvider extends ChangeNotifier {
       }
     } else if (bulletin is TcpSocketIpBulletin) {
       tcpIP = bulletin.getTcpIP() ?? "";
+      notifyListeners();
     }
     notifyListeners();
   }
