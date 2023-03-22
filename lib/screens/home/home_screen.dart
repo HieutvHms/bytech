@@ -204,8 +204,7 @@ class WifiListWidget extends StatelessWidget {
                 return const Text('Chưa có wifi kết nối');
               } else {
                 return Text(
-                  "Đã kết nối với wifi ${snapshot.data?.ssidNameConnect},\nIP config :${provider.tcpIP} ",
-                );
+                    "${snapshot.data?.getStatusWifi() ?? ""}\nIP config :${provider.tcpIP}");
               }
             }),
         const SizedBox(height: 10),
