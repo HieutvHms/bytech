@@ -22,6 +22,11 @@ import 'package:nsd/nsd.dart';
 
 enum ConnectStatus { BLE, SOCKET }
 
+enum MDNSStatus {
+  SCANING,
+  DONE_SCAN,
+}
+
 class AppProvider extends ChangeNotifier {
   List<BluetoothDevice> bleDeviceList = [];
   BluetoothDevice? bluetoothDevice;
@@ -37,6 +42,7 @@ class AppProvider extends ChangeNotifier {
   StreamSubscription<BluetoothDeviceState>? subscription;
 
   final bleStatusStream = BehaviorSubject<BLEStatus>();
+  final mdnsStatusStream = BehaviorSubject<MDNSStatus>();
   final motorStatus = BehaviorSubject<MotorStatus?>();
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
@@ -123,8 +129,10 @@ class AppProvider extends ChangeNotifier {
   void scanLocalService() async {
     try {
       //remove all old service
+
       localService = [];
       notifyListeners();
+      mdnsStatusStream.add(MDNSStatus.SCANING);
       //Start scan new service
       final discovery = (await mdnsService.startDiscoveryMDNS());
       discovery.addServiceListener(
@@ -135,8 +143,9 @@ class AppProvider extends ChangeNotifier {
           }
         },
       );
+      mdnsStatusStream.add(MDNSStatus.DONE_SCAN);
     } catch (e) {
-      print(e);
+      mdnsStatusStream.add(MDNSStatus.DONE_SCAN);
     }
   }
 
@@ -144,6 +153,7 @@ class AppProvider extends ChangeNotifier {
     try {
       //Remove connect to BLE
       disconnectBLE();
+
       socketTCP = await socketService.connect(
         ip,
         port,

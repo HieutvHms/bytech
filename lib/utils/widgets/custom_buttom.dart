@@ -9,9 +9,13 @@ class CustomButton extends StatelessWidget {
     required this.onTap,
     required this.enable,
     this.isLoading,
+    this.onLongPressStart,
+    this.onLongPressEnd,
   });
   final String title;
   final VoidCallback onTap;
+  final VoidCallback? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
   final bool enable;
   final bool? isLoading;
   @override
@@ -21,6 +25,12 @@ class CustomButton extends StatelessWidget {
         if (enable) {
           onTap();
         }
+      },
+      onLongPressStart: (s) {
+        onLongPressStart!();
+      },
+      onLongPressEnd: (s) {
+        onLongPressEnd!();
       },
       child: Container(
         padding: const EdgeInsets.all(8),

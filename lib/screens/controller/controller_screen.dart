@@ -101,22 +101,23 @@ class ControllerBoard extends StatelessWidget {
                       children: [
                         CustomButton(
                           title: 'MOVE IN ',
-                          onTap: () {
+                          onLongPressStart: () {
                             provider.controlMotor(ControlType.GO_IN);
                           },
+                          onLongPressEnd: () {
+                            provider.controlMotor(ControlType.STOP);
+                          },
+                          onTap: () {},
                           enable: snapshot.data?.canMoveIn() == true,
                         ),
                         CustomButton(
-                          title: '  STOP  ',
-                          onTap: () {
-                            provider.controlMotor(ControlType.STOP);
-                          },
-                          enable: snapshot.data?.isRunning() == false,
-                        ),
-                        CustomButton(
                           title: 'MOVE OUT',
-                          onTap: () {
+                          onTap: () {},
+                          onLongPressStart: () {
                             provider.controlMotor(ControlType.GO_OUT);
+                          },
+                          onLongPressEnd: () {
+                            provider.controlMotor(ControlType.STOP);
                           },
                           enable: snapshot.data?.canMoveOut() == true,
                         )

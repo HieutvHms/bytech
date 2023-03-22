@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/screens/controller/controller_screen.dart';
-import 'package:reintechnik/screens/home/home_screen.dart';
+import 'package:reintechnik/screens/home/new_home.dart';
 import 'package:reintechnik/screens/screne/screne_screen.dart';
 import 'package:reintechnik/screens/setting/setting_screen.dart';
 
 const screenList = [
-  HomeScreen(),
+  NewHomeScreen(),
   ControllerScreen(),
   ScreneScreen(),
   SettingScreen()
