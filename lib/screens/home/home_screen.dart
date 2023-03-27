@@ -52,35 +52,42 @@ class _HomeScreenState extends State<HomeScreen>
               }
             },
           ),
-          // const Text("No local device connected try to scan"),
-          // CustomButton(
-          //   title: "   Scan   ",
-          //   onTap: () {
-          //     provider.connectSocket(provider.tcpIP, 80);
-          //   },
-          //   enable: true,
-          // ),
-          // Consumer<AppProvider>(
-          //   builder: (context, value, child) => Column(
-          //     children: value.localService
-          //         .map((localService) => Row(children: [
-          //               Expanded(
-          //                 child: Text(
-          //                   localService.name ?? "",
-          //                   maxLines: 2,
-          //                 ),
-          //               ),
-          //               CustomButton(
-          //                 title: 'Connect',
-          //                 onTap: () {
-          //                   provider.connectSocket(provider.tcpIP, 80);
-          //                 },
-          //                 enable: true,
-          //               )
-          //             ]))
-          //         .toList(),
-          //   ),
-          // )
+          const Text("No local device connected try to scan"),
+          CustomButton(
+            title: "   Scan   ",
+            onTap: () {
+              provider.scanLocalService();
+            },
+            enable: true,
+          ),
+          Consumer<AppProvider>(
+            builder: (context, value, child) => Column(
+              children: value.localService
+                  .map((localService) => Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(children: [
+                          Expanded(
+                            child: Text(
+                              localService.name ?? "",
+                              maxLines: 2,
+                            ),
+                          ),
+                          CustomButton(
+                            title: 'Connect',
+                            onTap: () {
+                              provider.connectSocket(
+                                context,
+                                localService.host ?? "",
+                                localService.port ?? 80,
+                              );
+                            },
+                            enable: true,
+                          )
+                        ]),
+                      ))
+                  .toList(),
+            ),
+          )
         ],
       ),
     );
@@ -186,6 +193,7 @@ class WifiListWidget extends StatelessWidget {
         Center(
           child: Text(
             "${provider.bluetoothDevice?.name} is connected.Let's Control",
+            maxLines: 2,
           ),
         ),
         const SizedBox(height: 10),
@@ -196,8 +204,7 @@ class WifiListWidget extends StatelessWidget {
                 return const Text('Chưa có wifi kết nối');
               } else {
                 return Text(
-                  "Đã kết nối với wifi ${snapshot.data?.ssidNameConnect}",
-                );
+                    "${snapshot.data?.getStatusWifi() ?? ""}\nIP config :${provider.tcpIP}");
               }
             }),
         const SizedBox(height: 10),

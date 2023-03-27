@@ -22,6 +22,11 @@ import 'package:nsd/nsd.dart';
 
 enum ConnectStatus { BLE, SOCKET }
 
+enum MDNSStatus {
+  SCANING,
+  DONE_SCAN,
+}
+
 class AppProvider extends ChangeNotifier {
   List<BluetoothDevice> bleDeviceList = [];
   BluetoothDevice? bluetoothDevice;
@@ -37,6 +42,7 @@ class AppProvider extends ChangeNotifier {
   StreamSubscription<BluetoothDeviceState>? subscription;
 
   final bleStatusStream = BehaviorSubject<BLEStatus>();
+  final mdnsStatusStream = BehaviorSubject<MDNSStatus>();
   final motorStatus = BehaviorSubject<MotorStatus?>();
   final wifiStatusStream = BehaviorSubject<WifiStatus>();
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
@@ -123,8 +129,10 @@ class AppProvider extends ChangeNotifier {
   void scanLocalService() async {
     try {
       //remove all old service
+
       localService = [];
       notifyListeners();
+      mdnsStatusStream.add(MDNSStatus.SCANING);
       //Start scan new service
       final discovery = (await mdnsService.startDiscoveryMDNS());
       discovery.addServiceListener(
@@ -135,13 +143,17 @@ class AppProvider extends ChangeNotifier {
           }
         },
       );
-    } catch (e) {}
+      mdnsStatusStream.add(MDNSStatus.DONE_SCAN);
+    } catch (e) {
+      mdnsStatusStream.add(MDNSStatus.DONE_SCAN);
+    }
   }
 
   void connectSocket(BuildContext context, String ip, int port) async {
     try {
       //Remove connect to BLE
       disconnectBLE();
+
       socketTCP = await socketService.connect(
         ip,
         port,
@@ -155,6 +167,7 @@ class AppProvider extends ChangeNotifier {
       connectStatus = ConnectStatus.SOCKET;
       notifyListeners();
     } catch (e) {
+      print(e);
       showStatus(
         buildContext: globalKey.currentContext!,
         message: "Kết nối thất bại",
@@ -167,7 +180,9 @@ class AppProvider extends ChangeNotifier {
     final bulletin = getDataBulletin(event);
     if (bulletin is WifiStatusBulletin) {
       final wifiStatus = bulletin.getWifiStatus();
-      wifiConnectStatusStream.add(wifiStatus!);
+      if (wifiStatus != null) {
+        wifiConnectStatusStream.add(wifiStatus);
+      }
     } else if (bulletin is MotorStatusBulletin) {
       final status = bulletin.getMotorStatus();
       motorStatus.add(status);
@@ -180,6 +195,7 @@ class AppProvider extends ChangeNotifier {
       }
     } else if (bulletin is TcpSocketIpBulletin) {
       tcpIP = bulletin.getTcpIP() ?? "";
+      notifyListeners();
     }
     notifyListeners();
   }
