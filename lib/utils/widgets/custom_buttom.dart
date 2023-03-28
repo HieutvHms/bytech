@@ -27,10 +27,14 @@ class CustomButton extends StatelessWidget {
         }
       },
       onLongPressStart: (s) {
-        onLongPressStart!();
+        if (enable) {
+          onLongPressStart!();
+        }
       },
       onLongPressEnd: (s) {
-        onLongPressEnd!();
+        if (enable) {
+          onLongPressEnd!();
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(8),
