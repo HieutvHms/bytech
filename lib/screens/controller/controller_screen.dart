@@ -100,6 +100,7 @@ class ControllerBoard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         CustomButton(
+                          height: 80,
                           title: 'MOVE IN ',
                           onLongPressStart: () {
                             provider.controlMotor(ControlType.GO_IN);
@@ -111,6 +112,7 @@ class ControllerBoard extends StatelessWidget {
                           enable: snapshot.data?.canMoveIn() == true,
                         ),
                         CustomButton(
+                          height: 80,
                           title: 'MOVE OUT',
                           onTap: () {},
                           onLongPressStart: () {

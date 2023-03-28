@@ -11,6 +11,7 @@ class CustomButton extends StatelessWidget {
     this.isLoading,
     this.onLongPressStart,
     this.onLongPressEnd,
+    this.height,
   });
   final String title;
   final VoidCallback onTap;
@@ -18,6 +19,7 @@ class CustomButton extends StatelessWidget {
   final VoidCallback? onLongPressEnd;
   final bool enable;
   final bool? isLoading;
+  final double? height;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -37,6 +39,8 @@ class CustomButton extends StatelessWidget {
         }
       },
       child: Container(
+        height: height,
+        alignment: Alignment.center,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
