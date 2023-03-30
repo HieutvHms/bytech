@@ -68,7 +68,8 @@ class AppProvider extends ChangeNotifier {
       discoveryService(device);
       //Listen to disconnect device ,and auto connect
       subscription = device.state.listen((event) {
-        if (event == BluetoothDeviceState.disconnected) {
+        if (event == BluetoothDeviceState.disconnected &&
+            bleStatusStream.value != BLEStatus.INITIAL) {
           connectToDevice(device);
         }
       });
