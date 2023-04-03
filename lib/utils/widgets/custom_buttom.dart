@@ -28,13 +28,13 @@ class CustomButton extends StatelessWidget {
           onTap();
         }
       },
-      onLongPressStart: (s) {
-        if (enable) {
+      onLongPressDown: (s) {
+        if (enable && onLongPressStart != null) {
           onLongPressStart!();
         }
       },
-      onLongPressEnd: (s) {
-        if (enable) {
+      onLongPressUp: () {
+        if (enable && onLongPressEnd != null) {
           onLongPressEnd!();
         }
       },
