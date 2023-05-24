@@ -8,7 +8,8 @@ class SocketService {
   static final SocketService instance = SocketService._();
   Future<Socket> connect(
       String host, int port, Function(List<int> event) alyticData) async {
-    final socket = await Socket.connect(host, port);
+    final socket =
+        await Socket.connect(host, port, timeout: const Duration(seconds: 5));
     socket.listen((event) {
       final listInt = event.toList();
       alyticData(listInt);
