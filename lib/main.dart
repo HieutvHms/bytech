@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/root.dart';
 
-import 'providers/ble_provider.dart';
+import 'providers/app_provider.dart';
 
 void main() {
   runApp(
@@ -11,7 +11,7 @@ void main() {
     /// can use [MyApp] while mocking the providers
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => BLEProvider()),
+        ChangeNotifierProvider(create: (_) => AppProvider()),
       ],
       child: const MyApp(),
     ),
