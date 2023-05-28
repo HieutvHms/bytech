@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 abstract class CustomColor {
-  static const primaryColor = Color(0xFF4E29AD);
+  static const primaryColor = Color(0xFF007DC5);
   static const stateGreen = Color(0xFF3fb05d);
   static const stateRed = Color(0xFFF4421D);
   static const stateYellow = Color(0xFFF7C73E);
