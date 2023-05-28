@@ -81,6 +81,7 @@ class ControlerButton extends StatelessWidget {
             size: 30,
           ),
         ),
+        SizedBox(height: 4),
         Text(
           title,
           style: CustomTextStyle.bodyMedium,
