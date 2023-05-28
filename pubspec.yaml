@@ -77,6 +77,14 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
+    - family: Helvetica
+      fonts:
+        - asset: assets/fonts/HelveticaNeue-Light.ttf
+          weight: 400
+        - asset: assets/fonts/helvetica-neue-medium.ttf
+          weight: 600
+        - asset: assets/fonts/Helvetica-Bold.ttf
+          weight: 700  
 
   # To add assets to your application, add an assets section, like this:
   # assets:
