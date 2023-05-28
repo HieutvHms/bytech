@@ -54,9 +54,13 @@ class BLEService {
   }
 
   //Command Struct: Header + ID + Devider + Control Content+ Footer.
-  void controlMotor(BluetoothCharacteristic c, ControlType controlType) {
-    List<int> command = getCommandByte(controlType);
-    c.write(command);
+  void controlMotor(BluetoothCharacteristic c, ControlType controlType) async {
+    try {
+      List<int> command = getCommandByte(controlType);
+      await c.write(command);
+    } catch (e) {
+      controlMotor(c, controlType);
+    }
   }
 
   void scanWifi(BluetoothCharacteristic c) {
