@@ -37,7 +37,6 @@ class _RootState extends State<Root> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        key: globalKey,
         body: screenList[currentTab],
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: currentTab,

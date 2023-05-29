@@ -6,6 +6,7 @@ import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
+import 'package:reintechnik/root.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
   const NewHomeScreen2({super.key});
@@ -14,6 +15,7 @@ class NewHomeScreen2 extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
     return Scaffold(
+      key: globalKey,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -176,6 +178,11 @@ class NewHomeScreen2 extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ExpansionTile(
+              onExpansionChanged: (value) {
+                if (value == true) {
+                  provider.scanLocalService();
+                }
+              },
               title: Row(
                 children: const [
                   CircleAvatar(
@@ -190,19 +197,27 @@ class NewHomeScreen2 extends StatelessWidget {
                   ),
                 ],
               ),
-              children: const [
-                WifiWarning()
-                // SizedBox(
-                //   height: MediaQuery.of(context).size.height * 0.5,
-                //   child: ListView.separated(
-                //     itemBuilder: (ctx, index) => DeviceConnectCard(
-                //       connect: () {},
-                //       devicename: 'APLS-0001',
-                //     ),
-                //     itemCount: 10,
-                //     separatorBuilder: (context, index) => const Divider(),
-                //   ),
-                // ),
+              children: [
+                Consumer<AppProvider>(
+                  builder: (context, value, child) => SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.5,
+                    child: ListView.separated(
+                      itemBuilder: (ctx, index) => DeviceConnectCard(
+                        connect: () {
+                          provider.connectSocket(
+                            context,
+                            value.localService[index].host ?? '',
+                            value.localService[index].port ?? 2000,
+                          );
+                        },
+                        devicename: value.localService[index].name ?? "",
+                      ),
+                      itemCount: value.localService.length,
+                      separatorBuilder: (context, index) => const Divider(),
+                    ),
+                  ),
+                ),
+                // WifiWarning()
               ],
             ),
           ],
@@ -297,9 +312,13 @@ class DeviceConnectCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            devicename,
-            style: CustomTextStyle.bodyLight,
+          Expanded(
+            child: Text(
+              devicename,
+              style: CustomTextStyle.bodyLight,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           CustomOutLineButton(title: 'Connect', ontap: connect),
         ],

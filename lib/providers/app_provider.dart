@@ -61,7 +61,7 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void scanLocalDevice() {}
+  // void scanLocalDevice() {}
 
   void connectToDevice(BluetoothDevice device) async {
     try {
