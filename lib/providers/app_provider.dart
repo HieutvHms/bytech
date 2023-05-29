@@ -65,7 +65,7 @@ class AppProvider extends ChangeNotifier {
 
   void connectToDevice(BluetoothDevice device) async {
     try {
-      await device.connect();
+      // await device.connect();
 
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);

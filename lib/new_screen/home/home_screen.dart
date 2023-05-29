@@ -4,6 +4,7 @@ import 'package:reintechnik/const/asset_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
+import 'package:reintechnik/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
@@ -36,7 +37,7 @@ class NewHomeScreen2 extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 60,
+                    top: 40,
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 32),
                       width: MediaQuery.of(context).size.width * 0.9,
@@ -74,6 +75,7 @@ class NewHomeScreen2 extends StatelessWidget {
                     bottom: 30,
                     child: ConnectDeviceWidget(
                       deviceName: provider.bluetoothDevice?.name ?? "",
+                      canGoNext: true,
                     ),
                   ),
                 ],
@@ -211,9 +213,10 @@ class NewHomeScreen2 extends StatelessWidget {
 }
 
 class ConnectDeviceWidget extends StatelessWidget {
-  const ConnectDeviceWidget({super.key, required this.deviceName});
+  const ConnectDeviceWidget(
+      {super.key, required this.deviceName, this.canGoNext});
   final String deviceName;
-
+  final bool? canGoNext;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -226,33 +229,49 @@ class ConnectDeviceWidget extends StatelessWidget {
       ),
       child: Consumer<AppProvider>(
         builder: (context, value, child) => value.bluetoothDevice != null
-            ? Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'ON CONNECTED',
-                        style: CustomTextStyle.bodyMedium,
+            ? GestureDetector(
+                onTap: () {
+                  if (canGoNext != null) {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => NewControllerScreen(
+                        deviceParam: DeviceParam(
+                          deviceName: deviceName,
+                          connectStatus: ConnectStatus.BLE,
+                        ),
                       ),
-                      ImageIcon(
-                        AssetImage(AssetConst.bluetoothIcon),
-                        size: 24,
-                        color: CustomColor.primaryColor,
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        deviceName,
-                        style: CustomTextStyle.h4Medium,
-                      ),
-                    ],
-                  )
-                ],
+                    ));
+                  }
+                },
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'ON CONNECTED',
+                          style: CustomTextStyle.bodyMedium.copyWith(
+                            color: CustomColor.neutralBlack50,
+                          ),
+                        ),
+                        const ImageIcon(
+                          AssetImage(AssetConst.bluetoothIcon),
+                          size: 24,
+                          color: CustomColor.primaryColor,
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          deviceName,
+                          style: CustomTextStyle.h4Medium,
+                        ),
+                      ],
+                    )
+                  ],
+                ),
               )
             : const Padding(
                 padding: EdgeInsets.all(16),
@@ -376,7 +395,7 @@ class WaveClipper extends CustomClipper<Path> {
       size.height / 2,
     );
     path.quadraticBezierTo(
-        size.width * 0.6, size.height, size.width, size.height * 0.7);
+        size.width * 0.55, size.height, size.width, size.height * 0.7);
     // path.c
     // final firstStart = Offset(size.width / 0.5, size.height / 2);
     // final firstEnd = Offset(size.width / 0.75, size.height);

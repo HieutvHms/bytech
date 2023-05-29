@@ -9,4 +9,7 @@ class AssetConst {
   static const stack1 = "assets/images/stack1.png";
   static const stack2 = "assets/images/stack2.png";
   static const stack3 = "assets/images/stack3.png";
+  static const screenImage = "assets/images/screen_image.png";
+  static const backArrow = "assets/images/back_arrow.png";
+  static const moreMenu = "assets/images/more_menu.png";
 }
