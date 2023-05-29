@@ -50,6 +50,11 @@ class AppProvider extends ChangeNotifier {
   final socketService = SocketService.instance;
 
   Future<void> scanDevice() async {
+    final isBluetoothOn = await FlutterBluePlus.instance.isOn;
+    if (!isBluetoothOn) {
+      bleStatusStream.add(BLEStatus.BLUE_TOOTH_IS_OFF);
+      return;
+    }
     bleStatusStream.add(BLEStatus.SCANNING);
     bleDeviceList = await BLEService.instance.startScanDevice();
     bleStatusStream.add(BLEStatus.INITIAL);
@@ -61,10 +66,11 @@ class AppProvider extends ChangeNotifier {
   void connectToDevice(BluetoothDevice device) async {
     try {
       await device.connect();
+
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);
       connectStatus = ConnectStatus.BLE;
-
+      notifyListeners();
       discoveryService(device);
       //Listen to disconnect device ,and auto connect
       subscription = device.state.listen((event) {

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/new_screen/home/home_screen.dart';
@@ -14,20 +12,22 @@ class NewControllerScreen extends StatelessWidget {
       body: Column(
         children: [
           Row(
-            children: [],
+            children: const [],
           ),
-          SizedBox(height: 48),
-          ConnectDeviceWidget(),
+          const SizedBox(height: 48),
+          const ConnectDeviceWidget(
+            deviceName: 'Name',
+          ),
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.6,
           ),
           Container(
             alignment: Alignment.center,
-            margin: EdgeInsets.symmetric(horizontal: 32),
+            margin: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
-                Text('Press and hold button to control device'),
-                SizedBox(height: 16),
+                const Text('Press and hold button to control device'),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -66,7 +66,7 @@ class ControlerButton extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             // borderRadius: BorderRadius.circular(60),
@@ -81,7 +81,7 @@ class ControlerButton extends StatelessWidget {
             size: 30,
           ),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
           title,
           style: CustomTextStyle.bodyMedium,

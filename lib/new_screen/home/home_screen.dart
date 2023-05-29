@@ -1,73 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:reintechnik/const/asset_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
+import 'package:reintechnik/const/enum.dart';
+import 'package:reintechnik/providers/app_provider.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
   const NewHomeScreen2({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context);
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Stack(
-              children: [
-                Container(
-                  height: MediaQuery.of(context).size.height * 0.35,
-                  width: double.maxFinite,
-                  // color: Colors.amberAccent,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(colors: [
-                      Color(0xFF42ABE8),
-                      Color(0xFF0A6294),
-                    ]),
-                  ),
-                ),
-                Positioned(
-                  top: 60,
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 32),
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Image.asset(AssetConst.logo),
-                              SizedBox(height: 16),
-                              Text(
-                                'Welcome,',
-                                style: CustomTextStyle.bodyLight
-                                    .copyWith(color: Colors.white),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Mr.David',
-                                style: CustomTextStyle.h4Medium
-                                    .copyWith(color: Colors.white),
-                              ),
-                            ]),
-                        // Spacer(),
-                        CircleAvatar(
-                          child: Icon(Icons.person),
-                          backgroundColor: Colors.white,
-                        )
-                      ],
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: Stack(
+                children: [
+                  ClipPath(
+                    clipper: WaveClipper(),
+                    child: Container(
+                      width: double.maxFinite,
+                      // color: Colors.amberAccent,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF42ABE8),
+                            Color(0xFF0A6294),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const Positioned(
-                  bottom: 10,
-                  child: ConnectDeviceWidget(),
-                ),
-              ],
+                  Positioned(
+                    top: 60,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Image.asset(AssetConst.logo),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Welcome,',
+                                  style: CustomTextStyle.bodyLight
+                                      .copyWith(color: Colors.white),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Mr.David',
+                                  style: CustomTextStyle.h4Medium
+                                      .copyWith(color: Colors.white),
+                                ),
+                              ]),
+                          // Spacer(),
+                          const CircleAvatar(
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.person),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 30,
+                    child: ConnectDeviceWidget(
+                      deviceName: provider.bluetoothDevice?.name ?? "",
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             ExpansionTile(
+              onExpansionChanged: (value) {
+                if (value == true) {
+                  provider.scanDevice();
+                }
+              },
               expandedCrossAxisAlignment: CrossAxisAlignment.center,
               title: Row(
                 children: const [
@@ -84,18 +102,74 @@ class NewHomeScreen2 extends StatelessWidget {
                 ],
               ),
               children: [
-                BluetoothWarning(),
-                // SizedBox(
-                //   height: MediaQuery.of(context).size.height * 0.5,
-                //   child: ListView.separated(
-                //     itemBuilder: (ctx, index) => DeviceConnectCard(
-                //       connect: () {},
-                //       devicename: 'APLS-0001',
-                //     ),
-                //     itemCount: 10,
-                //     separatorBuilder: (context, index) => const Divider(),
-                //   ),
-                // ),
+                // const BluetoothWarning(),
+                StreamBuilder(
+                  stream: provider.bleStatusStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.data == BLEStatus.INITIAL) {
+                      return SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: ListView.separated(
+                          itemBuilder: (ctx, index) => DeviceConnectCard(
+                            connect: () {
+                              provider.connectToDevice(
+                                provider.bleDeviceList[index],
+                              );
+                            },
+                            devicename: provider.bleDeviceList[index].name,
+                          ),
+                          itemCount: provider.bleDeviceList.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                        ),
+                      );
+                    } else if (snapshot.data == BLEStatus.SCANNING) {
+                      return const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    } else if (snapshot.data == BLEStatus.ERROR &&
+                        snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
+                      return const Text(
+                          'Error when connect try to scan and conenct again');
+                    } else if (snapshot.data == BLEStatus.CONNECTED) {
+                      return SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: ListView.separated(
+                          itemBuilder: (ctx, index) => DeviceConnectCard(
+                            connect: () {
+                              provider.connectToDevice(
+                                provider.bleDeviceList[index],
+                              );
+                            },
+                            devicename: provider.bleDeviceList[index].name,
+                          ),
+                          itemCount: provider.bleDeviceList.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                        ),
+                      );
+                    } else if (snapshot.data == BLEStatus.BLUE_TOOTH_IS_OFF) {
+                      return const BluetoothWarning();
+                    } else {
+                      return SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: ListView.separated(
+                          itemBuilder: (ctx, index) => DeviceConnectCard(
+                            connect: () {
+                              provider.connectToDevice(
+                                provider.bleDeviceList[index],
+                              );
+                            },
+                            devicename: provider.bleDeviceList[index].name,
+                          ),
+                          itemCount: provider.bleDeviceList.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                        ),
+                      );
+                    }
+                  },
+                )
               ],
             ),
             const SizedBox(height: 8),
@@ -114,7 +188,7 @@ class NewHomeScreen2 extends StatelessWidget {
                   ),
                 ],
               ),
-              children: [
+              children: const [
                 WifiWarning()
                 // SizedBox(
                 //   height: MediaQuery.of(context).size.height * 0.5,
@@ -137,7 +211,8 @@ class NewHomeScreen2 extends StatelessWidget {
 }
 
 class ConnectDeviceWidget extends StatelessWidget {
-  const ConnectDeviceWidget({super.key});
+  const ConnectDeviceWidget({super.key, required this.deviceName});
+  final String deviceName;
 
   @override
   Widget build(BuildContext context) {
@@ -149,33 +224,43 @@ class ConnectDeviceWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         color: Colors.white,
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'ON CONNECTED',
-                style: CustomTextStyle.bodyMedium,
-              ),
-              ImageIcon(
-                AssetImage(AssetConst.bluetoothIcon),
-                size: 24,
-                color: CustomColor.primaryColor,
+      child: Consumer<AppProvider>(
+        builder: (context, value, child) => value.bluetoothDevice != null
+            ? Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        'ON CONNECTED',
+                        style: CustomTextStyle.bodyMedium,
+                      ),
+                      ImageIcon(
+                        AssetImage(AssetConst.bluetoothIcon),
+                        size: 24,
+                        color: CustomColor.primaryColor,
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        deviceName,
+                        style: CustomTextStyle.h4Medium,
+                      ),
+                    ],
+                  )
+                ],
               )
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'ALPS-0001',
-                style: CustomTextStyle.h4Medium,
+            : const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'No device connected yet.',
+                  style: CustomTextStyle.h4Medium,
+                ),
               ),
-            ],
-          )
-        ],
       ),
     );
   }
@@ -197,7 +282,7 @@ class DeviceConnectCard extends StatelessWidget {
             devicename,
             style: CustomTextStyle.bodyLight,
           ),
-          CustomOutLineButton(title: 'Connect', ontap: () {}),
+          CustomOutLineButton(title: 'Connect', ontap: connect),
         ],
       ),
     );
@@ -238,12 +323,12 @@ class BluetoothWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 32),
+      padding: const EdgeInsets.symmetric(vertical: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
-            backgroundImage: AssetImage(AssetConst.noBluetooth),
+            backgroundImage: const AssetImage(AssetConst.noBluetooth),
             backgroundColor: CustomColor.stateRed.withOpacity(0.5),
           ),
           const Text(
@@ -281,24 +366,30 @@ class WifiWarning extends StatelessWidget {
     );
   }
 }
-// class WaveClipper extends CustomClipper<Path> {
-//   @override
-//   Path getClip(Size size) {
-//     var path = Path();
-//     path.lineTo(
-//       0,
-//       size.height - 100,
-//     );
-//     final firstStart = Offset(size.width / 0.5, size.height - 100);
-//     final firstEnd = Offset(size.width / 0.75, size.height);
-//     path.quadraticBezierTo(
-//         firstStart.dx, firstStart.dy, firstEnd.dx, firstEnd.dy);
-//     // path.lineTo(size.width, 0);
-//     return path;
-//   }
 
-//   @override
-//   bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
-//     return false;
-//   }
-// }
+class WaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.lineTo(
+      0,
+      size.height / 2,
+    );
+    path.quadraticBezierTo(
+        size.width * 0.6, size.height, size.width, size.height * 0.7);
+    // path.c
+    // final firstStart = Offset(size.width / 0.5, size.height / 2);
+    // final firstEnd = Offset(size.width / 0.75, size.height);
+    // path.quadraticBezierTo(
+    //     firstStart.dx, firstStart.dy, firstEnd.dx, firstEnd.dy);
+    path.lineTo(size.width, size.height);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
+    return false;
+  }
+}

@@ -8,6 +8,7 @@ enum BLEStatus {
   DISCONNECTED,
   ERROR,
   ERROR_NO_DEVICES,
+  BLUE_TOOTH_IS_OFF
 }
 
 enum WifiStatus {
