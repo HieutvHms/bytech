@@ -260,6 +260,7 @@ class ConnectDeviceWidget extends StatelessWidget {
         builder: (context, value, child) =>
             value.bluetoothDevice != null || value.socketTCP != null
                 ? GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
                       if (canGoNext != null) {
                         Navigator.of(context).push(MaterialPageRoute(
