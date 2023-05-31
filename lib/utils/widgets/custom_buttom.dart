@@ -41,10 +41,11 @@ class CustomButton extends StatelessWidget {
       child: Container(
         height: height,
         alignment: Alignment.center,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: enable ? CustomColor.pastel5 : CustomColor.neutralBlack50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: CustomColor.primaryColor),
+          color: enable ? CustomColor.primaryColor : CustomColor.neutralBlack50,
         ),
         child: isLoading == true
             ? const CircularProgressIndicator(
@@ -53,7 +54,9 @@ class CustomButton extends StatelessWidget {
               )
             : Text(
                 title,
-                style: CustomTextStyle.bodyMedium,
+                style: CustomTextStyle.bodyMedium.copyWith(
+                  color: Colors.white,
+                ),
               ),
       ),
     );

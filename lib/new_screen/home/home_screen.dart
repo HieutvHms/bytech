@@ -201,19 +201,30 @@ class NewHomeScreen2 extends StatelessWidget {
                 Consumer<AppProvider>(
                   builder: (context, value, child) => SizedBox(
                     height: MediaQuery.of(context).size.height * 0.5,
-                    child: ListView.separated(
-                      itemBuilder: (ctx, index) => DeviceConnectCard(
-                        connect: () {
-                          provider.connectSocket(
-                            context,
-                            value.localService[index].host ?? '',
-                            value.localService[index].port ?? 2000,
-                          );
-                        },
-                        devicename: value.localService[index].name ?? "",
-                      ),
-                      itemCount: value.localService.length,
-                      separatorBuilder: (context, index) => const Divider(),
+                    child: StreamBuilder(
+                      stream: provider.mdnsStatusStream,
+                      builder: (ctx, snapShot) => snapShot.data ==
+                              MDNSStatus.SCANING
+                          ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          : ListView.separated(
+                              itemBuilder: (ctx, index) => DeviceConnectCard(
+                                connect: () {
+                                  provider.connectSocket(
+                                    context,
+                                    value.localService[index].host ?? '',
+                                    value.localService[index].port ?? 2000,
+                                    value.localService[index].name ?? "",
+                                  );
+                                },
+                                devicename:
+                                    value.localService[index].name ?? "",
+                              ),
+                              itemCount: value.localService.length,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(),
+                            ),
                     ),
                   ),
                 ),
@@ -243,58 +254,70 @@ class ConnectDeviceWidget extends StatelessWidget {
         color: Colors.white,
       ),
       child: Consumer<AppProvider>(
-        builder: (context, value, child) => value.bluetoothDevice != null
-            ? GestureDetector(
-                onTap: () {
-                  if (canGoNext != null) {
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => NewControllerScreen(
-                        deviceParam: DeviceParam(
-                          deviceName: deviceName,
-                          connectStatus: ConnectStatus.BLE,
-                        ),
-                      ),
-                    ));
-                  }
-                },
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'ON CONNECTED',
-                          style: CustomTextStyle.bodyMedium.copyWith(
-                            color: CustomColor.neutralBlack50,
+        builder: (context, value, child) =>
+            value.bluetoothDevice != null || value.socketTCP != null
+                ? GestureDetector(
+                    onTap: () {
+                      if (canGoNext != null) {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => NewControllerScreen(
+                            deviceParam: DeviceParam(
+                              deviceName: deviceName,
+                              connectStatus: ConnectStatus.BLE,
+                            ),
+                            connectType: value.bluetoothDevice != null
+                                ? ConnectType.bluetooth
+                                : ConnectType.mdns,
                           ),
+                        ));
+                      }
+                    },
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'ON CONNECTED',
+                              style: CustomTextStyle.bodyMedium.copyWith(
+                                color: CustomColor.neutralBlack50,
+                              ),
+                            ),
+                            value.bluetoothDevice != null
+                                ? const ImageIcon(
+                                    AssetImage(AssetConst.bluetoothIcon),
+                                    size: 24,
+                                    color: CustomColor.primaryColor,
+                                  )
+                                : const ImageIcon(
+                                    AssetImage(AssetConst.wifiIcon),
+                                    size: 24,
+                                    color: CustomColor.primaryColor,
+                                  )
+                          ],
                         ),
-                        const ImageIcon(
-                          AssetImage(AssetConst.bluetoothIcon),
-                          size: 24,
-                          color: CustomColor.primaryColor,
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              value.bluetoothDevice != null
+                                  ? deviceName
+                                  : value.mdnsConnectedClient!.name,
+                              style: CustomTextStyle.h4Medium,
+                            ),
+                          ],
                         )
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          deviceName,
-                          style: CustomTextStyle.h4Medium,
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              )
-            : const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No device connected yet.',
-                  style: CustomTextStyle.h4Medium,
-                ),
-              ),
+                  )
+                : const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'No device connected yet.',
+                      style: CustomTextStyle.h4Medium,
+                    ),
+                  ),
       ),
     );
   }
@@ -329,25 +352,27 @@ class DeviceConnectCard extends StatelessWidget {
 
 class CustomOutLineButton extends StatelessWidget {
   const CustomOutLineButton(
-      {super.key, required this.title, required this.ontap});
+      {super.key, required this.title, required this.ontap, this.color});
   final String title;
   final VoidCallback ontap;
+  final Color? color;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: ontap,
       child: Container(
+        alignment: Alignment.center,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: CustomColor.primaryColor,
+            color: color ?? CustomColor.primaryColor,
           ),
         ),
         child: Text(
           title,
           style: CustomTextStyle.bodyMedium.copyWith(
-            color: CustomColor.primaryColor,
+            color: color ?? CustomColor.primaryColor,
           ),
         ),
       ),

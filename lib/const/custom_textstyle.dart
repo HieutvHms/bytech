@@ -77,4 +77,9 @@ abstract class CustomTextStyle {
     fontWeight: FontWeight.w600,
     fontSize: 14,
   );
+  static const captionMedium = TextStyle(
+    color: CustomColor.neutralBlack20,
+    fontWeight: FontWeight.w400,
+    fontSize: 12,
+  );
 }

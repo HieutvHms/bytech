@@ -83,6 +83,7 @@ class LocalDeviceList extends StatelessWidget {
                             context,
                             localService.host ?? "",
                             localService.port ?? 80,
+                            localService.name ?? "",
                           );
                         },
                         enable: true,

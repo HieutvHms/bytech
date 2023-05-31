@@ -79,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 context,
                                 localService.host ?? "",
                                 localService.port ?? 80,
+                                localService.name ?? "",
                               );
                             },
                             enable: true,
@@ -235,7 +236,8 @@ class WifiListWidget extends StatelessWidget {
             CustomButton(
               title: 'Connect Socket',
               onTap: () {
-                provider.connectSocket(context, provider.tcpIP, 80);
+                provider.connectSocket(
+                    context, provider.tcpIP, 80, 'fake devive');
               },
               enable: true,
             ),

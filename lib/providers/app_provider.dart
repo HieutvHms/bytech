@@ -8,6 +8,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/data_bulletin.dart';
+import 'package:reintechnik/models/mdns_connected_model.dart';
 import 'package:reintechnik/models/status_of_motor.dart';
 import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/models/wifi_status.dart';
@@ -36,7 +37,7 @@ class AppProvider extends ChangeNotifier {
   Socket? socketTCP;
   String tcpIP = "";
   BluetoothCharacteristic? bluetoothCharacteristic;
-
+  MdnsConnectedClient? mdnsConnectedClient;
   final bleService = BLEService.instance;
 
   StreamSubscription<BluetoothDeviceState>? subscription;
@@ -65,7 +66,7 @@ class AppProvider extends ChangeNotifier {
 
   void connectToDevice(BluetoothDevice device) async {
     try {
-      // await device.connect();
+      await device.connect();
 
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);
@@ -142,6 +143,7 @@ class AppProvider extends ChangeNotifier {
       mdnsStatusStream.add(MDNSStatus.SCANING);
       //Start scan new service
       final discovery = (await mdnsService.startDiscoveryMDNS());
+
       discovery.addServiceListener(
         (service, status) {
           if (status == ServiceStatus.found) {
@@ -156,7 +158,8 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void connectSocket(BuildContext context, String ip, int port) async {
+  void connectSocket(
+      BuildContext context, String ip, int port, String name) async {
     try {
       //Remove connect to BLE
       disconnectBLE();
@@ -166,18 +169,19 @@ class AppProvider extends ChangeNotifier {
         port,
         convertDataToStatus,
       );
+      mdnsConnectedClient =
+          MdnsConnectedClient(name: name, host: ip, port: port);
       showStatus(
         buildContext: globalKey.currentContext!,
-        message: "Giờ bạn có thể điều khiển thiết bị từ xa",
+        message: "Connect success",
         succcess: true,
       );
       connectStatus = ConnectStatus.SOCKET;
       notifyListeners();
     } catch (e) {
-      print(e);
       showStatus(
         buildContext: globalKey.currentContext!,
-        message: "Kết nối thất bại",
+        message: "Connect failed",
         succcess: false,
       );
     }
