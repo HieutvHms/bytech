@@ -202,13 +202,14 @@ class NewHomeScreen2 extends StatelessWidget {
                   builder: (context, value, child) => SizedBox(
                     height: MediaQuery.of(context).size.height * 0.5,
                     child: StreamBuilder(
-                      stream: provider.mdnsStatusStream,
-                      builder: (ctx, snapShot) => snapShot.data ==
-                              MDNSStatus.SCANING
-                          ? const Center(
+                        stream: provider.mdnsStatusStream,
+                        builder: (ctx, snapShot) {
+                          if (snapShot.data == MDNSStatus.SCANING) {
+                            return const Center(
                               child: CircularProgressIndicator(),
-                            )
-                          : ListView.separated(
+                            );
+                          } else if (snapShot.data == MDNSStatus.DONE_SCAN) {
+                            return ListView.separated(
                               itemBuilder: (ctx, index) => DeviceConnectCard(
                                 connect: () {
                                   provider.connectSocket(
@@ -224,11 +225,13 @@ class NewHomeScreen2 extends StatelessWidget {
                               itemCount: value.localService.length,
                               separatorBuilder: (context, index) =>
                                   const Divider(),
-                            ),
-                    ),
+                            );
+                          } else {
+                            return const WifiWarning();
+                          }
+                        }),
                   ),
                 ),
-                // WifiWarning()
               ],
             ),
           ],

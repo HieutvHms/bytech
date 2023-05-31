@@ -16,6 +16,7 @@ import 'package:reintechnik/root.dart';
 import 'package:reintechnik/service/ble_service.dart';
 import 'package:reintechnik/service/mdns_service.dart';
 import 'package:reintechnik/service/socket_service.dart';
+import 'package:reintechnik/utils/connectivity_extention.dart';
 import 'package:reintechnik/utils/convert_data.dart';
 import 'package:reintechnik/utils/show_status.dart';
 import 'package:rxdart/rxdart.dart';
@@ -26,6 +27,7 @@ enum ConnectStatus { BLE, SOCKET }
 enum MDNSStatus {
   SCANING,
   DONE_SCAN,
+  NO_CONNECT,
 }
 
 class AppProvider extends ChangeNotifier {
@@ -135,6 +137,11 @@ class AppProvider extends ChangeNotifier {
   }
 
   void scanLocalService() async {
+    final isConnected = await isConnectedInternet();
+    if (!isConnected) {
+      mdnsStatusStream.add(MDNSStatus.NO_CONNECT);
+      return;
+    }
     try {
       //remove all old service
 
