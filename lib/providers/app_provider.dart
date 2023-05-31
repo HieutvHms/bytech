@@ -154,7 +154,9 @@ class AppProvider extends ChangeNotifier {
       discovery.addServiceListener(
         (service, status) {
           if (status == ServiceStatus.found) {
-            localService.add(service);
+            if (!localService.any((element) => element.host == service.host)) {
+              localService.add(service);
+            }
             notifyListeners();
           }
         },
