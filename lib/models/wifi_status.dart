@@ -31,25 +31,25 @@ class WifiConnectStatus {
     switch (wifiStatusEnum) {
       case WifiStatusEnum.SUCCESS_CONNECT:
         return Text(
-          'Kết nối thành công',
+          'Connected',
           style: CustomTextStyle.bodyMedium
               .copyWith(color: CustomColor.stateGreen),
         );
       case WifiStatusEnum.CONNECTING:
         return Text(
-          'Đang kết nối ... ',
+          'Connecting ... ',
           style: CustomTextStyle.bodyMedium
               .copyWith(color: CustomColor.stateYellow),
         );
       case WifiStatusEnum.FAIL_CONNECT:
         return Text(
-          'Kết nối thất bại',
+          'Connect failed',
           style:
               CustomTextStyle.bodyMedium.copyWith(color: CustomColor.stateRed),
         );
       default:
         return Text(
-          'Kết nối thất bại',
+          'Connect failed',
           style:
               CustomTextStyle.bodyMedium.copyWith(color: CustomColor.stateRed),
         );
