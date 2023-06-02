@@ -5,6 +5,7 @@ import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/new_screen/controller_screen/new_controller_screen.dart';
+import 'package:reintechnik/new_screen/personal/profile_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
 import 'package:reintechnik/root.dart';
 
@@ -65,9 +66,15 @@ class NewHomeScreen2 extends StatelessWidget {
                                 ),
                               ]),
                           // Spacer(),
-                          const CircleAvatar(
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.person),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (ctx) => const ProfileScreen()));
+                            },
+                            child: const CircleAvatar(
+                              backgroundColor: Colors.white,
+                              child: Icon(Icons.person),
+                            ),
                           )
                         ],
                       ),
