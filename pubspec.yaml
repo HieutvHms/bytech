@@ -42,6 +42,7 @@ dependencies:
   percent_indicator: ^4.2.2
   nsd: ^2.3.0
   connectivity_plus: ^4.0.1
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +68,7 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
+    - assets/app_icons/
   fonts:
     - family: Inter
       fonts:
