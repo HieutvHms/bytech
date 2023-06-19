@@ -248,91 +248,20 @@ class NewHomeScreen2 extends StatelessWidget {
   }
 }
 
-class ConnectDeviceWidget extends StatelessWidget {
-  const ConnectDeviceWidget(
-      {super.key, required this.deviceName, this.canGoNext});
-  final String deviceName;
-  final bool? canGoNext;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      width: MediaQuery.of(context).size.width * 0.9,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
-      ),
-      child: Consumer<AppProvider>(
-        builder: (context, value, child) =>
-            value.bluetoothDevice != null || value.socketTCP != null
-                ? GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (canGoNext != null) {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => NewControllerScreen(
-                            deviceParam: DeviceParam(
-                              deviceName: deviceName,
-                              connectStatus: ConnectStatus.BLE,
-                            ),
-                            connectType: value.bluetoothDevice != null
-                                ? ConnectType.bluetooth
-                                : ConnectType.mdns,
-                          ),
-                        ));
-                      }
-                    },
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'ON CONNECTED',
-                              style: CustomTextStyle.bodyMedium.copyWith(
-                                color: CustomColor.neutralBlack50,
-                              ),
-                            ),
-                            value.bluetoothDevice != null
-                                ? const ImageIcon(
-                                    AssetImage(AssetConst.bluetoothIcon),
-                                    size: 24,
-                                    color: CustomColor.primaryColor,
-                                  )
-                                : const ImageIcon(
-                                    AssetImage(AssetConst.wifiIcon),
-                                    size: 24,
-                                    color: CustomColor.primaryColor,
-                                  )
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              value.bluetoothDevice != null
-                                  ? deviceName
-                                  : value.mdnsConnectedClient!.name,
-                              style: CustomTextStyle.h4Medium,
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  )
-                : const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      'No device connected yet.',
-                      style: CustomTextStyle.h4Medium,
-                    ),
-                  ),
-      ),
-    );
-  }
-}
+// void showWifiSettingDialog(BuildContext context) {
+//   showModalBottomSheet(
+//     shape: const RoundedRectangleBorder(
+//       borderRadius: BorderRadius.only(
+//         topLeft: Radius.circular(16),
+//         topRight: Radius.circular(16),
+//       ),
+//     ),
+//     context: context,
+//     builder: (ctx) => ConfigWifiWidget(
+//       provider: Provider.of<AppProvider>(context),
+//     ),
+//   );
+// }
 
 class DeviceConnectCard extends StatelessWidget {
   const DeviceConnectCard(
@@ -451,11 +380,7 @@ class WaveClipper extends CustomClipper<Path> {
     );
     path.quadraticBezierTo(
         size.width * 0.55, size.height, size.width, size.height * 0.7);
-    // path.c
-    // final firstStart = Offset(size.width / 0.5, size.height / 2);
-    // final firstEnd = Offset(size.width / 0.75, size.height);
-    // path.quadraticBezierTo(
-    //     firstStart.dx, firstStart.dy, firstEnd.dx, firstEnd.dy);
+
     path.lineTo(size.width, size.height);
     path.lineTo(size.width, 0);
     path.close();

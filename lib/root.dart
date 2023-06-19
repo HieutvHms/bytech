@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:reintechnik/const/asset_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
-import 'package:reintechnik/screens/controller/controller_screen.dart';
-import 'package:reintechnik/screens/home/new_home.dart';
-import 'package:reintechnik/screens/screne/screne_screen.dart';
-import 'package:reintechnik/screens/setting/setting_screen.dart';
+import 'package:reintechnik/new_screen/connect_screen.dart';
+import 'package:reintechnik/new_screen/home/home_screen.dart';
+import 'package:reintechnik/new_screen/personal/profile_screen.dart';
 
-const screenList = [
-  NewHomeScreen(),
-  ControllerScreen(),
-  ScreneScreen(),
-  SettingScreen()
+final screenList = [
+  const NewHomeScreen2(),
+  const ConnectScreen(),
+  const ProfileScreen(),
 ];
 final GlobalKey<NavigatorState> globalKey = GlobalKey<NavigatorState>();
 
@@ -41,25 +40,21 @@ class _RootState extends State<Root> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: currentTab,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: CustomColor.stateGreen,
+          selectedItemColor: CustomColor.primaryColor,
           unselectedItemColor: CustomColor.neutralBlack,
           onTap: changeTab,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: ImageIcon(AssetImage(AssetConst.homeIcon)),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.pest_control_rodent_outlined),
-              label: 'Controller',
+              icon: ImageIcon(AssetImage(AssetConst.connectIcon)),
+              label: 'Connect',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.screen_share_sharp),
-              label: 'Screne',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Setting',
+              icon: ImageIcon(AssetImage(AssetConst.profileIcon)),
+              label: 'Profile',
             ),
           ],
         ),

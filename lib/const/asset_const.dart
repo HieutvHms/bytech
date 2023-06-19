@@ -13,4 +13,7 @@ class AssetConst {
   static const backArrow = "assets/images/back_arrow.png";
   static const moreMenu = "assets/images/more_menu.png";
   static const syncIcon = "assets/images/sync_alt_solid.png";
+  static const profileIcon = "assets/images/profile_icon.png";
+  static const connectIcon = "assets/images/connect_icon.png";
+  static const homeIcon = "assets/images/home_icon.png";
 }

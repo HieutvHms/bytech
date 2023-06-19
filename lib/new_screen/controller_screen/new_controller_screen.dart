@@ -47,105 +47,77 @@ class NewControllerScreen extends StatelessWidget {
           deviceParam.deviceName,
           style: CustomTextStyle.h4Medium,
         ),
-        actions: [
-          if (connectType == ConnectType.bluetooth)
-            PopupMenuButton(
-              splashRadius: 12,
-              child: const ImageIcon(
-                AssetImage(AssetConst.moreMenu),
-                color: CustomColor.neutralBlack,
-              ),
-              itemBuilder: (ctx) => [
-                PopupMenuItem(
-                  onTap: () {
-                    Future.delayed(const Duration(milliseconds: 200))
-                        .then((value) {
-                      showWifiSettingDialog(context);
-                    });
-                  },
-                  child: const Text(
-                    "Config",
-                    style: CustomTextStyle.bodyMedium,
-                  ),
-                ),
-                PopupMenuItem(
-                  onTap: () {
-                    provider.disconnectBLE();
-                    Future.delayed(const Duration(milliseconds: 200))
-                        .then((value) {
-                      Navigator.of(context).pop();
-                    });
-                  },
-                  child: const Text(
-                    "Disconnect",
-                    style: CustomTextStyle.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-          const SizedBox(
-            width: 16,
-          )
-        ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          ConnectDeviceWidget(
-            deviceName: deviceParam.deviceName,
-          ),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.5,
-            child: Image.asset(AssetConst.screenImage),
-          ),
-          StreamBuilder(
-            stream: Provider.of<AppProvider>(context).motorStatus,
-            builder: (ctx, snapshot) => Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              alignment: Alignment.center,
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.white,
-              ),
-              child: Column(
-                children: [
-                  const Text('Press and hold button to control device'),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ControlerButton(
-                        onTap: () {},
-                        iconData: Icons.arrow_back,
-                        title: 'Move in',
-                        enable: snapshot.data?.canMoveIn() == true,
-                        onLongPressStart: () {
-                          provider.controlMotor(ControlType.GO_IN);
-                        },
-                        onLongPressEnd: () {
-                          provider.controlMotor(ControlType.STOP);
-                        },
-                      ),
-                      ControlerButton(
-                        onTap: () {},
-                        iconData: Icons.arrow_forward,
-                        title: 'Move out',
-                        enable: snapshot.data?.canMoveOut() == true,
-                        onLongPressStart: () {
-                          provider.controlMotor(ControlType.GO_OUT);
-                        },
-                        onLongPressEnd: () {
-                          provider.controlMotor(ControlType.STOP);
-                        },
-                      ),
-                    ],
-                  )
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              'Information',
+              style: CustomTextStyle.bodyMedium
+                  .copyWith(color: CustomColor.neutralBlack50),
+            ),
+            const SizedBox(height: 4),
+            ConnectDeviceWidget(
+              deviceName: deviceParam.deviceName,
+            ),
+            Center(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: Image.asset(AssetConst.screenImage),
               ),
             ),
-          )
-        ],
+            StreamBuilder(
+              stream: Provider.of<AppProvider>(context).motorStatus,
+              builder: (ctx, snapshot) => Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                alignment: Alignment.center,
+                // margin: const EdgeInsets.symmetric(horizontal: 32),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                ),
+                child: Column(
+                  children: [
+                    const Text('Press and hold button to control device'),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ControlerButton(
+                          onTap: () {},
+                          iconData: Icons.arrow_back,
+                          title: 'Move in',
+                          enable: snapshot.data?.canMoveIn() == true,
+                          onLongPressStart: () {
+                            provider.controlMotor(ControlType.GO_IN);
+                          },
+                          onLongPressEnd: () {
+                            provider.controlMotor(ControlType.STOP);
+                          },
+                        ),
+                        ControlerButton(
+                          onTap: () {},
+                          iconData: Icons.arrow_forward,
+                          title: 'Move out',
+                          enable: snapshot.data?.canMoveOut() == true,
+                          onLongPressStart: () {
+                            provider.controlMotor(ControlType.GO_OUT);
+                          },
+                          onLongPressEnd: () {
+                            provider.controlMotor(ControlType.STOP);
+                          },
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -164,6 +136,90 @@ class NewControllerScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class ConnectDeviceWidget extends StatelessWidget {
+  const ConnectDeviceWidget(
+      {super.key, required this.deviceName, this.canGoNext});
+  final String deviceName;
+  final bool? canGoNext;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      // margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      width: MediaQuery.of(context).size.width * 0.9,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+      ),
+      child: Consumer<AppProvider>(
+        builder: (context, value, child) =>
+            value.bluetoothDevice != null || value.socketTCP != null
+                ? Column(
+                    children: [
+                      _infoRow("Device name", deviceName),
+                      _infoRow(
+                        "Connection",
+                        value.bluetoothDevice != null ? "BLUETOOTH" : "WIFI",
+                      ),
+                      Row(
+                        children: [
+                          const Text(
+                            "Wifi Configuration",
+                            style: CustomTextStyle.bodyLight,
+                          ),
+                          CustomOutLineButton(
+                            title: 'Config',
+                            ontap: () {
+                              showWifiSettingDialog(context);
+                            },
+                          )
+                        ],
+                      )
+                    ],
+                  )
+                : const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'No device connected yet.',
+                      style: CustomTextStyle.h4Medium,
+                    ),
+                  ),
+      ),
+    );
+  }
+}
+
+Widget _infoRow(String title, String name) {
+  return Row(
+    children: [
+      Text(
+        title,
+        style: CustomTextStyle.bodyMedium,
+      ),
+      const Spacer(),
+      Text(
+        name,
+        style: CustomTextStyle.bodyMedium,
+      ),
+    ],
+  );
+}
+
+void showWifiSettingDialog(BuildContext context) {
+  showModalBottomSheet(
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+      ),
+    ),
+    context: context,
+    builder: (ctx) => ConfigWifiWidget(
+      provider: Provider.of<AppProvider>(context),
+    ),
+  );
 }
 
 class ConfigWifiWidget extends StatefulWidget {

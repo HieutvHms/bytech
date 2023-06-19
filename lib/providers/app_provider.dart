@@ -66,7 +66,7 @@ class AppProvider extends ChangeNotifier {
 
   // void scanLocalDevice() {}
 
-  void connectToDevice(BluetoothDevice device) async {
+  Future<void> connectToDevice(BluetoothDevice device) async {
     try {
       await device.connect();
 

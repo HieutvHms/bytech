@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, lines_longer_than_80_chars
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:reintechnik/new_screen/home/home_screen.dart';
+import 'package:reintechnik/root.dart';
 
 import 'providers/app_provider.dart';
 
@@ -28,10 +28,10 @@ class MyApp extends StatelessWidget {
       title: 'Reintechnik',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        // primarySwatch: CustomColor.primaryColor,
         fontFamily: 'Helvetica',
       ),
-      home: const NewHomeScreen2(),
+      home: const Root(),
     );
   }
 }
