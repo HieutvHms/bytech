@@ -98,11 +98,11 @@ class NewHomeScreen2 extends StatelessWidget {
                               _info(value.bleDeviceList.length.toString(),
                                   "Devices"),
                               const SizedBox(
-                                width: 60,
+                                width: 30,
                               ),
                               _info("1", "Connected"),
                               const SizedBox(
-                                width: 60,
+                                width: 30,
                               ),
                               _info(
                                 (value.bleDeviceList.length - 1).toString(),
@@ -113,15 +113,16 @@ class NewHomeScreen2 extends StatelessWidget {
                         } else if (value.mdnsConnectedClient != null &&
                             provider.connectStatus == ConnectStatus.SOCKET) {
                           return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _info(value.localService.length.toString(),
                                   "Devices"),
                               const SizedBox(
-                                width: 60,
+                                width: 30,
                               ),
                               _info("1", "Connected"),
                               const SizedBox(
-                                width: 60,
+                                width: 30,
                               ),
                               _info(
                                 (value.localService.length - 1).toString(),
