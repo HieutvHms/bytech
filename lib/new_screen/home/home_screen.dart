@@ -173,7 +173,7 @@ class NewHomeScreen2 extends StatelessWidget {
                   );
                 } else if (value.connectStatus == ConnectStatus.SOCKET) {
                   return ListView.builder(
-                    itemCount: value.bleDeviceList.length,
+                    itemCount: value.localService.length,
                     itemBuilder: (ctx, index) => _deviceCard(
                       value.localService[index].name ?? "",
                       ConnectStatus.SOCKET,
