@@ -53,22 +53,23 @@ class NewControllerScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
             Text(
               'Information',
               style: CustomTextStyle.bodyMedium
                   .copyWith(color: CustomColor.neutralBlack50),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             ConnectDeviceWidget(
               deviceName: deviceParam.deviceName,
             ),
-            Center(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: Image.asset(AssetConst.screenImage),
-              ),
+            const SizedBox(height: 42),
+            Text(
+              'Control',
+              style: CustomTextStyle.bodyMedium
+                  .copyWith(color: CustomColor.neutralBlack50),
             ),
+            const SizedBox(height: 8),
             StreamBuilder(
               stream: Provider.of<AppProvider>(context).motorStatus,
               builder: (ctx, snapshot) => Container(
@@ -81,6 +82,12 @@ class NewControllerScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
+                    Center(
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.3,
+                        child: Image.asset(AssetConst.screenImage),
+                      ),
+                    ),
                     const Text('Press and hold button to control device'),
                     const SizedBox(height: 16),
                     Row(
@@ -123,6 +130,7 @@ class NewControllerScreen extends StatelessWidget {
   }
 
   void showWifiSettingDialog(BuildContext context) {
+    final myModel = Provider.of<AppProvider>(context, listen: false);
     showModalBottomSheet(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -131,8 +139,9 @@ class NewControllerScreen extends StatelessWidget {
         ),
       ),
       context: context,
-      builder: (ctx) => ConfigWifiWidget(
-        provider: Provider.of<AppProvider>(context),
+      builder: (ctx) => ListenableProvider.value(
+        value: myModel,
+        child: const ConfigWifiWidget(),
       ),
     );
   }
@@ -159,11 +168,14 @@ class ConnectDeviceWidget extends StatelessWidget {
                 ? Column(
                     children: [
                       _infoRow("Device name", deviceName),
+                      const Divider(),
                       _infoRow(
                         "Connection",
                         value.bluetoothDevice != null ? "BLUETOOTH" : "WIFI",
                       ),
+                      const Divider(),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
                             "Wifi Configuration",
@@ -196,7 +208,7 @@ Widget _infoRow(String title, String name) {
     children: [
       Text(
         title,
-        style: CustomTextStyle.bodyMedium,
+        style: CustomTextStyle.bodyLight,
       ),
       const Spacer(),
       Text(
@@ -208,6 +220,7 @@ Widget _infoRow(String title, String name) {
 }
 
 void showWifiSettingDialog(BuildContext context) {
+  final myModel = Provider.of<AppProvider>(context, listen: false);
   showModalBottomSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.only(
@@ -216,29 +229,99 @@ void showWifiSettingDialog(BuildContext context) {
       ),
     ),
     context: context,
-    builder: (ctx) => ConfigWifiWidget(
-      provider: Provider.of<AppProvider>(context),
+    builder: (ctx) => ListenableProvider.value(
+      value: myModel,
+      child: const ConfigWifiWidget(),
     ),
   );
 }
 
 class ConfigWifiWidget extends StatefulWidget {
-  const ConfigWifiWidget({super.key, required this.provider});
-  final AppProvider provider;
+  const ConfigWifiWidget({
+    super.key,
+  });
+  // final AppProvider provider;
   @override
   State<ConfigWifiWidget> createState() => _ConfigWifiWidgetState();
 }
 
 class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
+  // late AppProvider provider;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    widget.provider.scanWifi();
+    // provider = context.watch<AppProvider>();
+    // provider.scanWifi();
+  }
+
+  void showConfigWifi(Wifi wifi, AppProvider provider) {
+    final wifiCtrl = TextEditingController(text: wifi.name);
+    final passCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 24),
+              const Text('Wifi'),
+              const SizedBox(height: 8),
+              InputInfoWidget(
+                editingController: wifiCtrl,
+                enabled: false,
+              ),
+              const SizedBox(height: 12),
+              const Text('Password'),
+              const SizedBox(height: 8),
+              InputInfoWidget(
+                editingController: passCtrl,
+                enabled: true,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: CustomOutLineButton(
+                      ontap: () {
+                        Navigator.of(ctx).pop();
+                      },
+                      title: "Cancel",
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: CustomButton(
+                      title: 'Save',
+                      onTap: () {
+                        provider.confiWifi(
+                          Wifi(
+                            name: wifiCtrl.text,
+                            password: passCtrl.text,
+                          ),
+                        );
+                        Navigator.of(ctx).pop();
+                      },
+                      enable: true,
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AppProvider>();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -269,7 +352,7 @@ class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
             ),
             GestureDetector(
               onTap: () {
-                widget.provider.scanWifi();
+                provider.scanWifi();
               },
               child: Row(
                 children: const [
@@ -296,94 +379,35 @@ class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
             color: CustomColor.neutralWhite90,
           ),
           child: StreamBuilder(
-            stream: widget.provider.wifiConnectStatusStream,
-            builder: (ctx, snapShot) => ListView.builder(
-              itemBuilder: (ctx, index) => GestureDetector(
-                onTap: () {
-                  final wifiCtrl = TextEditingController(
-                      text: widget.provider.wifiList[index].name);
-                  final passCtrl = TextEditingController();
-
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => Dialog(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 24),
-                            const Text('Wifi'),
-                            const SizedBox(height: 8),
-                            InputInfoWidget(
-                              editingController: wifiCtrl,
-                              enabled: false,
-                            ),
-                            const SizedBox(height: 12),
-                            const Text('Password'),
-                            const SizedBox(height: 8),
-                            InputInfoWidget(
-                              editingController: passCtrl,
-                              enabled: true,
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: CustomOutLineButton(
-                                    ontap: () {
-                                      Navigator.of(ctx).pop();
-                                    },
-                                    title: "Cancel",
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: CustomButton(
-                                    title: 'Save',
-                                    onTap: () {
-                                      widget.provider.confiWifi(
-                                        Wifi(
-                                          name: wifiCtrl.text,
-                                          password: passCtrl.text,
-                                        ),
-                                      );
-                                      Navigator.of(ctx).pop();
-                                    },
-                                    enable: true,
-                                  ),
-                                )
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: snapShot.data?.ssidNameConnect !=
-                          widget.provider.wifiList[index].name
-                      ? Text(
-                          widget.provider.wifiList[index].name,
-                          style: CustomTextStyle.bodyMedium,
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              widget.provider.wifiList[index].name,
-                              style: CustomTextStyle.bodyMedium,
-                            ),
-                            snapShot.data!.getStatusTextWifi(),
-                          ],
-                        ),
+            stream: provider.wifiConnectStatusStream,
+            builder: (ctx, snapShot) => Consumer<AppProvider>(
+              builder: (_, appProvider, __) => ListView.builder(
+                itemBuilder: (ctx, index) => GestureDetector(
+                  onTap: () {
+                    showConfigWifi(appProvider.wifiList[index], appProvider);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: snapShot.data?.ssidNameConnect !=
+                            appProvider.wifiList[index].name
+                        ? Text(
+                            appProvider.wifiList[index].name,
+                            style: CustomTextStyle.bodyMedium,
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                appProvider.wifiList[index].name,
+                                style: CustomTextStyle.bodyMedium,
+                              ),
+                              snapShot.data!.getStatusTextWifi(),
+                            ],
+                          ),
+                  ),
                 ),
+                itemCount: appProvider.wifiList.length,
               ),
-              itemCount: widget.provider.wifiList.length,
             ),
           ),
         )
