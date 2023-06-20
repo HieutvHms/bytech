@@ -174,21 +174,22 @@ class ConnectDeviceWidget extends StatelessWidget {
                         value.bluetoothDevice != null ? "BLUETOOTH" : "WIFI",
                       ),
                       const Divider(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Wifi Configuration",
-                            style: CustomTextStyle.bodyLight,
-                          ),
-                          CustomOutLineButton(
-                            title: 'Config',
-                            ontap: () {
-                              showWifiSettingDialog(context);
-                            },
-                          )
-                        ],
-                      )
+                      if (value.bluetoothDevice != null)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Wifi Configuration",
+                              style: CustomTextStyle.bodyLight,
+                            ),
+                            CustomOutLineButton(
+                              title: 'Config',
+                              ontap: () {
+                                showWifiSettingDialog(context);
+                              },
+                            )
+                          ],
+                        )
                     ],
                   )
                 : const Padding(
@@ -479,26 +480,22 @@ class ControlerButton extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              // borderRadius: BorderRadius.circular(60),
-              border: Border.all(
-                color: enable
-                    ? CustomColor.primaryColor
-                    : CustomColor.neutralBlack50,
-                width: 4,
-              ),
-            ),
-            child: Icon(
-              iconData,
               color: enable
                   ? CustomColor.primaryColor
                   : CustomColor.neutralBlack50,
+              // borderRadius: BorderRadius.circular(60),
+            ),
+            child: Icon(
+              iconData,
+              color: CustomColor.neutralWhite,
               size: 30,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: CustomTextStyle.bodyMedium,
+            style: CustomTextStyle.bodyMedium
+                .copyWith(color: CustomColor.neutralBlack50),
           )
         ],
       ),

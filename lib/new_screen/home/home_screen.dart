@@ -248,21 +248,6 @@ class NewHomeScreen2 extends StatelessWidget {
   }
 }
 
-// void showWifiSettingDialog(BuildContext context) {
-//   showModalBottomSheet(
-//     shape: const RoundedRectangleBorder(
-//       borderRadius: BorderRadius.only(
-//         topLeft: Radius.circular(16),
-//         topRight: Radius.circular(16),
-//       ),
-//     ),
-//     context: context,
-//     builder: (ctx) => ConfigWifiWidget(
-//       provider: Provider.of<AppProvider>(context),
-//     ),
-//   );
-// }
-
 class DeviceConnectCard extends StatelessWidget {
   const DeviceConnectCard(
       {super.key, required this.devicename, required this.connect});
