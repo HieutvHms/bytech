@@ -206,15 +206,19 @@ class ConnectDeviceWidget extends StatelessWidget {
 
 Widget _infoRow(String title, String name) {
   return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
       Text(
         title,
         style: CustomTextStyle.bodyLight,
       ),
-      const Spacer(),
-      Text(
-        name,
-        style: CustomTextStyle.bodyMedium,
+      Expanded(
+        child: Text(
+          name,
+          style: CustomTextStyle.bodyMedium,
+          textAlign: TextAlign.end,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     ],
   );

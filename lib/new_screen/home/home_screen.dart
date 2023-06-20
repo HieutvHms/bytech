@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/const/asset_const.dart';
+import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
-import 'package:reintechnik/const/enum.dart';
-import 'package:reintechnik/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:reintechnik/new_screen/personal/profile_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
-import 'package:reintechnik/root.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
   const NewHomeScreen2({super.key});
@@ -16,232 +14,323 @@ class NewHomeScreen2 extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
     return Scaffold(
-      key: globalKey,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.4,
-              child: Stack(
-                children: [
-                  ClipPath(
-                    clipper: WaveClipper(),
-                    child: Container(
-                      width: double.maxFinite,
-                      // color: Colors.amberAccent,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF42ABE8),
-                            Color(0xFF0A6294),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 40,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 32),
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Image.asset(AssetConst.logo),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Welcome,',
-                                  style: CustomTextStyle.bodyLight
-                                      .copyWith(color: Colors.white),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Mr.David',
-                                  style: CustomTextStyle.h4Medium
-                                      .copyWith(color: Colors.white),
-                                ),
-                              ]),
-                          // Spacer(),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (ctx) => const ProfileScreen()));
-                            },
-                            child: const CircleAvatar(
-                              backgroundColor: Colors.white,
-                              child: Icon(Icons.person),
-                            ),
-                          )
+      // key: globalKey,
+      body: Column(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.4,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                ClipPath(
+                  clipper: WaveClipper(),
+                  child: Container(
+                    width: double.maxFinite,
+                    // color: Colors.amberAccent,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF42ABE8),
+                          Color(0xFF0A6294),
                         ],
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: 30,
-                    child: ConnectDeviceWidget(
-                      deviceName: provider.bluetoothDevice?.name ?? "",
-                      canGoNext: true,
+                ),
+                Positioned(
+                  top: 40,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 32),
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Image.asset(AssetConst.logo),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Welcome,',
+                                style: CustomTextStyle.bodyLight
+                                    .copyWith(color: Colors.white),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Mr.David',
+                                style: CustomTextStyle.h4Medium
+                                    .copyWith(color: Colors.white),
+                              ),
+                            ]),
+                        // Spacer(),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (ctx) => const ProfileScreen()));
+                          },
+                          child: const CircleAvatar(
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.person),
+                          ),
+                        )
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ExpansionTile(
-              onExpansionChanged: (value) {
-                if (value == true) {
-                  provider.scanDevice();
-                }
-              },
-              expandedCrossAxisAlignment: CrossAxisAlignment.center,
-              title: Row(
-                children: const [
-                  CircleAvatar(
-                    backgroundImage: AssetImage(AssetConst.bluetoothIcon),
-                    radius: 12,
-                    backgroundColor: CustomColor.neutralWhite96,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Bluetooth connections',
-                    style: CustomTextStyle.h5Medium,
-                  ),
-                ],
-              ),
-              children: [
-                // const BluetoothWarning(),
-                StreamBuilder(
-                  stream: provider.bleStatusStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.data == BLEStatus.INITIAL) {
-                      return SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.5,
-                        child: ListView.separated(
-                          itemBuilder: (ctx, index) => DeviceConnectCard(
-                            connect: () {
-                              provider.connectToDevice(
-                                provider.bleDeviceList[index],
-                              );
-                            },
-                            devicename: provider.bleDeviceList[index].name,
-                          ),
-                          itemCount: provider.bleDeviceList.length,
-                          separatorBuilder: (context, index) => const Divider(),
-                        ),
-                      );
-                    } else if (snapshot.data == BLEStatus.SCANNING) {
-                      return const Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    } else if (snapshot.data == BLEStatus.ERROR &&
-                        snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
-                      return const Text(
-                          'Error when connect try to scan and conenct again');
-                    } else if (snapshot.data == BLEStatus.CONNECTED) {
-                      return SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.5,
-                        child: ListView.separated(
-                          itemBuilder: (ctx, index) => DeviceConnectCard(
-                            connect: () {
-                              provider.connectToDevice(
-                                provider.bleDeviceList[index],
-                              );
-                            },
-                            devicename: provider.bleDeviceList[index].name,
-                          ),
-                          itemCount: provider.bleDeviceList.length,
-                          separatorBuilder: (context, index) => const Divider(),
-                        ),
-                      );
-                    } else if (snapshot.data == BLEStatus.BLUE_TOOTH_IS_OFF) {
-                      return const BluetoothWarning();
-                    } else {
-                      return SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.5,
-                        child: ListView.separated(
-                          itemBuilder: (ctx, index) => DeviceConnectCard(
-                            connect: () {
-                              provider.connectToDevice(
-                                provider.bleDeviceList[index],
-                              );
-                            },
-                            devicename: provider.bleDeviceList[index].name,
-                          ),
-                          itemCount: provider.bleDeviceList.length,
-                          separatorBuilder: (context, index) => const Divider(),
-                        ),
-                      );
-                    }
-                  },
-                )
-              ],
-            ),
-            const SizedBox(height: 8),
-            ExpansionTile(
-              onExpansionChanged: (value) {
-                if (value == true) {
-                  provider.scanLocalService();
-                }
-              },
-              title: Row(
-                children: const [
-                  CircleAvatar(
-                    backgroundImage: AssetImage(AssetConst.wifiIcon),
-                    radius: 12,
-                    backgroundColor: CustomColor.neutralWhite96,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Wifi connections',
-                    style: CustomTextStyle.h5Medium,
-                  ),
-                ],
-              ),
-              children: [
-                Consumer<AppProvider>(
-                  builder: (context, value, child) => SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.5,
-                    child: StreamBuilder(
-                        stream: provider.mdnsStatusStream,
-                        builder: (ctx, snapShot) {
-                          if (snapShot.data == MDNSStatus.SCANING) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          } else if (snapShot.data == MDNSStatus.DONE_SCAN) {
-                            return ListView.separated(
-                              itemBuilder: (ctx, index) => DeviceConnectCard(
-                                connect: () {
-                                  provider.connectSocket(
-                                    context,
-                                    value.localService[index].host ?? '',
-                                    value.localService[index].port ?? 2000,
-                                    value.localService[index].name ?? "",
-                                  );
-                                },
-                                devicename:
-                                    value.localService[index].name ?? "",
+                ),
+                Positioned(
+                  bottom: 30,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: CustomColor.neutralWhite,
+                    ),
+                    child: Consumer<AppProvider>(
+                      builder: (context, value, child) {
+                        if (value.bluetoothDevice != null &&
+                            provider.connectStatus == ConnectStatus.BLE) {
+                          return Row(
+                            children: [
+                              _info(value.bleDeviceList.length.toString(),
+                                  "Devices"),
+                              const SizedBox(
+                                width: 60,
                               ),
-                              itemCount: value.localService.length,
-                              separatorBuilder: (context, index) =>
-                                  const Divider(),
-                            );
-                          } else {
-                            return const WifiWarning();
-                          }
-                        }),
+                              _info("1", "Connected"),
+                              const SizedBox(
+                                width: 60,
+                              ),
+                              _info(
+                                (value.bleDeviceList.length - 1).toString(),
+                                "Disconnected",
+                              ),
+                            ],
+                          );
+                        } else if (value.mdnsConnectedClient != null &&
+                            provider.connectStatus == ConnectStatus.SOCKET) {
+                          return Row(
+                            children: [
+                              _info(value.localService.length.toString(),
+                                  "Devices"),
+                              const SizedBox(
+                                width: 60,
+                              ),
+                              _info("1", "Connected"),
+                              const SizedBox(
+                                width: 60,
+                              ),
+                              _info(
+                                (value.localService.length - 1).toString(),
+                                "Disconnected",
+                              ),
+                            ],
+                          );
+                        } else {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              'No information',
+                              style: CustomTextStyle.h3Medium,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Text(
+                  "All devices",
+                  style: CustomTextStyle.h5Medium.copyWith(
+                    color: CustomColor.neutralBlack50,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Consumer<AppProvider>(
+              builder: (context, value, child) {
+                if (value.connectStatus == ConnectStatus.BLE) {
+                  return ListView.builder(
+                    itemCount: value.bleDeviceList.length,
+                    itemBuilder: (ctx, index) => _deviceCard(
+                      value.bleDeviceList[index].name,
+                      ConnectStatus.BLE,
+                      context,
+                    ),
+                  );
+                } else if (value.connectStatus == ConnectStatus.SOCKET) {
+                  return ListView.builder(
+                    itemCount: value.bleDeviceList.length,
+                    itemBuilder: (ctx, index) => _deviceCard(
+                      value.localService[index].name ?? "",
+                      ConnectStatus.SOCKET,
+                      context,
+                    ),
+                  );
+                } else {
+                  return const SizedBox();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _info(String title, String info) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: CustomTextStyle.h3Medium,
+        ),
+        Text(
+          info,
+          style: CustomTextStyle.bodyLight,
+        ),
+      ],
+    );
+  }
+}
+
+Widget _deviceCard(
+    String deviceName, ConnectStatus connectStatus, BuildContext context) {
+  final provider = Provider.of<AppProvider>(context);
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    margin: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: CustomColor.neutralWhite,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const CircleAvatar(
+              child: ImageIcon(AssetImage(AssetConst.deviceIcon)),
+            ),
+            ImageIcon(AssetImage(connectStatus == ConnectStatus.BLE
+                ? AssetConst.bluetoothIcon
+                : AssetConst.wifiIcon))
           ],
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                deviceName,
+                style: CustomTextStyle.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 24),
+            if (deviceName == provider.bluetoothDevice?.name ||
+                deviceName == provider.mdnsConnectedClient?.name)
+              StreamBuilder(
+                stream: Provider.of<AppProvider>(context).motorStatus,
+                builder: (context, snapshot) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      HomeControlButton(
+                        onTap: () {},
+                        iconData: Icons.arrow_back,
+                        enable: snapshot.data?.canMoveIn() == true,
+                        onLongPressStart: () {
+                          provider.controlMotor(ControlType.GO_IN);
+                        },
+                        onLongPressEnd: () {
+                          provider.controlMotor(ControlType.STOP);
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      HomeControlButton(
+                        onTap: () {},
+                        iconData: Icons.arrow_forward,
+                        enable: snapshot.data?.canMoveOut() == true,
+                        onLongPressStart: () {
+                          provider.controlMotor(ControlType.GO_OUT);
+                        },
+                        onLongPressEnd: () {
+                          provider.controlMotor(ControlType.STOP);
+                        },
+                      ),
+                    ],
+                  );
+                },
+              )
+          ],
+        )
+      ],
+    ),
+  );
+}
+
+class HomeControlButton extends StatelessWidget {
+  const HomeControlButton(
+      {super.key,
+      required this.onTap,
+      this.onLongPressStart,
+      this.onLongPressEnd,
+      required this.iconData,
+      required this.enable});
+  final VoidCallback onTap;
+  final VoidCallback? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
+  final IconData iconData;
+  final bool enable;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (enable) {
+          onTap();
+        }
+      },
+      onLongPressDown: (s) {
+        if (enable && onLongPressStart != null) {
+          onLongPressStart!();
+        }
+      },
+      onLongPressEnd: (e) {
+        if (enable && onLongPressEnd != null) {
+          onLongPressEnd!();
+        }
+      },
+      onLongPressCancel: () {
+        if (enable && onLongPressEnd != null) {
+          onLongPressEnd!();
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: enable ? CustomColor.primaryColor : CustomColor.neutralBlack50,
+          // borderRadius: BorderRadius.circular(60),
+        ),
+        child: Icon(
+          iconData,
+          color: CustomColor.neutralWhite,
+          size: 24,
         ),
       ),
     );

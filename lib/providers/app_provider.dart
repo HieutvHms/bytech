@@ -167,7 +167,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void connectSocket(
+  Future<void> connectSocket(
       BuildContext context, String ip, int port, String name) async {
     try {
       //Remove connect to BLE

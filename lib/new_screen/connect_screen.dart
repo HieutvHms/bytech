@@ -73,18 +73,6 @@ class ConnectScreen extends StatelessWidget {
                           child: ListView.separated(
                             itemBuilder: (ctx, index) => DeviceConnectCard(
                               connect: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => NewControllerScreen(
-                                      deviceParam: DeviceParam(
-                                        deviceName:
-                                            provider.bleDeviceList[index].name,
-                                        connectStatus: ConnectStatus.BLE,
-                                      ),
-                                      connectType: ConnectType.bluetooth,
-                                    ),
-                                  ),
-                                );
                                 provider
                                     .connectToDevice(
                                   provider.bleDeviceList[index],
@@ -194,7 +182,7 @@ class ConnectScreen extends StatelessWidget {
                 ),
                 children: [
                   Consumer<AppProvider>(
-                    builder: (context, value, child) => SizedBox(
+                    builder: (context, consumer, child) => SizedBox(
                       height: MediaQuery.of(context).size.height * 0.5,
                       child: StreamBuilder(
                           stream: provider.mdnsStatusStream,
@@ -207,17 +195,36 @@ class ConnectScreen extends StatelessWidget {
                               return ListView.separated(
                                 itemBuilder: (ctx, index) => DeviceConnectCard(
                                   connect: () {
-                                    provider.connectSocket(
+                                    provider
+                                        .connectSocket(
                                       context,
-                                      value.localService[index].host ?? '',
-                                      value.localService[index].port ?? 2000,
-                                      value.localService[index].name ?? "",
-                                    );
+                                      consumer.localService[index].host ?? '',
+                                      consumer.localService[index].port ?? 2000,
+                                      consumer.localService[index].name ?? "",
+                                    )
+                                        .then((value) {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => NewControllerScreen(
+                                            deviceParam: DeviceParam(
+                                              deviceName: consumer
+                                                      .localService[index]
+                                                      .name ??
+                                                  "",
+                                              connectStatus:
+                                                  ConnectStatus.SOCKET,
+                                            ),
+                                            connectType: ConnectType.mdns
+                                            ,
+                                          ),
+                                        ),
+                                      );
+                                    });
                                   },
                                   devicename:
-                                      value.localService[index].name ?? "",
+                                      consumer.localService[index].name ?? "",
                                 ),
-                                itemCount: value.localService.length,
+                                itemCount: consumer.localService.length,
                                 separatorBuilder: (context, index) =>
                                     const Divider(),
                               );
