@@ -13,31 +13,16 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Flexible(
-                  flex: 3,
-                  child: Row(children: [
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: const Icon(Icons.close)),
-                    const Spacer(),
-                    const Text(
-                      'Profile',
-                      style: CustomTextStyle.h4Bold,
-                    )
-                  ]),
-                ),
-                const Flexible(flex: 2, child: SizedBox()),
-                // SizedBox(),
-              ],
+            const Center(
+              child: Text(
+                'Profile',
+                textAlign: TextAlign.center,
+                style: CustomTextStyle.h4Bold,
+              ),
             ),
             const SizedBox(height: 48),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
                   const CircleAvatar(
