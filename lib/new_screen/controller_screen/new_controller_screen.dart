@@ -469,7 +469,12 @@ class ControlerButton extends StatelessWidget {
           onLongPressStart!();
         }
       },
-      onLongPressUp: () {
+      onLongPressEnd: (e) {
+        if (enable && onLongPressEnd != null) {
+          onLongPressEnd!();
+        }
+      },
+      onLongPressCancel: () {
         if (enable && onLongPressEnd != null) {
           onLongPressEnd!();
         }

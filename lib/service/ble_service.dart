@@ -27,7 +27,9 @@ class BLEService {
     flutterBlue.scanResults.listen((results) {
       for (ScanResult r in results) {
         if (!scanDevices.any((device) => device.name == r.device.name)) {
-          scanDevices.add(r.device);
+          if (r.device.name.toLowerCase().contains("AVMOTOR".toLowerCase())) {
+            scanDevices.add(r.device);
+          }
         }
       }
     });

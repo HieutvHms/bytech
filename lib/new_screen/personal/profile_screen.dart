@@ -129,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                  color: CustomColor.neutralBlack50,
+                  color: CustomColor.neutralWhite90,
                   borderRadius: BorderRadius.circular(12)),
               child: const Text('Log out'),
             )
