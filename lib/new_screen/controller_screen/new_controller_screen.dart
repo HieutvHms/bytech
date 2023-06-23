@@ -497,7 +497,7 @@ class ControlerButton extends StatelessWidget {
             child: Icon(
               iconData,
               color: CustomColor.neutralWhite,
-              size: 30,
+              size: 48,
             ),
           ),
           const SizedBox(height: 8),

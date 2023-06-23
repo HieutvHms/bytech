@@ -79,6 +79,11 @@ class AppProvider extends ChangeNotifier {
       subscription = device.state.listen((event) {
         if (event == BluetoothDeviceState.disconnected &&
             bleStatusStream.value != BLEStatus.INITIAL) {
+          showStatus(
+            buildContext: globalKey.currentContext!,
+            message: "Device is disconnect",
+            succcess: true,
+          );
           connectToDevice(device);
         }
       });
@@ -180,6 +185,7 @@ class AppProvider extends ChangeNotifier {
       );
       mdnsConnectedClient =
           MdnsConnectedClient(name: name, host: ip, port: port);
+
       showStatus(
         buildContext: globalKey.currentContext!,
         message: "Connect success",

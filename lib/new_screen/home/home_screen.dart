@@ -261,8 +261,9 @@ Widget _deviceCard(
                         onLongPressEnd: () {
                           provider.controlMotor(ControlType.STOP);
                         },
+                        
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 24),
                       HomeControlButton(
                         onTap: () {},
                         iconData: Icons.arrow_forward,
