@@ -82,7 +82,7 @@ class AppProvider extends ChangeNotifier {
           showStatus(
             buildContext: globalKey.currentContext!,
             message: "Device is disconnect",
-            succcess: true,
+            succcess: false,
           );
           connectToDevice(device);
         }
@@ -125,10 +125,18 @@ class AppProvider extends ChangeNotifier {
   }
 
   void controlMotor(ControlType controlType) {
-    if (connectStatus == ConnectStatus.BLE) {
-      bleService.controlMotor(bluetoothCharacteristic!, controlType);
-    } else {
-      socketService.controlDevice(socketTCP!, controlType);
+    try {
+      if (connectStatus == ConnectStatus.BLE) {
+        bleService.controlMotor(bluetoothCharacteristic!, controlType);
+      } else {
+        socketService.controlDevice(socketTCP!, controlType);
+      }
+    } catch (e) {
+      showStatus(
+        buildContext: globalKey.currentContext!,
+        message: "Control device failure",
+        succcess: false,
+      );
     }
   }
 

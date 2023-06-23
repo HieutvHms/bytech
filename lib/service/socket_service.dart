@@ -18,8 +18,12 @@ class SocketService {
   }
 
   void controlDevice(Socket socket, ControlType controlType) {
-    List<int> command = getCommandByte(controlType);
-    final commandString = String.fromCharCodes(command);
-    socket.write(commandString);
+    try {
+      List<int> command = getCommandByte(controlType);
+      final commandString = String.fromCharCodes(command);
+      socket.write(commandString);
+    } catch (e) {
+      rethrow;
+    }
   }
 }

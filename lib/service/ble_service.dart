@@ -61,7 +61,7 @@ class BLEService {
       List<int> command = getCommandByte(controlType);
       await c.write(command);
     } catch (e) {
-      controlMotor(c, controlType);
+      rethrow;
     }
   }
 
