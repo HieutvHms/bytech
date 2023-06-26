@@ -184,7 +184,7 @@ class ConnectDeviceWidget extends StatelessWidget {
                             ),
                             CustomOutLineButton(
                               title: 'Config',
-                              ontap: () {
+                              ontap: () async {
                                 showWifiSettingDialog(context);
                               },
                             )
@@ -292,7 +292,7 @@ class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
                 children: [
                   Expanded(
                     child: CustomOutLineButton(
-                      ontap: () {
+                      ontap: () async {
                         Navigator.of(ctx).pop();
                       },
                       title: "Cancel",
@@ -462,27 +462,37 @@ class ControlerButton extends StatelessWidget {
   final bool enable;
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (enable) {
-          onTap();
-        }
-      },
-      onLongPressDown: (s) {
+    return Listener(
+      onPointerDown: (e) {
         if (enable && onLongPressStart != null) {
           onLongPressStart!();
         }
       },
-      onLongPressEnd: (e) {
+      onPointerUp: (e) {
         if (enable && onLongPressEnd != null) {
           onLongPressEnd!();
         }
       },
-      onLongPressCancel: () {
-        if (enable && onLongPressEnd != null) {
-          onLongPressEnd!();
-        }
-      },
+      // onTap: () {
+      //   if (enable) {
+      //     onTap();
+      //   }
+      // },
+      // onLongPressDown: (s) {
+      //   if (enable && onLongPressStart != null) {
+      //     onLongPressStart!();
+      //   }
+      // },
+      // onLongPressEnd: (e) {
+      //   if (enable && onLongPressEnd != null) {
+      //     onLongPressEnd!();
+      //   }
+      // },
+      // onLongPressCancel: () {
+      //   if (enable && onLongPressEnd != null) {
+      //     onLongPressEnd!();
+      //   }
+      // },
       child: Column(
         children: [
           Container(

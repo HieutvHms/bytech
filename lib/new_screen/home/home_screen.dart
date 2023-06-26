@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:reintechnik/const/asset_const.dart';
@@ -224,8 +225,20 @@ Widget _deviceCard(
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const CircleAvatar(
-              child: ImageIcon(AssetImage(AssetConst.deviceIcon)),
+            Row(
+              children: [
+                const CircleAvatar(
+                  child: ImageIcon(AssetImage(AssetConst.deviceIcon)),
+                ),
+                const SizedBox(width: 16),
+                if (deviceName == provider.bluetoothDevice?.name ||
+                    deviceName == provider.mdnsConnectedClient?.name)
+                  Text(
+                    "Connected",
+                    style: CustomTextStyle.bodyMedium
+                        .copyWith(color: CustomColor.stateGreen),
+                  )
+              ],
             ),
             ImageIcon(AssetImage(connectStatus == ConnectStatus.BLE
                 ? AssetConst.bluetoothIcon
@@ -261,7 +274,6 @@ Widget _deviceCard(
                         onLongPressEnd: () {
                           provider.controlMotor(ControlType.STOP);
                         },
-                        
                       ),
                       const SizedBox(width: 24),
                       HomeControlButton(
@@ -343,7 +355,8 @@ class DeviceConnectCard extends StatelessWidget {
   const DeviceConnectCard(
       {super.key, required this.devicename, required this.connect});
   final String devicename;
-  final VoidCallback connect;
+  final AsyncCallback connect;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -359,38 +372,64 @@ class DeviceConnectCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          CustomOutLineButton(title: 'Connect', ontap: connect),
+          CustomOutLineButton(
+              title: 'Connect',
+              ontap: () async {
+                await connect();
+              }),
         ],
       ),
     );
   }
 }
 
-class CustomOutLineButton extends StatelessWidget {
+class CustomOutLineButton extends StatefulWidget {
   const CustomOutLineButton(
       {super.key, required this.title, required this.ontap, this.color});
   final String title;
-  final VoidCallback ontap;
+  final AsyncCallback ontap;
   final Color? color;
+
+  @override
+  State<CustomOutLineButton> createState() => _CustomOutLineButtonState();
+}
+
+class _CustomOutLineButtonState extends State<CustomOutLineButton> {
+  bool isLoading = false;
+  void ontap() async {
+    isLoading = true;
+    setState(() {});
+    await widget.ontap();
+    isLoading = false;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: ontap,
       child: Container(
+        height: 40,
+        width: 80,
         alignment: Alignment.center,
-        padding: const EdgeInsets.all(12),
+        // padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: color ?? CustomColor.primaryColor,
+            color: widget.color ?? CustomColor.primaryColor,
           ),
         ),
-        child: Text(
-          title,
-          style: CustomTextStyle.bodyMedium.copyWith(
-            color: color ?? CustomColor.primaryColor,
-          ),
-        ),
+        child: isLoading
+            ? Transform.scale(
+                scale: 0.5,
+                child: const CircularProgressIndicator(),
+              )
+            : Text(
+                widget.title,
+                style: CustomTextStyle.bodyMedium.copyWith(
+                  color: widget.color ?? CustomColor.primaryColor,
+                ),
+              ),
       ),
     );
   }

@@ -72,8 +72,8 @@ class ConnectScreen extends StatelessWidget {
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: ListView.separated(
                             itemBuilder: (ctx, index) => DeviceConnectCard(
-                              connect: () {
-                                provider
+                              connect: () async {
+                                await provider
                                     .connectToDevice(
                                   provider.bleDeviceList[index],
                                 )
@@ -115,8 +115,8 @@ class ConnectScreen extends StatelessWidget {
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: ListView.separated(
                             itemBuilder: (ctx, index) => DeviceConnectCard(
-                              connect: () {
-                                provider.connectToDevice(
+                              connect: () async {
+                                await provider.connectToDevice(
                                   provider.bleDeviceList[index],
                                 );
                               },
@@ -134,8 +134,8 @@ class ConnectScreen extends StatelessWidget {
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: ListView.separated(
                             itemBuilder: (ctx, index) => DeviceConnectCard(
-                              connect: () {
-                                provider.connectToDevice(
+                              connect: () async {
+                                await provider.connectToDevice(
                                   provider.bleDeviceList[index],
                                 );
                               },
@@ -194,8 +194,8 @@ class ConnectScreen extends StatelessWidget {
                             } else if (snapShot.data == MDNSStatus.DONE_SCAN) {
                               return ListView.separated(
                                 itemBuilder: (ctx, index) => DeviceConnectCard(
-                                  connect: () {
-                                    provider
+                                  connect: () async {
+                                    await provider
                                         .connectSocket(
                                       context,
                                       consumer.localService[index].host ?? '',
@@ -214,8 +214,7 @@ class ConnectScreen extends StatelessWidget {
                                               connectStatus:
                                                   ConnectStatus.SOCKET,
                                             ),
-                                            connectType: ConnectType.mdns
-                                            ,
+                                            connectType: ConnectType.mdns,
                                           ),
                                         ),
                                       );

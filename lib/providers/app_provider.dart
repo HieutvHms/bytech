@@ -68,6 +68,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
+      await disconnectBLE();
       await device.connect();
 
       bluetoothDevice = device;
@@ -110,7 +111,7 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
-  void disconnectBLE() async {
+  Future<void> disconnectBLE() async {
     subscription?.cancel();
     await bluetoothDevice?.disconnect();
     bluetoothDevice = null;
