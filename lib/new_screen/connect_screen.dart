@@ -71,29 +71,33 @@ class ConnectScreen extends StatelessWidget {
                         return SizedBox(
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: ListView.separated(
-                            itemBuilder: (ctx, index) => DeviceConnectCard(
-                              connect: () async {
-                                await provider
-                                    .connectToDevice(
-                                  provider.bleDeviceList[index],
-                                )
-                                    .then((value) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => NewControllerScreen(
-                                        deviceParam: DeviceParam(
-                                          deviceName: provider
-                                              .bleDeviceList[index].name,
-                                          connectStatus: ConnectStatus.BLE,
+                            itemBuilder: (ctx, index) {
+                              return DeviceConnectCard(
+                                connect: () async {
+                                  await provider
+                                      .connectToDevice(
+                                    provider.bleDeviceList[index],
+                                  )
+                                      .then((value) {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => NewControllerScreen(
+                                          deviceParam: DeviceParam(
+                                            deviceName: provider
+                                                .bleDeviceList[index].name,
+                                            connectStatus: ConnectStatus.BLE,
+                                          ),
+                                          connectType: ConnectType.bluetooth,
                                         ),
-                                        connectType: ConnectType.bluetooth,
                                       ),
-                                    ),
-                                  );
-                                });
-                              },
-                              devicename: provider.bleDeviceList[index].name,
-                            ),
+                                    );
+                                  });
+                                },
+                                devicename: provider.renameMap[
+                                        provider.bleDeviceList[index].name] ??
+                                    provider.bleDeviceList[index].name,
+                              );
+                            },
                             itemCount: provider.bleDeviceList.length,
                             separatorBuilder: (context, index) =>
                                 const Divider(),
@@ -120,7 +124,8 @@ class ConnectScreen extends StatelessWidget {
                                   provider.bleDeviceList[index],
                                 );
                               },
-                              devicename: provider.bleDeviceList[index].name,
+                              devicename: provider.renameMap[
+                                  provider.bleDeviceList[index].name],
                             ),
                             itemCount: provider.bleDeviceList.length,
                             separatorBuilder: (context, index) =>
@@ -139,7 +144,8 @@ class ConnectScreen extends StatelessWidget {
                                   provider.bleDeviceList[index],
                                 );
                               },
-                              devicename: provider.bleDeviceList[index].name,
+                              devicename: provider.renameMap[
+                                  provider.bleDeviceList[index].name],
                             ),
                             itemCount: provider.bleDeviceList.length,
                             separatorBuilder: (context, index) =>
@@ -207,9 +213,10 @@ class ConnectScreen extends StatelessWidget {
                                         MaterialPageRoute(
                                           builder: (_) => NewControllerScreen(
                                             deviceParam: DeviceParam(
-                                              deviceName: consumer
-                                                      .localService[index]
-                                                      .name ??
+                                              deviceName: consumer.renameMap[
+                                                      consumer
+                                                          .localService[index]
+                                                          .name] ??
                                                   "",
                                               connectStatus:
                                                   ConnectStatus.SOCKET,

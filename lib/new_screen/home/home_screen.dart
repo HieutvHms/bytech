@@ -250,7 +250,7 @@ Widget _deviceCard(
           children: [
             Expanded(
               child: Text(
-                deviceName,
+                provider.renameMap[deviceName],
                 style: CustomTextStyle.bodyMedium,
                 overflow: TextOverflow.ellipsis,
               ),

@@ -16,6 +16,7 @@ import 'package:reintechnik/root.dart';
 import 'package:reintechnik/service/ble_service.dart';
 import 'package:reintechnik/service/mdns_service.dart';
 import 'package:reintechnik/service/socket_service.dart';
+import 'package:reintechnik/service/storage_service.dart';
 import 'package:reintechnik/utils/connectivity_extention.dart';
 import 'package:reintechnik/utils/convert_data.dart';
 import 'package:reintechnik/utils/show_status.dart';
@@ -41,6 +42,7 @@ class AppProvider extends ChangeNotifier {
   BluetoothCharacteristic? bluetoothCharacteristic;
   MdnsConnectedClient? mdnsConnectedClient;
   final bleService = BLEService.instance;
+  Map<String, dynamic> renameMap = {};
 
   StreamSubscription<BluetoothDeviceState>? subscription;
 
@@ -64,7 +66,18 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // void scanLocalDevice() {}
+  Future<void> getSaveName() async {
+    final result = await StorageService.getSaveName();
+    if (result != null) {
+      renameMap = result;
+      notifyListeners();
+    }
+  }
+
+  void saveDeviceName(String deviceName, String saveName) async {
+    renameMap[deviceName] = saveName;
+    StorageService.saveName(renameMap);
+  }
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {

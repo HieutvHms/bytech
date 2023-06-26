@@ -44,7 +44,7 @@ class NewControllerScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          deviceParam.deviceName,
+          provider.renameMap[deviceParam.deviceName] ?? deviceParam.deviceName,
           style: CustomTextStyle.h4Medium,
         ),
       ),
@@ -122,7 +122,8 @@ class NewControllerScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            )
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -163,42 +164,62 @@ class ConnectDeviceWidget extends StatelessWidget {
         color: Colors.white,
       ),
       child: Consumer<AppProvider>(
-        builder: (context, value, child) =>
-            value.bluetoothDevice != null || value.socketTCP != null
-                ? Column(
-                    children: [
-                      _infoRow("Device name", deviceName),
-                      const Divider(),
-                      _infoRow(
-                        "Connection",
-                        value.bluetoothDevice != null ? "BLUETOOTH" : "WIFI",
-                      ),
-                      const Divider(),
-                      if (value.bluetoothDevice != null)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Wifi Configuration",
-                              style: CustomTextStyle.bodyLight,
-                            ),
-                            CustomOutLineButton(
-                              title: 'Config',
-                              ontap: () async {
-                                showWifiSettingDialog(context);
-                              },
-                            )
-                          ],
-                        )
-                    ],
-                  )
-                : const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      'No device connected yet.',
-                      style: CustomTextStyle.h4Medium,
-                    ),
+        builder: (context, value, child) => value.bluetoothDevice != null ||
+                value.socketTCP != null
+            ? Column(
+                children: [
+                  _infoRow(
+                      "Device name", value.renameMap[deviceName] ?? deviceName),
+                  const Divider(),
+                  _infoRow(
+                    "Connection",
+                    value.bluetoothDevice != null ? "BLUETOOTH" : "WIFI",
                   ),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          deviceName,
+                          style: CustomTextStyle.bodyLight,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      CustomOutLineButton(
+                        title: 'Rename',
+                        ontap: () async {
+                          showRenameDialog(deviceName, context);
+                        },
+                      )
+                    ],
+                  ),
+                  const Divider(),
+                  if (value.bluetoothDevice != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Wifi Configuration",
+                          style: CustomTextStyle.bodyLight,
+                        ),
+                        CustomOutLineButton(
+                          title: 'Config',
+                          ontap: () async {
+                            showWifiSettingDialog(context);
+                          },
+                        )
+                      ],
+                    ),
+                ],
+              )
+            : const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'No device connected yet.',
+                  style: CustomTextStyle.h4Medium,
+                ),
+              ),
       ),
     );
   }
@@ -241,6 +262,69 @@ void showWifiSettingDialog(BuildContext context) {
   );
 }
 
+void showRenameDialog(String currentName, BuildContext context) {
+  final myModel = Provider.of<AppProvider>(context, listen: false);
+  showDialog(
+      context: context,
+      builder: (ctx) {
+        final currentNameCtrl = TextEditingController(text: currentName);
+        final reNameCtrl = TextEditingController();
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 24),
+                const Text('Device current name'),
+                const SizedBox(height: 8),
+                InputInfoWidget(
+                  editingController: currentNameCtrl,
+                  enabled: false,
+                ),
+                const SizedBox(height: 12),
+                const Text('New name'),
+                const SizedBox(height: 8),
+                InputInfoWidget(
+                  editingController: reNameCtrl,
+                  enabled: true,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomOutLineButton(
+                        ontap: () async {
+                          Navigator.of(ctx).pop();
+                        },
+                        title: "Cancel",
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        title: 'Save',
+                        onTap: () {
+                          myModel.saveDeviceName(
+                            currentNameCtrl.text,
+                            reNameCtrl.text,
+                          );
+                          Navigator.of(ctx).pop();
+                        },
+                        enable: true,
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
+      });
+}
+
 class ConfigWifiWidget extends StatefulWidget {
   const ConfigWifiWidget({
     super.key,
@@ -251,13 +335,9 @@ class ConfigWifiWidget extends StatefulWidget {
 }
 
 class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
-  // late AppProvider provider;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    // provider = context.watch<AppProvider>();
-    // provider.scanWifi();
   }
 
   void showConfigWifi(Wifi wifi, AppProvider provider) {

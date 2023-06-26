@@ -6,12 +6,16 @@ import 'package:reintechnik/root.dart';
 import 'providers/app_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
     /// Providers are above [MyApp] instead of inside it, so that tests
     /// can use [MyApp] while mocking the providers
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AppProvider()..getSaveName(),
+        ),
       ],
       child: const MyApp(),
     ),
