@@ -49,7 +49,7 @@ class AppProvider extends ChangeNotifier {
   final bleStatusStream = BehaviorSubject<BLEStatus>();
   final mdnsStatusStream = BehaviorSubject<MDNSStatus>();
   final motorStatus = BehaviorSubject<MotorStatus?>();
-  final wifiStatusStream = BehaviorSubject<WifiStatus>();
+  WifiStatus wifiStatusStream = WifiStatus.INITIAL;
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
   final mdnsService = MdnsService();
   final socketService = SocketService.instance;
@@ -81,9 +81,12 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
+      if (bluetoothDevice != null) {
+        bleDeviceList.add(bluetoothDevice!);
+      }
       await disconnectBLE();
       await device.connect();
-
+      bleDeviceList.remove(device);
       bluetoothDevice = device;
       bleStatusStream.add(BLEStatus.CONNECTED);
       connectStatus = ConnectStatus.BLE;
@@ -125,6 +128,7 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> disconnectBLE() async {
+    wifiConnectStatusStream.add(WifiConnectStatus());
     subscription?.cancel();
     await bluetoothDevice?.disconnect();
     bluetoothDevice = null;
@@ -155,8 +159,9 @@ class AppProvider extends ChangeNotifier {
   }
 
   void scanWifi() {
-    wifiStatusStream.add(WifiStatus.SCANNING);
+    wifiStatusStream = WifiStatus.SCANNING;
     bleService.scanWifi(bluetoothCharacteristic!);
+    notifyListeners();
   }
 
   void confiWifi(Wifi wifi) {
@@ -237,7 +242,7 @@ class AppProvider extends ChangeNotifier {
     } else if (bulletin is ScannedWifiListBulletin) {
       final wifi = bulletin.getWifiData();
       if (wifi.name.isEmpty) {
-        wifiStatusStream.add(WifiStatus.STOP_SCAN);
+        wifiStatusStream = WifiStatus.STOP_SCAN;
       } else if (!wifiList.any((element) => wifi.name == element.name)) {
         wifiList.add(wifi);
       }

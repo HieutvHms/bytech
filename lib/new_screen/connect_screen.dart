@@ -84,7 +84,8 @@ class ConnectScreen extends StatelessWidget {
                                         builder: (_) => NewControllerScreen(
                                           deviceParam: DeviceParam(
                                             deviceName: provider
-                                                .bleDeviceList[index].name,
+                                                    .bluetoothDevice?.name ??
+                                                "",
                                             connectStatus: ConnectStatus.BLE,
                                           ),
                                           connectType: ConnectType.bluetooth,
@@ -120,12 +121,29 @@ class ConnectScreen extends StatelessWidget {
                           child: ListView.separated(
                             itemBuilder: (ctx, index) => DeviceConnectCard(
                               connect: () async {
-                                await provider.connectToDevice(
+                                await provider
+                                    .connectToDevice(
                                   provider.bleDeviceList[index],
-                                );
+                                )
+                                    .then((value) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => NewControllerScreen(
+                                        deviceParam: DeviceParam(
+                                          deviceName:
+                                              provider.bluetoothDevice?.name ??
+                                                  "",
+                                          connectStatus: ConnectStatus.BLE,
+                                        ),
+                                        connectType: ConnectType.bluetooth,
+                                      ),
+                                    ),
+                                  );
+                                });
                               },
                               devicename: provider.renameMap[
-                                  provider.bleDeviceList[index].name],
+                                      provider.bleDeviceList[index].name] ??
+                                  provider.bleDeviceList[index].name,
                             ),
                             itemCount: provider.bleDeviceList.length,
                             separatorBuilder: (context, index) =>
@@ -145,7 +163,8 @@ class ConnectScreen extends StatelessWidget {
                                 );
                               },
                               devicename: provider.renameMap[
-                                  provider.bleDeviceList[index].name],
+                                      provider.bleDeviceList[index].name] ??
+                                  provider.bleDeviceList[index].name,
                             ),
                             itemCount: provider.bleDeviceList.length,
                             separatorBuilder: (context, index) =>
@@ -217,7 +236,8 @@ class ConnectScreen extends StatelessWidget {
                                                       consumer
                                                           .localService[index]
                                                           .name] ??
-                                                  "",
+                                                  consumer
+                                                      .localService[index].name,
                                               connectStatus:
                                                   ConnectStatus.SOCKET,
                                             ),
@@ -227,8 +247,10 @@ class ConnectScreen extends StatelessWidget {
                                       );
                                     });
                                   },
-                                  devicename:
-                                      consumer.localService[index].name ?? "",
+                                  devicename: consumer.renameMap[
+                                          consumer.localService[index].name] ??
+                                      consumer.localService[index].name ??
+                                      "",
                                 ),
                                 itemCount: consumer.localService.length,
                                 separatorBuilder: (context, index) =>

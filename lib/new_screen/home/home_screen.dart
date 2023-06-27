@@ -96,7 +96,7 @@ class NewHomeScreen2 extends StatelessWidget {
                             provider.connectStatus == ConnectStatus.BLE) {
                           return Row(
                             children: [
-                              _info(value.bleDeviceList.length.toString(),
+                              _info((value.bleDeviceList.length + 1).toString(),
                                   "Devices"),
                               const SizedBox(
                                 width: 30,
@@ -106,7 +106,7 @@ class NewHomeScreen2 extends StatelessWidget {
                                 width: 30,
                               ),
                               _info(
-                                (value.bleDeviceList.length - 1).toString(),
+                                value.bleDeviceList.length.toString(),
                                 "Disconnected",
                               ),
                             ],
@@ -165,10 +165,14 @@ class NewHomeScreen2 extends StatelessWidget {
             child: Consumer<AppProvider>(
               builder: (context, value, child) {
                 if (value.connectStatus == ConnectStatus.BLE) {
+                  final blueToothList = [
+                    ...value.bleDeviceList,
+                    value.bluetoothDevice
+                  ];
                   return ListView.builder(
-                    itemCount: value.bleDeviceList.length,
+                    itemCount: blueToothList.length,
                     itemBuilder: (ctx, index) => _deviceCard(
-                      value.bleDeviceList[index].name,
+                      blueToothList[index]?.name ?? '',
                       ConnectStatus.BLE,
                       context,
                     ),
@@ -250,7 +254,7 @@ Widget _deviceCard(
           children: [
             Expanded(
               child: Text(
-                provider.renameMap[deviceName],
+                provider.renameMap[deviceName] ?? deviceName,
                 style: CustomTextStyle.bodyMedium,
                 overflow: TextOverflow.ellipsis,
               ),

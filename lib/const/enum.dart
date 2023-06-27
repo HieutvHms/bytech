@@ -12,6 +12,7 @@ enum BLEStatus {
 }
 
 enum WifiStatus {
+  INITIAL,
   SCANNING,
   STOP_SCAN,
   CONNECTING,

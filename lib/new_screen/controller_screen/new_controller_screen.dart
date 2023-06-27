@@ -4,6 +4,7 @@ import 'package:reintechnik/const/asset_const.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
+import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/new_screen/home/home_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
@@ -466,33 +467,40 @@ class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
           child: StreamBuilder(
             stream: provider.wifiConnectStatusStream,
             builder: (ctx, snapShot) => Consumer<AppProvider>(
-              builder: (_, appProvider, __) => ListView.builder(
-                itemBuilder: (ctx, index) => GestureDetector(
-                  onTap: () {
-                    showConfigWifi(appProvider.wifiList[index], appProvider);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: snapShot.data?.ssidNameConnect !=
-                            appProvider.wifiList[index].name
-                        ? Text(
-                            appProvider.wifiList[index].name,
-                            style: CustomTextStyle.bodyMedium,
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                appProvider.wifiList[index].name,
-                                style: CustomTextStyle.bodyMedium,
-                              ),
-                              snapShot.data!.getStatusTextWifi(),
-                            ],
+              builder: (_, appProvider, __) =>
+                  appProvider.wifiStatusStream == WifiStatus.SCANNING
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : ListView.builder(
+                          itemBuilder: (ctx, index) => GestureDetector(
+                            onTap: () {
+                              showConfigWifi(
+                                  appProvider.wifiList[index], appProvider);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: snapShot.data?.ssidNameConnect !=
+                                      appProvider.wifiList[index].name
+                                  ? Text(
+                                      appProvider.wifiList[index].name,
+                                      style: CustomTextStyle.bodyMedium,
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          appProvider.wifiList[index].name,
+                                          style: CustomTextStyle.bodyMedium,
+                                        ),
+                                        snapShot.data!.getStatusTextWifi(),
+                                      ],
+                                    ),
+                            ),
                           ),
-                  ),
-                ),
-                itemCount: appProvider.wifiList.length,
-              ),
+                          itemCount: appProvider.wifiList.length,
+                        ),
             ),
           ),
         )
