@@ -5,6 +5,7 @@ import 'package:reintechnik/const/asset_const.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/custom_color.dart';
 import 'package:reintechnik/const/custom_textstyle.dart';
+import 'package:reintechnik/models/saved_device_model.dart';
 import 'package:reintechnik/new_screen/personal/profile_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
 
@@ -96,7 +97,7 @@ class NewHomeScreen2 extends StatelessWidget {
                             provider.connectStatus == ConnectStatus.BLE) {
                           return Row(
                             children: [
-                              _info((value.bleDeviceList.length + 1).toString(),
+                              _info(value.saveDeviceList.length.toString(),
                                   "Devices"),
                               const SizedBox(
                                 width: 30,
@@ -106,7 +107,7 @@ class NewHomeScreen2 extends StatelessWidget {
                                 width: 30,
                               ),
                               _info(
-                                value.bleDeviceList.length.toString(),
+                                (value.saveDeviceList.length - 1).toString(),
                                 "Disconnected",
                               ),
                             ],
@@ -116,7 +117,7 @@ class NewHomeScreen2 extends StatelessWidget {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _info(value.localService.length.toString(),
+                              _info(value.saveDeviceList.length.toString(),
                                   "Devices"),
                               const SizedBox(
                                 width: 30,
@@ -126,18 +127,29 @@ class NewHomeScreen2 extends StatelessWidget {
                                 width: 30,
                               ),
                               _info(
-                                (value.localService.length - 1).toString(),
+                                (value.saveDeviceList.length - 1).toString(),
                                 "Disconnected",
                               ),
                             ],
                           );
                         } else {
-                          return const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'No information',
-                              style: CustomTextStyle.h3Medium,
-                            ),
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _info(value.saveDeviceList.length.toString(),
+                                  "Devices"),
+                              const SizedBox(
+                                width: 30,
+                              ),
+                              _info("0", "Connected"),
+                              const SizedBox(
+                                width: 30,
+                              ),
+                              _info(
+                                (value.saveDeviceList.length).toString(),
+                                "Disconnected",
+                              ),
+                            ],
                           );
                         }
                       },
@@ -164,31 +176,39 @@ class NewHomeScreen2 extends StatelessWidget {
           Expanded(
             child: Consumer<AppProvider>(
               builder: (context, value, child) {
-                if (value.connectStatus == ConnectStatus.BLE) {
-                  final blueToothList = [
-                    ...value.bleDeviceList,
-                    value.bluetoothDevice
-                  ];
-                  return ListView.builder(
-                    itemCount: blueToothList.length,
-                    itemBuilder: (ctx, index) => _deviceCard(
-                      blueToothList[index]?.name ?? '',
-                      ConnectStatus.BLE,
-                      context,
-                    ),
-                  );
-                } else if (value.connectStatus == ConnectStatus.SOCKET) {
-                  return ListView.builder(
-                    itemCount: value.localService.length,
-                    itemBuilder: (ctx, index) => _deviceCard(
-                      value.localService[index].name ?? "",
-                      ConnectStatus.SOCKET,
-                      context,
-                    ),
-                  );
-                } else {
-                  return const SizedBox();
-                }
+                return ListView.builder(
+                  itemCount: value.saveDeviceList.length,
+                  itemBuilder: (ctx, index) => _deviceCard(
+                    value.saveDeviceList[index].deviceName,
+                    value.saveDeviceList[index].deviceType,
+                    context,
+                  ),
+                );
+                // if (value.connectStatus == ConnectStatus.BLE) {
+                //   final blueToothList = [
+                //     ...value.bleDeviceList,
+                //     value.bluetoothDevice
+                //   ];
+                //   return ListView.builder(
+                //     itemCount: blueToothList.length,
+                //     itemBuilder: (ctx, index) => _deviceCard(
+                //       blueToothList[index]?.name ?? '',
+                //       ConnectStatus.BLE,
+                //       context,
+                //     ),
+                //   );
+                // } else if (value.connectStatus == ConnectStatus.SOCKET) {
+                //   return ListView.builder(
+                //     itemCount: value.localService.length,
+                //     itemBuilder: (ctx, index) => _deviceCard(
+                //       value.localService[index].name ?? "",
+                //       ConnectStatus.SOCKET,
+                //       context,
+                //     ),
+                //   );
+                // } else {
+                //   return const SizedBox();
+                // }
               },
             ),
           ),
@@ -214,7 +234,7 @@ class NewHomeScreen2 extends StatelessWidget {
 }
 
 Widget _deviceCard(
-    String deviceName, ConnectStatus connectStatus, BuildContext context) {
+    String deviceName, DeviceType deviceType, BuildContext context) {
   final provider = Provider.of<AppProvider>(context);
   return Container(
     width: double.infinity,
@@ -244,7 +264,7 @@ Widget _deviceCard(
                   )
               ],
             ),
-            ImageIcon(AssetImage(connectStatus == ConnectStatus.BLE
+            ImageIcon(AssetImage(deviceType == DeviceType.BLE
                 ? AssetConst.bluetoothIcon
                 : AssetConst.wifiIcon))
           ],

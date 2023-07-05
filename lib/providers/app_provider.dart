@@ -9,6 +9,7 @@ import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/data_bulletin.dart';
 import 'package:reintechnik/models/mdns_connected_model.dart';
+import 'package:reintechnik/models/saved_device_model.dart';
 import 'package:reintechnik/models/status_of_motor.dart';
 import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/models/wifi_status.dart';
@@ -43,7 +44,7 @@ class AppProvider extends ChangeNotifier {
   MdnsConnectedClient? mdnsConnectedClient;
   final bleService = BLEService.instance;
   Map<String, dynamic> renameMap = {};
-
+  List<SavedDeviceModel> saveDeviceList = [];
   StreamSubscription<BluetoothDeviceState>? subscription;
 
   final bleStatusStream = BehaviorSubject<BLEStatus>();
@@ -61,8 +62,11 @@ class AppProvider extends ChangeNotifier {
       return;
     }
     bleStatusStream.add(BLEStatus.SCANNING);
-    bleDeviceList = await BLEService.instance.startScanDevice();
+    await BLEService.instance.startScanDevice().then((value) {
+      bleDeviceList = value;
+    });
     bleStatusStream.add(BLEStatus.INITIAL);
+
     notifyListeners();
   }
 
@@ -74,6 +78,12 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  void getSaveDevice() async {
+    final result = await StorageService.getDeviceList();
+    saveDeviceList = result;
+    notifyListeners();
+  }
+
   void saveDeviceName(String deviceName, String saveName) async {
     renameMap[deviceName] = saveName;
     StorageService.saveName(renameMap);
@@ -81,6 +91,20 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
+      saveDeviceList.addAll(
+        bleDeviceList
+            .where(
+              (e) => !saveDeviceList
+                  .any((element) => element.deviceName == e.name),
+            )
+            .map(
+              (e) => SavedDeviceModel(
+                deviceName: e.name,
+                deviceType: DeviceType.BLE,
+              ),
+            ),
+      );
+      StorageService.saveDeviceList(saveDeviceList);
       if (bluetoothDevice != null) {
         bleDeviceList.add(bluetoothDevice!);
       }
@@ -186,6 +210,11 @@ class AppProvider extends ChangeNotifier {
       discovery.addServiceListener(
         (service, status) {
           if (status == ServiceStatus.found) {
+            if (!saveDeviceList
+                .any((element) => element.deviceName == service.name)) {
+              saveDeviceList.add(SavedDeviceModel(
+                  deviceName: service.name ?? "", deviceType: DeviceType.MDNS));
+            }
             if (!localService.any((element) => element.host == service.host)) {
               localService.add(service);
             }

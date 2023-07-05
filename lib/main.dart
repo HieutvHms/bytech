@@ -14,7 +14,9 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => AppProvider()..getSaveName(),
+          create: (_) => AppProvider()
+            ..getSaveName()
+            ..getSaveDevice(),
         ),
       ],
       child: const MyApp(),
