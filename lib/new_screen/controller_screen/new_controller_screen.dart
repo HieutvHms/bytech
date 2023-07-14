@@ -212,6 +212,25 @@ class ConnectDeviceWidget extends StatelessWidget {
                         )
                       ],
                     ),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Firmware : ${value.version ?? "AVMotor 000"}",
+                          style: CustomTextStyle.bodyLight,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      CustomOutLineButton(
+                        title: 'Update',
+                        ontap: () async {
+                          value.updateFirmWare();
+                        },
+                      )
+                    ],
+                  ),
                 ],
               )
             : const Padding(

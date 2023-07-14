@@ -54,7 +54,7 @@ class AppProvider extends ChangeNotifier {
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
   final mdnsService = MdnsService();
   final socketService = SocketService.instance;
-
+  String? version = "AVMotor 000";
   Future<void> scanDevice() async {
     final isBluetoothOn = await FlutterBluePlus.instance.isOn;
     if (!isBluetoothOn) {
@@ -91,6 +91,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
+      version = 'AVMotor 000';
       saveDeviceList.addAll(
         bleDeviceList
             .where(
@@ -152,6 +153,7 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> disconnectBLE() async {
+    version = 'AVMotor 000';
     wifiConnectStatusStream.add(WifiConnectStatus());
     subscription?.cancel();
     await bluetoothDevice?.disconnect();
@@ -179,6 +181,14 @@ class AppProvider extends ChangeNotifier {
         message: "Control device failure",
         succcess: false,
       );
+    }
+  }
+
+  void updateFirmWare() {
+    if (connectStatus == ConnectStatus.BLE) {
+      bleService.updateFirmware(bluetoothCharacteristic!);
+    } else {
+      socketService.updateFirmWare(socketTCP!);
     }
   }
 
@@ -277,6 +287,9 @@ class AppProvider extends ChangeNotifier {
       }
     } else if (bulletin is TcpSocketIpBulletin) {
       tcpIP = bulletin.getTcpIP() ?? "";
+      notifyListeners();
+    } else if (bulletin is FirmwareVersionBulletin) {
+      version = bulletin.payload;
       notifyListeners();
     }
     notifyListeners();

@@ -65,6 +65,16 @@ class BLEService {
     }
   }
 
+  void updateFirmware(BluetoothCharacteristic c) async {
+    try {
+      List<int> command = [];
+      command.addAll(BLERequestConst.UPDATE_FIRMWARE);
+      await c.write(command);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   void scanWifi(BluetoothCharacteristic c) {
     List<int> command = [];
 

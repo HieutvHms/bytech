@@ -22,11 +22,14 @@ class BLERequestConst {
   static List<int> GO_IN_COMMAND = utf8.encode('01');
   static List<int> GO_OUT_COMMAND = utf8.encode('11');
   static List<int> STOP_COMMAND = utf8.encode('00');
+
+  static List<int> UPDATE_FIRMWARE =
+      utf8.encode('#5:http://27.71.226.192:2602/AV03_NEW_HW.bin!');
 }
 
 class BLERespondConst {
-  static const String RESPOND_HEADER = '\$';
-
+  static const String RESPOND_HEADER_ID = '\$';
+  static const String FIRMWARE_VERSION_ID = '0';
   static const String WIFI_STATUS_ID = '1';
   static const String MOTOR_STATUS_ID = '2';
   static const String SCAN_WIFI_LIST_ID = '3';

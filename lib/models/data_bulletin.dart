@@ -12,12 +12,23 @@ abstract class DataBulletTin {
       ScannedWifiListBulletin;
   const factory DataBulletTin.tcpSocketIp({String? payload}) =
       TcpSocketIpBulletin;
+  const factory DataBulletTin.firmWareVersion({String? payload}) =
+      FirmwareVersionBulletin;
+}
+
+class FirmwareVersionBulletin implements DataBulletTin {
+  const FirmwareVersionBulletin(
+      {this.header = BLERespondConst.RESPOND_HEADER_ID +
+          BLERespondConst.FIRMWARE_VERSION_ID,
+      this.payload});
+  final String header;
+  final String? payload;
 }
 
 class WifiStatusBulletin implements DataBulletTin {
   const WifiStatusBulletin(
       {this.header =
-          BLERespondConst.RESPOND_HEADER + BLERespondConst.WIFI_STATUS_ID,
+          BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.WIFI_STATUS_ID,
       this.payload});
 
   final String header;
@@ -27,7 +38,7 @@ class WifiStatusBulletin implements DataBulletTin {
 class MotorStatusBulletin implements DataBulletTin {
   const MotorStatusBulletin(
       {this.header =
-          BLERespondConst.RESPOND_HEADER + BLERespondConst.MOTOR_STATUS_ID,
+          BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.MOTOR_STATUS_ID,
       this.payload});
   final String header;
   final String? payload;
@@ -36,10 +47,13 @@ class MotorStatusBulletin implements DataBulletTin {
 class ScannedWifiListBulletin implements DataBulletTin {
   const ScannedWifiListBulletin(
       {this.header =
-          BLERespondConst.RESPOND_HEADER + BLERespondConst.SCAN_WIFI_LIST_ID,
+          BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.SCAN_WIFI_LIST_ID,
       this.payload});
   final String header;
   final String? payload;
+  String? getVersion() {
+    return payload;
+  }
 }
 
 class TcpSocketIpBulletin implements DataBulletTin {
@@ -47,7 +61,7 @@ class TcpSocketIpBulletin implements DataBulletTin {
   final String? payload;
 
   const TcpSocketIpBulletin(
-      {this.header = BLERespondConst.RESPOND_HEADER + BLERespondConst.TCP_ID,
+      {this.header = BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.TCP_ID,
       this.payload});
 }
 

@@ -26,4 +26,18 @@ class SocketService {
       rethrow;
     }
   }
+
+  void updateFirmWare(Socket socket) {
+    try {
+      List<int> command = BLERequestConst.UPDATE_FIRMWARE;
+      final commandString = String.fromCharCodes(command);
+      socket.write(commandString);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  void disconnect(Socket socket) {
+    socket.close();
+  }
 }

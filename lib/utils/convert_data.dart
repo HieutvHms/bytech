@@ -16,18 +16,20 @@ DataBulletTin? getDataBulletin(List<int> rawData) {
   payLoad = payLoad.substring(0, subIndex);
 
   if (header ==
-      BLERespondConst.RESPOND_HEADER + BLERespondConst.MOTOR_STATUS_ID) {
+      BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.MOTOR_STATUS_ID) {
     return DataBulletTin.motorStatus(payload: payLoad);
   } else if (header ==
-      BLERespondConst.RESPOND_HEADER + BLERespondConst.WIFI_STATUS_ID) {
+      BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.WIFI_STATUS_ID) {
     return DataBulletTin.wifiStatus(payload: payLoad);
   } else if (header ==
-      BLERespondConst.RESPOND_HEADER + BLERespondConst.SCAN_WIFI_LIST_ID) {
+      BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.SCAN_WIFI_LIST_ID) {
     return DataBulletTin.scannedWifiBulletin(payload: payLoad);
   } else if (header ==
-      BLERespondConst.RESPOND_HEADER + BLERespondConst.TCP_ID) {
+      BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.TCP_ID) {
     return DataBulletTin.tcpSocketIp(payload: payLoad);
+  } else if (header ==
+      BLERespondConst.RESPOND_HEADER_ID + BLERespondConst.FIRMWARE_VERSION_ID) {
+    return DataBulletTin.firmWareVersion(payload: payLoad);
   }
-
   return null;
 }
