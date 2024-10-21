@@ -15,16 +15,16 @@ class BLEService {
 
   static final BLEService instance = BLEService._();
 
-  FlutterBluePlus flutterBlue = FlutterBluePlus.instance;
+  // FlutterBluePlus flutterBlue = FlutterBluePlus.instance;
 
   Future<List<BluetoothDevice>> startScanDevice() async {
     List<BluetoothDevice> scanDevices = [];
-    await flutterBlue.startScan(
+    await FlutterBluePlus.startScan(
       timeout: const Duration(seconds: 4),
-      allowDuplicates: false,
+      // allowDuplicates: false,s
     );
     //Listen to scan result
-    flutterBlue.scanResults.listen((results) {
+    FlutterBluePlus.scanResults.listen((results) {
       for (ScanResult r in results) {
         if (!scanDevices.any((device) => device.name == r.device.name)) {
           if (r.device.name.toLowerCase().contains("AVMOTOR".toLowerCase())) {
@@ -33,7 +33,7 @@ class BLEService {
         }
       }
     });
-    flutterBlue.stopScan();
+    FlutterBluePlus.stopScan();
     return scanDevices;
   }
 

@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:nsd/nsd.dart';
 import 'package:reintechnik/const/ble_const.dart';
 import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/data_bulletin.dart';
@@ -22,7 +23,6 @@ import 'package:reintechnik/utils/connectivity_extention.dart';
 import 'package:reintechnik/utils/convert_data.dart';
 import 'package:reintechnik/utils/show_status.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:nsd/nsd.dart';
 
 enum ConnectStatus { BLE, SOCKET }
 
@@ -45,7 +45,7 @@ class AppProvider extends ChangeNotifier {
   final bleService = BLEService.instance;
   Map<String, dynamic> renameMap = {};
   List<SavedDeviceModel> saveDeviceList = [];
-  StreamSubscription<BluetoothDeviceState>? subscription;
+  StreamSubscription<BluetoothConnectionState>? subscription;
 
   final bleStatusStream = BehaviorSubject<BLEStatus>();
   final mdnsStatusStream = BehaviorSubject<MDNSStatus>();
@@ -56,7 +56,9 @@ class AppProvider extends ChangeNotifier {
   final socketService = SocketService.instance;
   String? version = "AVMotor 000";
   Future<void> scanDevice() async {
-    final isBluetoothOn = await FlutterBluePlus.instance.isOn;
+    final bluetoothState = await FlutterBluePlus.adapterState.first;
+    final isBluetoothOn = bluetoothState == BluetoothAdapterState.on ||
+        bluetoothState == BluetoothAdapterState.turningOn;
     if (!isBluetoothOn) {
       bleStatusStream.add(BLEStatus.BLUE_TOOTH_IS_OFF);
       return;
@@ -118,7 +120,8 @@ class AppProvider extends ChangeNotifier {
       notifyListeners();
       discoveryService(device);
       //Listen to disconnect device ,and auto connect
-      subscription = device.state.listen((event) {
+      subscription = device.connectionState.listen((event) {});
+      device.state.listen((event) {
         if (event == BluetoothDeviceState.disconnected &&
             bleStatusStream.value != BLEStatus.INITIAL) {
           showStatus(

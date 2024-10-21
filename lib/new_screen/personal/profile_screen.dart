@@ -21,23 +21,23 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 48),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 18,
                     child: Icon(
                       Icons.person,
                       size: 28,
                     ),
                   ),
-                  const SizedBox(
+                  SizedBox(
                     width: 12,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'David Nguyen',
                         style: CustomTextStyle.h5Medium,
@@ -45,8 +45,8 @@ class ProfileScreen extends StatelessWidget {
                       Text('davidnguyen@gmail.com'),
                     ],
                   ),
-                  const Spacer(),
-                  const Icon(Icons.arrow_forward_ios),
+                  Spacer(),
+                  Icon(Icons.arrow_forward_ios),
                 ],
               ),
             ),
@@ -66,9 +66,9 @@ class ProfileScreen extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'FAQ',
                     style: CustomTextStyle.bodyMedium,
@@ -106,9 +106,9 @@ class ProfileScreen extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Interface Settings',
                     style: CustomTextStyle.bodyMedium,
