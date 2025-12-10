@@ -1,0 +1,64 @@
+import 'package:flutter/material.dart';
+import 'package:new_renitek/const/custom_color.dart';
+import 'package:new_renitek/const/custom_textstyle.dart';
+
+class CustomButton extends StatelessWidget {
+  const CustomButton({
+    super.key,
+    required this.title,
+    required this.onTap,
+    required this.enable,
+    this.isLoading,
+    this.onLongPressStart,
+    this.onLongPressEnd,
+    this.height,
+  });
+  final String title;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
+  final bool enable;
+  final bool? isLoading;
+  final double? height;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (enable) {
+          onTap();
+        }
+      },
+      onLongPressDown: (s) {
+        if (enable && onLongPressStart != null) {
+          onLongPressStart!();
+        }
+      },
+      onLongPressUp: () {
+        if (enable && onLongPressEnd != null) {
+          onLongPressEnd!();
+        }
+      },
+      child: Container(
+        height: height,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: CustomColor.primaryColor),
+          color: enable ? CustomColor.primaryColor : CustomColor.neutralBlack50,
+        ),
+        child: isLoading == true
+            ? const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: CustomColor.neutralWhite,
+              )
+            : Text(
+                title,
+                style: CustomTextStyle.bodyMedium.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+      ),
+    );
+  }
+}
