@@ -19,23 +19,58 @@ class BLEService {
 
   Future<List<BluetoothDevice>> startScanDevice() async {
     List<BluetoothDevice> scanDevices = [];
+
+    // Clear previous scan
+    scanDevices.clear();
+
+
+    // Start scanning
     await FlutterBluePlus.startScan(
       timeout: const Duration(seconds: 4),
-      // allowDuplicates: false,s
     );
-    //Listen to scan result
-    FlutterBluePlus.scanResults.listen((results) {
-      for (ScanResult r in results) {
-        if (!scanDevices.any((device) => device.name == r.device.name)) {
-          if (r.device.name.toLowerCase().contains("AVMOTOR".toLowerCase())) {
-            scanDevices.add(r.device);
-          }
+
+    // Listen for results during scanning
+  final subscription = FlutterBluePlus.scanResults.listen((results) {
+    for (ScanResult r in results) {
+      print("========== BLE DEVICE FOUND ==========");
+      print("remoteId      : ${r.device.remoteId}");
+      print("device.name   : '${r.device.name}'");
+      print("advName       : '${r.device.advName}'");
+      print("RSSI          : ${r.rssi}");
+      print("txPowerLevel  : ${r.advertisementData.txPowerLevel}");
+      
+      print("manufacturerData:");
+      r.advertisementData.manufacturerData.forEach((k, v) {
+        print("  ID: $k   DATA: ${v.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}");
+      });
+
+      print("serviceData:");
+      r.advertisementData.serviceData.forEach((k, v) {
+        print("  UUID: $k  DATA: ${v.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}");
+      });
+
+      print("serviceUuids: ${r.advertisementData.serviceUuids}");
+
+      print("======================================");
+
+      // Lọc thiết bị AVMOTOR
+      if (!scanDevices.any((d) => d.remoteId == r.device.remoteId)) {
+        if (r.device.advName.toLowerCase().contains("avmotor".toLowerCase())) {
+          scanDevices.add(r.device);
         }
       }
-    });
-    FlutterBluePlus.stopScan();
+    }
+  });
+
+    // Wait for scan to finish (timeout)
+    await FlutterBluePlus.isScanning.where((s) => s == false).first;
+
+    // Cancel listener to avoid memory leak
+    await subscription.cancel();
+
     return scanDevices;
   }
+
 
   Future<BluetoothCharacteristic?> discoverService(
       BluetoothDevice device) async {
