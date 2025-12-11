@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -164,13 +165,14 @@ class AppProvider extends ChangeNotifier {
             bleStatusStream.add(BLEStatus.CONNECTED);
             connectStatus = ConnectStatus.BLE;
             notifyListeners();
-
-            // Request MTU for better data transfer
-            _requestMtu(device.id);
-
             // Discover services after MTU negotiation
             Timer(const Duration(milliseconds: 500), () {
               discoveryService(device);
+            });
+
+            // Request MTU for better data transfer
+            Timer(const Duration(milliseconds: 3000), () {
+              _requestMtu(device.id);
             });
 
             // Auto check firmware after successful connection
@@ -688,14 +690,26 @@ class AppProvider extends ChangeNotifier {
   }
 
   List<int> getConfigWifiCommand(Wifi wifi) {
-    // Create config wifi command
     List<int> command = [];
     command.addAll(BLERequestConst.CONTROL_HEADER);
     command.addAll(BLERequestConst.CONFIG_WIFI_ID);
     command.addAll(BLERequestConst.ID_PAYLOAD_DIVIVDER);
-    command.addAll(wifi.name.codeUnits);
+    //Name  length < 10 => 0+ Name .(EX: Name length =6 =>06)
+    final nameLength = wifi.name.length < 10
+        ? "0${wifi.name.length}"
+        : wifi.name.length.toString();
+
+    command.addAll(utf8.encode(nameLength));
     command.addAll(BLERequestConst.DASH);
-    command.addAll(wifi.password?.codeUnits ?? []);
+    command.addAll(utf8.encode(wifi.name));
+    command.addAll(BLERequestConst.DASH);
+    //Pass  length < 10 => 0+ Pass .(EX: Pass length =6 =>06)
+    final passLength = wifi.password!.length < 10
+        ? "0${wifi.password!.length}"
+        : wifi.password!.length.toString();
+    command.addAll(utf8.encode(passLength));
+    command.addAll(BLERequestConst.DASH);
+    command.addAll(utf8.encode(wifi.password!));
     command.addAll(BLERequestConst.FOOTER);
     return command;
   }

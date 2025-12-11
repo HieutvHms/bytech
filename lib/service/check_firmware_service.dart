@@ -24,14 +24,13 @@ class CheckFirmwareService {
           final deviceMac = response['mac'] as String;
           final noUpdate = response['no_update'] as bool? ?? false;
           // Compare versions
-          final isUpdateAvailable = !noUpdate;
 
           final result = FirmwareCheckResult(
             deviceMac: deviceMac,
             currentVersion: currentVersion,
             latestVersion: serverVersion,
             updateUrl: updateUrl,
-            noUpdate: isUpdateAvailable,
+            noUpdate: noUpdate,
           );
 
           print('Firmware check successful:');
@@ -55,46 +54,6 @@ class CheckFirmwareService {
     } catch (e) {
       print('Failed to check firmware: $e');
       return null;
-    }
-  }
-
-  /// Compare version strings to determine if an update is available
-  /// Returns true if serverVersion is newer than currentVersion
-  static bool _isUpdateAvailable(String currentVersion, String serverVersion) {
-    if (currentVersion == serverVersion) {
-      return false;
-    }
-
-    // Handle "AVMotor" prefix versions
-    final cleanCurrent = currentVersion.replaceFirst('AVMotor ', '').trim();
-    final cleanServer = serverVersion.replaceFirst('AVMotor ', '').trim();
-
-    try {
-      // Simple version comparison for numeric versions
-      final currentParts = cleanCurrent.split('.').map(int.parse).toList();
-      final serverParts = cleanServer.split('.').map(int.parse).toList();
-
-      // Pad shorter version with zeros
-      final maxLength = currentParts.length > serverParts.length
-          ? currentParts.length
-          : serverParts.length;
-
-      while (currentParts.length < maxLength) currentParts.add(0);
-      while (serverParts.length < maxLength) serverParts.add(0);
-
-      // Compare version parts
-      for (int i = 0; i < maxLength; i++) {
-        if (serverParts[i] > currentParts[i]) {
-          return true;
-        } else if (serverParts[i] < currentParts[i]) {
-          return false;
-        }
-      }
-
-      return false; // Versions are equal
-    } catch (e) {
-      // If numeric comparison fails, use string comparison
-      return cleanServer.compareTo(cleanCurrent) > 0;
     }
   }
 }

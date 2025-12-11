@@ -7,6 +7,7 @@ import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/models/wifi.dart';
 import 'package:new_renitek/new_screen/home/home_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
+import 'package:new_renitek/service/check_firmware_service.dart';
 import 'package:new_renitek/utils/widgets/custom_buttom.dart';
 import 'package:provider/provider.dart';
 
@@ -268,7 +269,49 @@ class ConnectDeviceWidget extends StatelessWidget {
                           CustomOutLineButton(
                             title: 'Check update',
                             ontap: () async {
-                              await value.checkCurrentFirmware();
+                              CheckFirmwareService.checkFirmware(
+                                      mac: value.bluetoothDevice!.id.toString(),
+                                      currentVersion: value.version ?? "0.0.0")
+                                  .then((result) {
+                                if (result != null) {
+                                  print(result.noUpdate);
+                                  if (result.noUpdate == false) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) {
+                                        return AlertDialog(
+                                          title: const Text('Firmware Update'),
+                                          content: Text(
+                                              'A new firmware version ${result.latestVersion} is available. Would you like to update now?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                              },
+                                              child: const Text('Later'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                                value.updateFirmWare();
+                                              },
+                                              child: const Text('Update'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Firmware is up to date.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              });
                             },
                           )
                         ],
@@ -287,7 +330,8 @@ class ConnectDeviceWidget extends StatelessWidget {
                               title: 'Update Now',
                               color: Colors.orange,
                               ontap: () async {
-                                showFirmwareUpdateDialog(context, value);
+                                showFirmwareUpdateDialog(context, value,
+                                    value.firmwareCheckResult?.updateUrl ?? "");
                               },
                             )
                           ],
@@ -346,7 +390,8 @@ void showWifiSettingDialog(BuildContext context) {
   );
 }
 
-void showFirmwareUpdateDialog(BuildContext context, AppProvider provider) {
+void showFirmwareUpdateDialog(
+    BuildContext context, AppProvider provider, String url) {
   if (provider.firmwareCheckResult == null ||
       !provider.firmwareCheckResult!.noUpdate == false) {
     return;
