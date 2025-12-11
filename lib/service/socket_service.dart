@@ -6,10 +6,8 @@ import 'package:reintechnik/utils/get_command_byte.dart';
 class SocketService {
   SocketService._();
   static final SocketService instance = SocketService._();
-  Future<Socket> connect(
-      String host, int port, Function(List<int> event) alyticData) async {
-    final socket =
-        await Socket.connect(host, port, timeout: const Duration(seconds: 5));
+  Future<Socket> connect(String host, int port, Function(List<int> event) alyticData) async {
+    final socket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
     socket.listen((event) {
       final listInt = event.toList();
       alyticData(listInt);
@@ -27,10 +25,9 @@ class SocketService {
     }
   }
 
-  void updateFirmWare(Socket socket) {
+  void updateFirmWare(Socket socket, String updateUrl) {
     try {
-      List<int> command = BLERequestConst.UPDATE_FIRMWARE;
-      final commandString = String.fromCharCodes(command);
+      final commandString = "#5:$updateUrl!";
       socket.write(commandString);
     } catch (e) {
       rethrow;

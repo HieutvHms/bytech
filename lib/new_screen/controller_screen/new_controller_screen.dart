@@ -8,6 +8,7 @@ import 'package:reintechnik/const/enum.dart';
 import 'package:reintechnik/models/wifi.dart';
 import 'package:reintechnik/new_screen/home/home_screen.dart';
 import 'package:reintechnik/providers/app_provider.dart';
+import 'package:reintechnik/service/check_firmware_service.dart';
 import 'package:reintechnik/utils/widgets/custom_buttom.dart';
 
 class DeviceParam {
@@ -23,8 +24,7 @@ class DeviceParam {
 enum ConnectType { bluetooth, mdns }
 
 class NewControllerScreen extends StatelessWidget {
-  const NewControllerScreen(
-      {super.key, required this.deviceParam, required this.connectType});
+  const NewControllerScreen({super.key, required this.deviceParam, required this.connectType});
   final DeviceParam deviceParam;
   final ConnectType connectType;
   @override
@@ -57,8 +57,7 @@ class NewControllerScreen extends StatelessWidget {
             const SizedBox(height: 32),
             Text(
               'Information',
-              style: CustomTextStyle.bodyMedium
-                  .copyWith(color: CustomColor.neutralBlack50),
+              style: CustomTextStyle.bodyMedium.copyWith(color: CustomColor.neutralBlack50),
             ),
             const SizedBox(height: 8),
             ConnectDeviceWidget(
@@ -67,8 +66,7 @@ class NewControllerScreen extends StatelessWidget {
             const SizedBox(height: 42),
             Text(
               'Control',
-              style: CustomTextStyle.bodyMedium
-                  .copyWith(color: CustomColor.neutralBlack50),
+              style: CustomTextStyle.bodyMedium.copyWith(color: CustomColor.neutralBlack50),
             ),
             const SizedBox(height: 8),
             StreamBuilder(
@@ -150,8 +148,7 @@ class NewControllerScreen extends StatelessWidget {
 }
 
 class ConnectDeviceWidget extends StatelessWidget {
-  const ConnectDeviceWidget(
-      {super.key, required this.deviceName, this.canGoNext});
+  const ConnectDeviceWidget({super.key, required this.deviceName, this.canGoNext});
   final String deviceName;
   final bool? canGoNext;
   @override
@@ -165,12 +162,10 @@ class ConnectDeviceWidget extends StatelessWidget {
         color: Colors.white,
       ),
       child: Consumer<AppProvider>(
-        builder: (context, value, child) => value.bluetoothDevice != null ||
-                value.socketTCP != null
+        builder: (context, value, child) => value.bluetoothDevice != null || value.socketTCP != null
             ? Column(
                 children: [
-                  _infoRow(
-                      "Device name", value.renameMap[deviceName] ?? deviceName),
+                  _infoRow("Device name", value.renameMap[deviceName] ?? deviceName),
                   const Divider(),
                   _infoRow(
                     "Connection",
@@ -226,7 +221,38 @@ class ConnectDeviceWidget extends StatelessWidget {
                       CustomOutLineButton(
                         title: 'Update',
                         ontap: () async {
-                          value.updateFirmWare();
+                          final result = await CheckFirmwareService.checkFirmware(
+                            mac: value.bluetoothDevice!.remoteId.str.toString(),
+                            currentVersion: value.version.toString(),
+                          );
+                          if (result?.noUpdate == true) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Your firmware is up to date.'),
+                              ),
+                            );
+                          } else {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Firmware Update Available'),
+                                content: const Text('A new firmware version is available. Do you want to update now?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      value.updateFirmWare(result?.updateUrl ?? "");
+                                    },
+                                    child: const Text('Update'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
                         },
                       )
                     ],
@@ -486,40 +512,36 @@ class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
           child: StreamBuilder(
             stream: provider.wifiConnectStatusStream,
             builder: (ctx, snapShot) => Consumer<AppProvider>(
-              builder: (_, appProvider, __) =>
-                  appProvider.wifiStatusStream == WifiStatus.SCANNING
-                      ? const Center(
-                          child: CircularProgressIndicator(),
-                        )
-                      : ListView.builder(
-                          itemBuilder: (ctx, index) => GestureDetector(
-                            onTap: () {
-                              showConfigWifi(
-                                  appProvider.wifiList[index], appProvider);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: snapShot.data?.ssidNameConnect !=
-                                      appProvider.wifiList[index].name
-                                  ? Text(
+              builder: (_, appProvider, __) => appProvider.wifiStatusStream == WifiStatus.SCANNING
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : ListView.builder(
+                      itemBuilder: (ctx, index) => GestureDetector(
+                        onTap: () {
+                          showConfigWifi(appProvider.wifiList[index], appProvider);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: snapShot.data?.ssidNameConnect != appProvider.wifiList[index].name
+                              ? Text(
+                                  appProvider.wifiList[index].name,
+                                  style: CustomTextStyle.bodyMedium,
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
                                       appProvider.wifiList[index].name,
                                       style: CustomTextStyle.bodyMedium,
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          appProvider.wifiList[index].name,
-                                          style: CustomTextStyle.bodyMedium,
-                                        ),
-                                        snapShot.data!.getStatusTextWifi(),
-                                      ],
                                     ),
-                            ),
-                          ),
-                          itemCount: appProvider.wifiList.length,
+                                    snapShot.data!.getStatusTextWifi(),
+                                  ],
+                                ),
                         ),
+                      ),
+                      itemCount: appProvider.wifiList.length,
+                    ),
             ),
           ),
         )
@@ -529,8 +551,7 @@ class _ConfigWifiWidgetState extends State<ConfigWifiWidget> {
 }
 
 class InputInfoWidget extends StatelessWidget {
-  const InputInfoWidget(
-      {super.key, required this.enabled, this.editingController});
+  const InputInfoWidget({super.key, required this.enabled, this.editingController});
   final bool enabled;
   final TextEditingController? editingController;
   @override
@@ -540,9 +561,7 @@ class InputInfoWidget extends StatelessWidget {
       alignment: Alignment.center,
       width: double.maxFinite,
       padding: const EdgeInsets.only(left: 12),
-      decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: CustomColor.neutralWhite90),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: CustomColor.neutralWhite90),
       child: TextField(
         controller: editingController,
         enabled: enabled,
@@ -606,9 +625,7 @@ class ControlerButton extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: enable
-                  ? CustomColor.primaryColor
-                  : CustomColor.neutralBlack50,
+              color: enable ? CustomColor.primaryColor : CustomColor.neutralBlack50,
               // borderRadius: BorderRadius.circular(60),
             ),
             child: Icon(
@@ -620,8 +637,7 @@ class ControlerButton extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: CustomTextStyle.bodyMedium
-                .copyWith(color: CustomColor.neutralBlack50),
+            style: CustomTextStyle.bodyMedium.copyWith(color: CustomColor.neutralBlack50),
           )
         ],
       ),

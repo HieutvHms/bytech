@@ -83,9 +83,7 @@ class ConnectScreen extends StatelessWidget {
                                       MaterialPageRoute(
                                         builder: (_) => NewControllerScreen(
                                           deviceParam: DeviceParam(
-                                            deviceName: provider
-                                                    .bluetoothDevice?.name ??
-                                                "",
+                                            deviceName: provider.bluetoothDevice?.name ?? "",
                                             connectStatus: ConnectStatus.BLE,
                                           ),
                                           connectType: ConnectType.bluetooth,
@@ -94,14 +92,11 @@ class ConnectScreen extends StatelessWidget {
                                     );
                                   });
                                 },
-                                devicename: provider.renameMap[
-                                        provider.bleDeviceList[index].name] ??
-                                    provider.bleDeviceList[index].name,
+                                devicename: provider.renameMap[provider.bleDeviceList[index].name] ?? provider.bleDeviceList[index].name,
                               );
                             },
                             itemCount: provider.bleDeviceList.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(),
+                            separatorBuilder: (context, index) => const Divider(),
                           ),
                         );
                       } else if (snapshot.data == BLEStatus.SCANNING) {
@@ -111,10 +106,8 @@ class ConnectScreen extends StatelessWidget {
                             child: CircularProgressIndicator(),
                           ),
                         );
-                      } else if (snapshot.data == BLEStatus.ERROR &&
-                          snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
-                        return const Text(
-                            'Error when connect try to scan and conenct again');
+                      } else if (snapshot.data == BLEStatus.ERROR && snapshot.data == BLEStatus.ERROR_NO_DEVICES) {
+                        return const Text('Error when connect try to scan and conenct again');
                       } else if (snapshot.data == BLEStatus.CONNECTED) {
                         return SizedBox(
                           height: MediaQuery.of(context).size.height * 0.5,
@@ -130,9 +123,7 @@ class ConnectScreen extends StatelessWidget {
                                     MaterialPageRoute(
                                       builder: (_) => NewControllerScreen(
                                         deviceParam: DeviceParam(
-                                          deviceName:
-                                              provider.bluetoothDevice?.name ??
-                                                  "",
+                                          deviceName: provider.bluetoothDevice?.name ?? "",
                                           connectStatus: ConnectStatus.BLE,
                                         ),
                                         connectType: ConnectType.bluetooth,
@@ -141,13 +132,10 @@ class ConnectScreen extends StatelessWidget {
                                   );
                                 });
                               },
-                              devicename: provider.renameMap[
-                                      provider.bleDeviceList[index].name] ??
-                                  provider.bleDeviceList[index].name,
+                              devicename: provider.renameMap[provider.bleDeviceList[index].name] ?? provider.bleDeviceList[index].name,
                             ),
                             itemCount: provider.bleDeviceList.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(),
+                            separatorBuilder: (context, index) => const Divider(),
                           ),
                         );
                       } else if (snapshot.data == BLEStatus.BLUE_TOOTH_IS_OFF) {
@@ -162,13 +150,10 @@ class ConnectScreen extends StatelessWidget {
                                   provider.bleDeviceList[index],
                                 );
                               },
-                              devicename: provider.renameMap[
-                                      provider.bleDeviceList[index].name] ??
-                                  provider.bleDeviceList[index].name,
+                              devicename: provider.renameMap[provider.bleDeviceList[index].name] ?? provider.bleDeviceList[index].name,
                             ),
                             itemCount: provider.bleDeviceList.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(),
+                            separatorBuilder: (context, index) => const Divider(),
                           ),
                         );
                       }
@@ -224,7 +209,7 @@ class ConnectScreen extends StatelessWidget {
                                         .connectSocket(
                                       context,
                                       consumer.localService[index].host ?? '',
-                                      consumer.localService[index].port ?? 2000,
+                                      23,
                                       consumer.localService[index].name ?? "",
                                     )
                                         .then((value) {
@@ -232,14 +217,8 @@ class ConnectScreen extends StatelessWidget {
                                         MaterialPageRoute(
                                           builder: (_) => NewControllerScreen(
                                             deviceParam: DeviceParam(
-                                              deviceName: consumer.renameMap[
-                                                      consumer
-                                                          .localService[index]
-                                                          .name] ??
-                                                  consumer
-                                                      .localService[index].name,
-                                              connectStatus:
-                                                  ConnectStatus.SOCKET,
+                                              deviceName: consumer.renameMap[consumer.localService[index].name] ?? consumer.localService[index].name,
+                                              connectStatus: ConnectStatus.SOCKET,
                                             ),
                                             connectType: ConnectType.mdns,
                                           ),
@@ -247,14 +226,10 @@ class ConnectScreen extends StatelessWidget {
                                       );
                                     });
                                   },
-                                  devicename: consumer.renameMap[
-                                          consumer.localService[index].name] ??
-                                      consumer.localService[index].name ??
-                                      "",
+                                  devicename: consumer.renameMap[consumer.localService[index].name] ?? consumer.localService[index].name ?? "",
                                 ),
                                 itemCount: consumer.localService.length,
-                                separatorBuilder: (context, index) =>
-                                    const Divider(),
+                                separatorBuilder: (context, index) => const Divider(),
                               );
                             } else {
                               return const WifiWarning();

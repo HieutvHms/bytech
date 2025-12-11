@@ -57,8 +57,7 @@ class AppProvider extends ChangeNotifier {
   String? version = "AVMotor 000";
   Future<void> scanDevice() async {
     final bluetoothState = await FlutterBluePlus.adapterState.first;
-    final isBluetoothOn = bluetoothState == BluetoothAdapterState.on ||
-        bluetoothState == BluetoothAdapterState.turningOn;
+    final isBluetoothOn = bluetoothState == BluetoothAdapterState.on || bluetoothState == BluetoothAdapterState.turningOn;
     if (!isBluetoothOn) {
       bleStatusStream.add(BLEStatus.BLUE_TOOTH_IS_OFF);
       return;
@@ -97,8 +96,7 @@ class AppProvider extends ChangeNotifier {
       saveDeviceList.addAll(
         bleDeviceList
             .where(
-              (e) => !saveDeviceList
-                  .any((element) => element.deviceName == e.name),
+              (e) => !saveDeviceList.any((element) => element.deviceName == e.name),
             )
             .map(
               (e) => SavedDeviceModel(
@@ -122,8 +120,7 @@ class AppProvider extends ChangeNotifier {
       //Listen to disconnect device ,and auto connect
       subscription = device.connectionState.listen((event) {});
       device.state.listen((event) {
-        if (event == BluetoothDeviceState.disconnected &&
-            bleStatusStream.value != BLEStatus.INITIAL) {
+        if (event == BluetoothDeviceState.disconnected && bleStatusStream.value != BLEStatus.INITIAL) {
           showStatus(
             buildContext: globalKey.currentContext!,
             message: "Device is disconnect",
@@ -187,11 +184,11 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void updateFirmWare() {
+  void updateFirmWare(String updateUrl) {
     if (connectStatus == ConnectStatus.BLE) {
-      bleService.updateFirmware(bluetoothCharacteristic!);
+      bleService.updateFirmware(bluetoothCharacteristic!, updateUrl);
     } else {
-      socketService.updateFirmWare(socketTCP!);
+      socketService.updateFirmWare(socketTCP!, updateUrl);
     }
   }
 
@@ -223,10 +220,8 @@ class AppProvider extends ChangeNotifier {
       discovery.addServiceListener(
         (service, status) {
           if (status == ServiceStatus.found) {
-            if (!saveDeviceList
-                .any((element) => element.deviceName == service.name)) {
-              saveDeviceList.add(SavedDeviceModel(
-                  deviceName: service.name ?? "", deviceType: DeviceType.MDNS));
+            if (!saveDeviceList.any((element) => element.deviceName == service.name)) {
+              saveDeviceList.add(SavedDeviceModel(deviceName: service.name ?? "", deviceType: DeviceType.MDNS));
             }
             if (!localService.any((element) => element.host == service.host)) {
               localService.add(service);
@@ -241,8 +236,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> connectSocket(
-      BuildContext context, String ip, int port, String name) async {
+  Future<void> connectSocket(BuildContext context, String ip, int port, String name) async {
     try {
       //Remove connect to BLE
       disconnectBLE();
@@ -252,8 +246,7 @@ class AppProvider extends ChangeNotifier {
         port,
         convertDataToStatus,
       );
-      mdnsConnectedClient =
-          MdnsConnectedClient(name: name, host: ip, port: port);
+      mdnsConnectedClient = MdnsConnectedClient(name: name, host: ip, port: port);
 
       showStatus(
         buildContext: globalKey.currentContext!,
