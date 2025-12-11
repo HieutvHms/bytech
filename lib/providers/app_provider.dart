@@ -179,6 +179,11 @@ class AppProvider extends ChangeNotifier {
             Timer(const Duration(seconds: 3), () {
               checkCurrentFirmware();
             });
+
+            // Auto check firmware after successful connection
+            // Timer(const Duration(seconds: 5), () {
+            //   checkCurrentFirmware();
+            // });
             break;
           case DeviceConnectionState.disconnected:
             print('BLE Disconnected from device: ${device.id}');
@@ -573,14 +578,14 @@ class AppProvider extends ChangeNotifier {
         return;
       }
 
+      print('Firmware check result: Current $version');
+
       final firmwareResult = await CheckFirmwareService.checkFirmware(
         mac: deviceMac,
         currentVersion: version!,
       );
 
       if (firmwareResult != null) {
-        print(
-            'Firmware check result: Current ${firmwareResult.currentVersion}, Latest ${firmwareResult.latestVersion}');
         if (!firmwareResult.noUpdate) {
           showStatus(
             buildContext: globalKey.currentContext!,
@@ -630,7 +635,7 @@ class AppProvider extends ChangeNotifier {
       );
       return null;
     }
-
+    print("Checking firmware for device: $deviceMac, version: $version");
     try {
       final result = await CheckFirmwareService.checkFirmware(
         mac: deviceMac,
