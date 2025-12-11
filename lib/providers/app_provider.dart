@@ -387,7 +387,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void updateFirmWare() {
+  void updateFirmWare(String url) {
     // Check if firmware check was performed and update is available
     if (firmwareCheckResult == null) {
       showStatus(
@@ -418,7 +418,7 @@ class AppProvider extends ChangeNotifier {
       if (connectStatus == ConnectStatus.BLE &&
           bluetoothCharacteristic != null) {
         // Use reactive_ble for firmware update
-        final updateCommand = getFirmwareUpdateCommand();
+        final updateCommand = getFirmwareUpdateCommand(url);
         _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: updateCommand);
       } else if (socketTCP != null) {
@@ -674,13 +674,10 @@ class AppProvider extends ChangeNotifier {
   }
 
   // Helper methods for BLE commands
-  List<int> getFirmwareUpdateCommand() {
+  List<int> getFirmwareUpdateCommand(String url) {
     // Create firmware update command
     List<int> command = [];
-    command.addAll(BLERequestConst.CONTROL_HEADER);
-    command.addAll([51]); // Firmware update ID
-    command.addAll(BLERequestConst.ID_PAYLOAD_DIVIVDER);
-    command.addAll(BLERequestConst.FOOTER);
+    command.addAll(utf8.encode('#5:$url!'));
     return command;
   }
 

@@ -274,7 +274,6 @@ class ConnectDeviceWidget extends StatelessWidget {
                                       currentVersion: value.version ?? "0.0.0")
                                   .then((result) {
                                 if (result != null) {
-                                  print(result.noUpdate);
                                   if (result.noUpdate == false) {
                                     showDialog(
                                       context: context,
@@ -293,7 +292,8 @@ class ConnectDeviceWidget extends StatelessWidget {
                                             TextButton(
                                               onPressed: () {
                                                 Navigator.of(ctx).pop();
-                                                value.updateFirmWare();
+                                                value.updateFirmWare(
+                                                    result.updateUrl);
                                               },
                                               child: const Text('Update'),
                                             ),
@@ -446,7 +446,7 @@ void showFirmwareUpdateDialog(
                       title: 'Update',
                       onTap: () {
                         Navigator.of(ctx).pop();
-                        provider.updateFirmWare();
+                        provider.updateFirmWare(url);
                       },
                       enable: true,
                     ),
