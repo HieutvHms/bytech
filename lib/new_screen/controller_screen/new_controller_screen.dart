@@ -248,21 +248,6 @@ class ConnectDeviceWidget extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
                                 ),
-                                if (value.firmwareCheckResult != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    !value.firmwareCheckResult!.noUpdate
-                                        ? "Latest: ${value.firmwareCheckResult!.latestVersion} (Update available)"
-                                        : "Latest: ${value.firmwareCheckResult!.latestVersion} (Up to date)",
-                                    style: CustomTextStyle.bodyLight.copyWith(
-                                      color:
-                                          !value.firmwareCheckResult!.noUpdate
-                                              ? Colors.orange
-                                              : Colors.green,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ]
                               ],
                             ),
                           ),
@@ -275,6 +260,7 @@ class ConnectDeviceWidget extends StatelessWidget {
                                   .then((result) {
                                 if (result != null) {
                                   if (result.noUpdate == false) {
+                                    value.firmwareCheckResult = result;
                                     showDialog(
                                       context: context,
                                       builder: (ctx) {
@@ -316,27 +302,6 @@ class ConnectDeviceWidget extends StatelessWidget {
                           )
                         ],
                       ),
-                      if (value.firmwareCheckResult?.noUpdate == false) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                "Update to ${value.firmwareCheckResult!.latestVersion}?",
-                                style: CustomTextStyle.bodyLight,
-                              ),
-                            ),
-                            CustomOutLineButton(
-                              title: 'Update Now',
-                              color: Colors.orange,
-                              ontap: () async {
-                                showFirmwareUpdateDialog(context, value,
-                                    value.firmwareCheckResult?.updateUrl ?? "");
-                              },
-                            )
-                          ],
-                        ),
-                      ]
                     ],
                   ),
                 ],

@@ -421,6 +421,8 @@ class AppProvider extends ChangeNotifier {
         final updateCommand = getFirmwareUpdateCommand(url);
         _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: updateCommand);
+        print(updateCommand);
+        print(String.fromCharCodes(updateCommand));
       } else if (socketTCP != null) {
         socketService.updateFirmWare(
           socket: socketTCP!,
