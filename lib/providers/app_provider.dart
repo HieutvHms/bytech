@@ -464,6 +464,8 @@ class AppProvider extends ChangeNotifier {
   void confiWifi(Wifi wifi) {
     if (bluetoothCharacteristic != null) {
       final configCommand = getConfigWifiCommand(wifi);
+      print(configCommand);
+      print(String.fromCharCodes(configCommand));
       _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
           value: configCommand);
     }
