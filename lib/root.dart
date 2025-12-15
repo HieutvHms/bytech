@@ -4,6 +4,7 @@ import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/new_screen/connect_screen.dart';
 import 'package:new_renitek/new_screen/home/home_screen.dart';
 import 'package:new_renitek/new_screen/personal/profile_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 final screenList = [
   const NewHomeScreen2(),
@@ -23,6 +24,7 @@ class _RootState extends State<Root> {
   @override
   void initState() {
     super.initState();
+     _initPermission();
   }
 
   int currentTab = 1;
@@ -30,6 +32,12 @@ class _RootState extends State<Root> {
   void changeTab(int tabIndex) {
     currentTab = tabIndex;
     setState(() {});
+  }
+
+  Future<void> _initPermission() async {
+    await Permission.bluetoothScan.request();
+    await Permission.bluetoothConnect.request();
+    await Permission.location.request();
   }
 
   @override

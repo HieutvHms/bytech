@@ -58,7 +58,7 @@ class AppProvider extends ChangeNotifier {
   final wifiConnectStatusStream = BehaviorSubject<WifiConnectStatus>();
   final mdnsService = MdnsService();
   final socketService = SocketService.instance;
-  String? version = "AVMotor 000";
+  String? version = "Not found";
   FirmwareCheckResult? firmwareCheckResult;
   Future<void> scanDevice() async {
     // Cancel previous scan if running
@@ -74,13 +74,14 @@ class AppProvider extends ChangeNotifier {
     bleStatusStream.add(BLEStatus.SCANNING);
     bleDeviceList.clear();
     print('Starting scan, cleared device list');
+
     notifyListeners();
 
     // Start scanning
     print('Starting BLE scan...');
     scanSubscription = _ble.scanForDevices(
-      withServices: [], // Scan for all devices
-      scanMode: ScanMode.lowLatency,
+      withServices: const [], // Scan for all devices
+      scanMode: ScanMode.balanced,
     ).listen(
       (device) {
         // Add all devices (even without names) for debugging
@@ -88,9 +89,11 @@ class AppProvider extends ChangeNotifier {
           final deviceName =
               device.name.isNotEmpty ? device.name : 'Unknown Device';
           print('Found device: $deviceName (${device.id})');
-          bleDeviceList.add(device);
-          print('Device added, total devices: ${bleDeviceList.length}');
-          notifyListeners();
+          if (deviceName.contains('AV')) {
+            bleDeviceList.add(device);
+            print('Device added, total devices: ${bleDeviceList.length}');
+            notifyListeners();
+          }
         }
       },
       onError: (error) {
@@ -135,7 +138,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> connectToDevice(DiscoveredDevice device) async {
     try {
-      version = 'AVMotor 000';
+      version = 'Not found';
       saveDeviceList.addAll(
         bleDeviceList
             .where(
@@ -345,7 +348,7 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> disconnectBLE() async {
-    version = 'AVMotor 000';
+    version = 'Not found';
     wifiConnectStatusStream.add(WifiConnectStatus());
     subscription?.cancel();
     scanSubscription?.cancel();

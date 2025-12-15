@@ -243,7 +243,7 @@ class ConnectDeviceWidget extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "Current Firmware: ${value.version ?? "AVMotor 000"}",
+                                  "Current Firmware: ${value.version ?? "Not found"}",
                                   style: CustomTextStyle.bodyLight,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
