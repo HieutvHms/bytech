@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
@@ -562,7 +562,49 @@ class AppProvider extends ChangeNotifier {
       version = bulletin.payload;
 
       // Check firmware version and log
-      _checkAndLogFirmware();
+      CheckFirmwareService.checkFirmware(
+              mac: bluetoothDevice!.id.toString(),
+              currentVersion: version ?? "0.0.0")
+          .then((result) {
+        if (result != null) {
+          if (result.noUpdate == false) {
+            firmwareCheckResult = result;
+            showDialog(
+              context: globalKey.currentContext!,
+              builder: (ctx) {
+                return AlertDialog(
+                  title: const Text('Firmware Update'),
+                  content: Text(
+                      'A new firmware version ${result.latestVersion} is available. Would you like to update now?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Later'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        updateFirmWare(result.updateUrl);
+                      },
+                      child: const Text('Update'),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            ScaffoldMessenger.of(globalKey.currentContext!).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Firmware is up to date.',
+                ),
+              ),
+            );
+          }
+        }
+      });
 
       notifyListeners();
     }
