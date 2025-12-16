@@ -272,11 +272,11 @@ class AppProvider extends ChangeNotifier {
       print('Requesting MTU for device: $deviceId');
       final mtu = await _ble.requestMtu(deviceId: deviceId, mtu: 96);
       print('MTU negotiated: $mtu bytes');
-      showStatus(
-        buildContext: globalKey.currentContext!,
-        message: 'MTU negotiated: $mtu bytes',
-        succcess: true,
-      );
+      // showStatus(
+      //   buildContext: globalKey.currentContext!,
+      //   message: 'MTU negotiated: $mtu bytes',
+      //   succcess: true,
+      // );
     } catch (e) {
       print('MTU request failed: $e');
       // MTU request failure is not critical, continue with default MTU
