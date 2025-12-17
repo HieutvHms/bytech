@@ -29,6 +29,10 @@ class SocketService {
   }
 
   void updateFirmWare({required Socket socket, String? url}) {
+    if (url == null)
+    {
+      return;
+    }
     try {
       List<int> command =
           url != null ? utf8.encode(url) : BLERequestConst.UPDATE_FIRMWARE;

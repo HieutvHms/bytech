@@ -578,7 +578,7 @@ class AppProvider extends ChangeNotifier {
                 return AlertDialog(
                   title: const Text('Firmware Update'),
                   content: Text(
-                      'A new firmware version ${result.latestVersion} is available. Would you like to update now?'),
+                      'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
                   actions: [
                     TextButton(
                       onPressed: () {
