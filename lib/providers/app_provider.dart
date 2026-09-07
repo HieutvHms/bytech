@@ -521,6 +521,11 @@ class AppProvider extends ChangeNotifier {
         port,
         convertDataToStatus,
       );
+
+      //  TEST: Gửi ngay 1 lệnh STOP xuống Firmware để check xem Firmware có nhận được Data không
+      // print('Sending initial test command to firmware...');
+      // socketService.controlDevice(socketTCP!, ControlType.STOP);
+
       mdnsConnectedClient =
           MdnsConnectedClient(name: name, host: ip, port: port);
 

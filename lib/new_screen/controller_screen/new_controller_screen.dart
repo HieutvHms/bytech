@@ -724,6 +724,11 @@ class ControlerButton extends StatelessWidget {
           onLongPressEnd!();
         }
       },
+      onPointerCancel: (e) {
+        if (enable && onLongPressEnd != null) {
+          onLongPressEnd!();
+        }
+      },
       // onTap: () {
       //   if (enable) {
       //     onTap();

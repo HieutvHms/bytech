@@ -266,7 +266,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                         .connectSocket(
                                       context,
                                       consumer.localService[index].host ?? '',
-                                      consumer.localService[index].port ?? 2000,
+                                      // consumer.localService[index].port ?? 2000,
+                                      23, // Cổng TCP thực sự của Firmware (đã xác nhận) thay vì lấy mDNS (cổng 80)
                                       consumer.localService[index].name ?? "",
                                     )
                                         .then((value) {

@@ -9,6 +9,9 @@ class SocketService {
   static final SocketService instance = SocketService._();
   Future<Socket> connect(
       String host, int port, Function(List<int> event) alyticData) async {
+    print('====================================');
+    print('🛠 DEBUG: Connecting to Socket -> IP: $host, Port: $port');
+    print('====================================');
     final socket =
         await Socket.connect(host, port, timeout: const Duration(seconds: 5));
     socket.listen((event) {
@@ -21,23 +24,33 @@ class SocketService {
   void controlDevice(Socket socket, ControlType controlType) {
     try {
       List<int> command = getCommandByte(controlType);
-      final commandString = String.fromCharCodes(command);
-      socket.write(commandString);
+
+      // OLD CODE:
+      // final commandString = String.fromCharCodes(command);
+      // socket.write(commandString);
+
+      // NEW CODE:
+      print('TCP SEND (control): ${String.fromCharCodes(command)}');
+      socket.add(command); // Gửi raw bytes thay vì chuyển sang String
     } catch (e) {
       rethrow;
     }
   }
 
   void updateFirmWare({required Socket socket, String? url}) {
-    if (url == null)
-    {
+    if (url == null) {
       return;
     }
     try {
-      List<int> command =
-          url != null ? utf8.encode(url) : BLERequestConst.UPDATE_FIRMWARE;
-      final commandString = String.fromCharCodes(command);
-      socket.write(commandString);
+      List<int> command = utf8.encode(url);
+
+      // OLD CODE:
+      // final commandString = String.fromCharCodes(command);
+      // socket.write(commandString);
+
+      // NEW CODE:
+      print('TCP SEND (firmware): ${String.fromCharCodes(command)}');
+      socket.add(command); // Gửi raw bytes
     } catch (e) {
       rethrow;
     }

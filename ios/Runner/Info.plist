@@ -45,5 +45,19 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Cấp quyền quét mạng LAN (mDNS) cho iOS 14+ -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Ứng dụng cần quyền truy cập mạng nội bộ để tìm và điều khiển thiết bị AVMotor trong nhà bạn.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
+
+	<!-- Cấp quyền Bluetooth -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Ứng dụng cần Bluetooth để kết nối và cấu hình ban đầu cho thiết bị.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Ứng dụng cần Bluetooth để kết nối và cấu hình ban đầu cho thiết bị.</string>
 </dict>
 </plist>
