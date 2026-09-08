@@ -38,7 +38,7 @@ class CheckFirmwareService {
           print('  Current version: ${result.currentVersion}');
           print('  Latest version: ${result.latestVersion}');
           print('  Update available: ${result.noUpdate}');
-          if (result.noUpdate) {
+          if (!result.noUpdate) {
             print('  Update URL: ${result.updateUrl}');
           }
 

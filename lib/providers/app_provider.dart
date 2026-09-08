@@ -47,6 +47,9 @@ class AppProvider extends ChangeNotifier {
   MdnsConnectedClient? mdnsConnectedClient;
   Map<String, dynamic> renameMap = {};
   List<SavedDeviceModel> saveDeviceList = [];
+
+  bool isLatestFirmware = false;
+
   StreamSubscription<ConnectionStateUpdate>? subscription;
   StreamSubscription<DiscoveredDevice>? scanSubscription;
   final FlutterReactiveBle _ble = FlutterReactiveBle();
@@ -125,6 +128,9 @@ class AppProvider extends ChangeNotifier {
   void getSaveDevice() async {
     final result = await StorageService.getDeviceList();
     saveDeviceList = result;
+
+    isLatestFirmware = await StorageService.getIsLatestFirmware();
+
     notifyListeners();
   }
 
@@ -426,11 +432,21 @@ class AppProvider extends ChangeNotifier {
             value: updateCommand);
         print(updateCommand);
         print(String.fromCharCodes(updateCommand));
+
+        // [NEW CODE] Đánh dấu đã gửi lệnh update thành công và ẩn bảng BLE vĩnh viễn
+        isLatestFirmware = true;
+        StorageService.saveIsLatestFirmware(true);
+        notifyListeners();
       } else if (socketTCP != null) {
         socketService.updateFirmWare(
           socket: socketTCP!,
           url: firmwareCheckResult?.updateUrl,
         );
+
+        // [NEW CODE] Đánh dấu đã gửi lệnh update thành công qua WiFi
+        isLatestFirmware = true;
+        StorageService.saveIsLatestFirmware(true);
+        notifyListeners();
       } else {
         showStatus(
           buildContext: globalKey.currentContext!,

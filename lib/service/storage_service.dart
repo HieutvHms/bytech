@@ -1,10 +1,10 @@
 import 'dart:convert';
-
 import 'package:new_renitek/models/saved_device_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const renameKey = "rename";
 const saveListKey = "saveListKey";
+const latestFirmwareKey = "latestFirmwareKey";
 
 class StorageService {
   static Future<Map<String, dynamic>?> getSaveName() async {
@@ -38,5 +38,17 @@ class StorageService {
       return [];
     }
     return data.map((e) => SavedDeviceModel.fromJson(json.decode(e))).toList();
+  }
+
+  // update firmware
+  static Future<bool> getIsLatestFirmware() async {
+    final shared = await SharedPreferences.getInstance();
+    return shared.getBool(latestFirmwareKey) ?? false;
+  }
+
+  // update firmware thành công
+  static void saveIsLatestFirmware(bool isLatest) async {
+    final shared = await SharedPreferences.getInstance();
+    shared.setBool(latestFirmwareKey, isLatest);
   }
 }
