@@ -5,8 +5,8 @@ import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/const/custom_textstyle.dart';
 import 'package:new_renitek/models/saved_device_model.dart';
-import 'package:new_renitek/new_screen/personal/profile_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
+import 'package:new_renitek/root.dart';
 import 'package:provider/provider.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
@@ -68,8 +68,9 @@ class NewHomeScreen2 extends StatelessWidget {
                         // Spacer(),
                         GestureDetector(
                           onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (ctx) => const ProfileScreen()));
+                            context
+                                .findAncestorStateOfType<RootState>()
+                                ?.changeTab(2);
                           },
                           child: const CircleAvatar(
                             backgroundColor: Colors.white,

@@ -49,6 +49,8 @@ class AppProvider extends ChangeNotifier {
   List<SavedDeviceModel> saveDeviceList = [];
 
   bool isLatestFirmware = false;
+  //trạng thái Expert Mode
+  bool isExpertMode = false;
 
   StreamSubscription<ConnectionStateUpdate>? subscription;
   StreamSubscription<DiscoveredDevice>? scanSubscription;
@@ -130,7 +132,16 @@ class AppProvider extends ChangeNotifier {
     saveDeviceList = result;
 
     isLatestFirmware = await StorageService.getIsLatestFirmware();
+    // [NEW CODE] Load trạng thái Expert Mode từ bộ nhớ
+    isExpertMode = await StorageService.getExpertMode();
 
+    notifyListeners();
+  }
+
+  //  hàm bật/tắt Expert Mode
+  void toggleExpertMode(bool value) {
+    isExpertMode = value;
+    StorageService.saveExpertMode(value);
     notifyListeners();
   }
 
@@ -433,9 +444,11 @@ class AppProvider extends ChangeNotifier {
         print(updateCommand);
         print(String.fromCharCodes(updateCommand));
 
-        // [NEW CODE] Đánh dấu đã gửi lệnh update thành công và ẩn bảng BLE vĩnh viễn
+        // Đánh dấu đã gửi lệnh update thành công và ẩn bảng BLE vĩnh viễn
         isLatestFirmware = true;
         StorageService.saveIsLatestFirmware(true);
+        // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
+        toggleExpertMode(false);
         notifyListeners();
       } else if (socketTCP != null) {
         socketService.updateFirmWare(
@@ -446,6 +459,8 @@ class AppProvider extends ChangeNotifier {
         // [NEW CODE] Đánh dấu đã gửi lệnh update thành công qua WiFi
         isLatestFirmware = true;
         StorageService.saveIsLatestFirmware(true);
+        // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
+        toggleExpertMode(false);
         notifyListeners();
       } else {
         showStatus(

@@ -44,8 +44,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
             children: [
               const SizedBox(height: 32),
 
-              // [NEW CODE] Nếu chưa update (isLatestFirmware == false) thì mới hiện bảng quét BLE
-              if (!provider.isLatestFirmware)
+              // Chỉ hiển thị quét BLE khi bật chế độ Expert Mode
+              if (provider.isExpertMode)
                 ExpansionTile(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

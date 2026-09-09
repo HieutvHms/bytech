@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/const/custom_textstyle.dart';
+import 'package:new_renitek/providers/app_provider.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -20,7 +22,7 @@ class ProfileScreen extends StatelessWidget {
                 style: CustomTextStyle.h4Bold,
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -50,7 +52,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
             Padding(
               padding: const EdgeInsets.only(left: 48),
               child: Text(
@@ -106,19 +108,44 @@ class ProfileScreen extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Interface Settings',
                     style: CustomTextStyle.bodyMedium,
                   ),
-                  Divider(
+                  const Divider(
                     thickness: 0.3,
                   ),
-                  Text(
+                  const Text(
                     'Upgrade firmware',
                     style: CustomTextStyle.bodyMedium,
+                  ),
+                  const Divider(
+                    thickness: 0.3,
+                  ),
+                  Consumer<AppProvider>(
+                    builder: (context, provider, child) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Expert Mode (Legacy)',
+                              style: CustomTextStyle.bodyMedium,
+                            ),
+                          ),
+                          Switch(
+                            value: provider.isExpertMode,
+                            onChanged: (value) {
+                              provider.toggleExpertMode(value);
+                            },
+                            activeThumbColor: CustomColor.primaryColor,
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),

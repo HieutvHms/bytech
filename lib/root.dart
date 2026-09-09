@@ -17,10 +17,10 @@ class Root extends StatefulWidget {
   const Root({super.key});
 
   @override
-  State<Root> createState() => _RootState();
+  State<Root> createState() => RootState();
 }
 
-class _RootState extends State<Root> {
+class RootState extends State<Root> {
   @override
   void initState() {
     super.initState();

@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 const renameKey = "rename";
 const saveListKey = "saveListKey";
 const latestFirmwareKey = "latestFirmwareKey";
+// trạng thái Expert Mode
+const expertModeKey = "expertModeKey";
 
 class StorageService {
   static Future<Map<String, dynamic>?> getSaveName() async {
@@ -50,5 +52,17 @@ class StorageService {
   static void saveIsLatestFirmware(bool isLatest) async {
     final shared = await SharedPreferences.getInstance();
     shared.setBool(latestFirmwareKey, isLatest);
+  }
+
+  // trạng thái Expert Mode
+  static Future<bool> getExpertMode() async {
+    final shared = await SharedPreferences.getInstance();
+    return shared.getBool(expertModeKey) ?? false;
+  }
+
+  // trạng thái Expert Mode
+  static void saveExpertMode(bool isExpert) async {
+    final shared = await SharedPreferences.getInstance();
+    shared.setBool(expertModeKey, isExpert);
   }
 }
