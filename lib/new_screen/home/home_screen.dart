@@ -5,6 +5,7 @@ import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/const/custom_textstyle.dart';
 import 'package:new_renitek/models/saved_device_model.dart';
+import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
 import 'package:new_renitek/root.dart';
 import 'package:provider/provider.dart';
@@ -237,90 +238,122 @@ class NewHomeScreen2 extends StatelessWidget {
 Widget _deviceCard(
     String deviceName, DeviceType deviceType, BuildContext context) {
   final provider = Provider.of<AppProvider>(context);
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    margin: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: CustomColor.neutralWhite,
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  child: ImageIcon(AssetImage(AssetConst.deviceIcon)),
+
+  // biến kiểm tra xem thiết bị đã được kết nói hay chưa
+  bool isConnected = deviceName == provider.bluetoothDevice?.name ||
+      deviceName == provider.mdnsConnectedClient?.name;
+  return GestureDetector(
+      onTap: () {
+        if (isConnected) {
+          // Đã kết nối -> Cho phép chuyển trang
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NewControllerScreen(
+                deviceParam: DeviceParam(
+                  deviceName: deviceName,
+                  connectStatus: provider.connectStatus!,
                 ),
-                const SizedBox(width: 16),
-                if (deviceName == provider.bluetoothDevice?.name ||
-                    deviceName == provider.mdnsConnectedClient?.name)
-                  Text(
-                    "Connected",
-                    style: CustomTextStyle.bodyMedium
-                        .copyWith(color: CustomColor.stateGreen),
-                  )
-              ],
-            ),
-            ImageIcon(AssetImage(deviceType == DeviceType.BLE
-                ? AssetConst.bluetoothIcon
-                : AssetConst.wifiIcon))
-          ],
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                provider.renameMap[deviceName] ?? deviceName,
-                style: CustomTextStyle.bodyMedium,
-                overflow: TextOverflow.ellipsis,
+                connectType: provider.connectStatus == ConnectStatus.BLE
+                    ? ConnectType.bluetooth
+                    : ConnectType.mdns,
               ),
             ),
-            const SizedBox(width: 24),
-            if (deviceName == provider.bluetoothDevice?.name ||
-                deviceName == provider.mdnsConnectedClient?.name)
-              StreamBuilder(
-                stream: Provider.of<AppProvider>(context).motorStatus,
-                builder: (context, snapshot) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      HomeControlButton(
-                        onTap: () {},
-                        iconData: Icons.arrow_back,
-                        enable: snapshot.data?.canMoveIn() == true,
-                        onLongPressStart: () {
-                          provider.controlMotor(ControlType.GO_IN);
-                        },
-                        onLongPressEnd: () {
-                          provider.controlMotor(ControlType.STOP);
-                        },
-                      ),
-                      const SizedBox(width: 24),
-                      HomeControlButton(
-                        onTap: () {},
-                        iconData: Icons.arrow_forward,
-                        enable: snapshot.data?.canMoveOut() == true,
-                        onLongPressStart: () {
-                          provider.controlMotor(ControlType.GO_OUT);
-                        },
-                        onLongPressEnd: () {
-                          provider.controlMotor(ControlType.STOP);
-                        },
-                      ),
-                    ],
-                  );
-                },
-              )
+          );
+        } else {
+          // Chưa kết nối -> Hiện thông báo (SnackBar) nhắc nhở
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Vui lòng kết nối với thiết bị $deviceName trước!'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CustomColor.neutralWhite,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      child: ImageIcon(AssetImage(AssetConst.deviceIcon)),
+                    ),
+                    const SizedBox(width: 16),
+                    if (deviceName == provider.bluetoothDevice?.name ||
+                        deviceName == provider.mdnsConnectedClient?.name)
+                      Text(
+                        "Connected",
+                        style: CustomTextStyle.bodyMedium
+                            .copyWith(color: CustomColor.stateGreen),
+                      )
+                  ],
+                ),
+                ImageIcon(AssetImage(deviceType == DeviceType.BLE
+                    ? AssetConst.bluetoothIcon
+                    : AssetConst.wifiIcon))
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    provider.renameMap[deviceName] ?? deviceName,
+                    style: CustomTextStyle.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 24),
+                if (deviceName == provider.bluetoothDevice?.name ||
+                    deviceName == provider.mdnsConnectedClient?.name)
+                  StreamBuilder(
+                    stream: Provider.of<AppProvider>(context).motorStatus,
+                    builder: (context, snapshot) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          HomeControlButton(
+                            onTap: () {},
+                            iconData: Icons.arrow_back,
+                            enable: snapshot.data?.canMoveIn() == true,
+                            onLongPressStart: () {
+                              provider.controlMotor(ControlType.GO_IN);
+                            },
+                            onLongPressEnd: () {
+                              provider.controlMotor(ControlType.STOP);
+                            },
+                          ),
+                          const SizedBox(width: 24),
+                          HomeControlButton(
+                            onTap: () {},
+                            iconData: Icons.arrow_forward,
+                            enable: snapshot.data?.canMoveOut() == true,
+                            onLongPressStart: () {
+                              provider.controlMotor(ControlType.GO_OUT);
+                            },
+                            onLongPressEnd: () {
+                              provider.controlMotor(ControlType.STOP);
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  )
+              ],
+            )
           ],
-        )
-      ],
-    ),
-  );
+        ),
+      ));
 }
 
 class HomeControlButton extends StatelessWidget {

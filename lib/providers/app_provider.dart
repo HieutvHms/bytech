@@ -132,7 +132,7 @@ class AppProvider extends ChangeNotifier {
     saveDeviceList = result;
 
     isLatestFirmware = await StorageService.getIsLatestFirmware();
-    // [NEW CODE] Load trạng thái Expert Mode từ bộ nhớ
+    //  Load trạng thái Expert Mode từ bộ nhớ
     isExpertMode = await StorageService.getExpertMode();
 
     notifyListeners();
