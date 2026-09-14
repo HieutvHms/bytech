@@ -16,11 +16,9 @@ class CheckFirmwareService {
 
       if (response != null) {
         // Validate expected response format
-        if (response.containsKey('mac') &&
-            response.containsKey('version') &&
-            response.containsKey('update_url')) {
+        if (response.containsKey('mac') && response.containsKey('version')) {
           final serverVersion = response['version'] as String;
-          final updateUrl = response['update_url'] as String;
+          final updateUrl = (response['update_url'] as String?) ?? "";
           final deviceMac = response['mac'] as String;
           bool noUpdate = response['no_update'] as bool? ?? false;
           // Compare versions locally

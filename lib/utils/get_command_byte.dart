@@ -12,3 +12,4 @@ List<int> getCommandByte(ControlType controlType) {
   command.addAll(BLERequestConst.FOOTER);
   return command;
 }
+

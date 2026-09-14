@@ -48,7 +48,7 @@ class LogsService {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(requestBody),
-      );
+      ).timeout(const Duration(seconds: 5));
 
       return response;
     } catch (e) {

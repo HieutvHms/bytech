@@ -254,52 +254,53 @@ class ConnectDeviceWidget extends StatelessWidget {
                           CustomOutLineButton(
                             title: 'Check update',
                             ontap: () async {
-                              CheckFirmwareService.checkFirmware(
-                                      mac: value.bluetoothDevice!.id.toString(),
-                                      currentVersion: value.version ?? "0.0.0")
-                                  .then((result) {
-                                if (result != null) {
-                                  if (result.noUpdate == false) {
-                                    value.firmwareCheckResult = result;
-                                    // showDialog(
-                                    //   context: context,
-                                    //   builder: (ctx) {
-                                    //     return AlertDialog(
-                                    //       title: const Text('Firmware Update'),
-                                    //       content: Text(
-                                    //           'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
-                                    //       actions: [
-                                    //         TextButton(
-                                    //           onPressed: () {
-                                    //             Navigator.of(ctx).pop();
-                                    //           },
-                                    //           child: const Text('Later'),
-                                    //         ),
-                                    //         TextButton(
-                                    //           onPressed: () {
-                                    //             Navigator.of(ctx).pop();
-                                    //             value.updateFirmWare(
-                                    //                 url: result.updateUrl);
-                                    //           },
-                                    //           child: const Text('Update'),
-                                    //         ),
-                                    //       ],
-                                    //     );
-                                    //   },
-                                    // );
-                                    showFirmwareUpdateDialog(
-                                        context, value, result.updateUrl);
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Firmware is up to date.',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                }
-                              });
+                              // CheckFirmwareService.checkFirmware(
+                              //         mac: value.bluetoothDevice!.id.toString(),
+                              //         currentVersion: value.version ?? "0.0.0")
+                              //     .then((result) {
+                              //   if (result != null) {
+                              //     if (result.noUpdate == false) {
+                              //       value.firmwareCheckResult = result;
+                              //       // showDialog(
+                              //       //   context: context,
+                              //       //   builder: (ctx) {
+                              //       //     return AlertDialog(
+                              //       //       title: const Text('Firmware Update'),
+                              //       //       content: Text(
+                              //       //           'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
+                              //       //       actions: [
+                              //       //         TextButton(
+                              //       //           onPressed: () {
+                              //       //             Navigator.of(ctx).pop();
+                              //       //           },
+                              //       //           child: const Text('Later'),
+                              //       //         ),
+                              //       //         TextButton(
+                              //       //           onPressed: () {
+                              //       //             Navigator.of(ctx).pop();
+                              //       //             value.updateFirmWare(
+                              //       //                 url: result.updateUrl);
+                              //       //           },
+                              //       //           child: const Text('Update'),
+                              //       //         ),
+                              //       //       ],
+                              //       //     );
+                              //       //   },
+                              //       // );
+                              //       showFirmwareUpdateDialog(
+                              //           context, value, result.updateUrl);
+                              //     } else {
+                              //       ScaffoldMessenger.of(context).showSnackBar(
+                              //         const SnackBar(
+                              //           content: Text(
+                              //             'Firmware is up to date.',
+                              //           ),
+                              //         ),
+                              //       );
+                              //     }
+                              //   }
+                              // });
+                              await value.checkCurrentFirmware();
                             },
                           )
                         ],

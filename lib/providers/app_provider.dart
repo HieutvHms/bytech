@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:http/http.dart' as http;
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/const/values.dart';
@@ -45,6 +46,7 @@ class AppProvider extends ChangeNotifier {
   List<Wifi> wifiList = [];
   List<nsd.Service> localService = [];
   Socket? socketTCP;
+  String? wifiApMac;
   String tcpIP = "";
   QualifiedCharacteristic? bluetoothCharacteristic;
   MdnsConnectedClient? mdnsConnectedClient;
@@ -564,9 +566,46 @@ class AppProvider extends ChangeNotifier {
         convertDataToStatus,
       );
 
-      //  TEST: Gửi ngay 1 lệnh STOP xuống Firmware để check xem Firmware có nhận được Data không
-      // print('Sending initial test command to firmware...');
-      // socketService.controlDevice(socketTCP!, ControlType.STOP);
+      //  Gọi HTTP GET lấy thông tin mạch
+      try {
+        print('Đang gọi HTTP GET để lấy thông tin mạch...');
+        // Endpoint HTTP của mạch ở chế độ Wi-Fi AP
+        final response = await http
+            .get(Uri.parse('http://$ip/status'))
+            .timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          final jsonData = json.decode(response.body);
+
+          if (jsonData['FW'] != null) {
+            version = jsonData['FW'].toString();
+          }
+          if (jsonData['MAC'] != null) {
+            String rawMac = jsonData['MAC'].toString();
+            if (rawMac.contains('WIFI-')) {
+              final parts = rawMac.split('WIFI-');
+              if (parts.length > 1) {
+                wifiApMac = parts[1].split(',')[0].trim();
+              }
+            } else {
+              wifiApMac = rawMac.trim();
+            }
+          }
+
+          print('Lấy thông tin thành công: MAC=$wifiApMac, Version=$version');
+
+          // Lưu vào bộ nhớ cục bộ để dùng cho Offline OTA
+          if (wifiApMac != null && wifiApMac!.isNotEmpty) {
+            OfflineOTAService.saveDevice(wifiApMac!, version ?? "0.0.0");
+          }
+        }
+      } catch (e) {
+        print('Lỗi khi gọi HTTP GET lấy thông tin mạch: $e');
+      }
+      // ---------------------------------------------
+
+      // Gửi 1 lệnh STOP xuống Firmware để yêu cầu Firmware trả về trạng thái Motor hiện tại
+      print('Sending initial STOP command to fetch Motor Status...');
+      socketService.controlDevice(socketTCP!, ControlType.STOP);
 
       mdnsConnectedClient =
           MdnsConnectedClient(name: name, host: ip, port: port);
@@ -579,10 +618,18 @@ class AppProvider extends ChangeNotifier {
       connectStatus = ConnectStatus.SOCKET;
 
       notifyListeners();
+
+      // Tự động kiểm tra phiên bản ngầm (Sẽ bật bảng thông báo nếu có bản Offline)
+      Timer(const Duration(seconds: 2), () {
+        checkCurrentFirmware();
+      });
     } catch (e) {
+      print('====================================');
+      print('LỖI KẾT NỐI SOCKET TỚI WI-FI AP: $e');
+      print('====================================');
       showStatus(
         buildContext: globalKey.currentContext!,
-        message: "Connect failed",
+        message: "Connect failed: $e",
         succcess: false,
       );
     }
@@ -739,7 +786,10 @@ class AppProvider extends ChangeNotifier {
       return bluetoothDevice!.id;
     } else if (connectStatus == ConnectStatus.SOCKET &&
         mdnsConnectedClient != null) {
-      // For socket connections, use IP as identifier since MAC might not be available
+      // Trả về MAC lấy được từ HTTP GET. Nếu không lấy được, fallback về IP.
+      if (wifiApMac != null && wifiApMac!.isNotEmpty) {
+        return wifiApMac!;
+      }
       return mdnsConnectedClient!.host;
     }
     return '';
@@ -760,8 +810,44 @@ class AppProvider extends ChangeNotifier {
     print("Checking firmware for device: $deviceMac, version: $version");
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult.contains(ConnectivityResult.none)) {
-        
+      bool isOnlineSuccess = false;
+
+      // 1. ONLINE CHECK (Thử check online nếu điện thoại báo đang có mạng Wi-Fi/4G)
+      if (!connectivityResult.contains(ConnectivityResult.none)) {
+        if (deviceMac.isNotEmpty && !deviceMac.contains('.')) {
+          final result = await CheckFirmwareService.checkFirmware(
+            mac: deviceMac,
+            currentVersion: version!,
+          );
+
+          if (result != null) {
+            isOnlineSuccess = true;
+            firmwareCheckResult = result;
+            if (!result.noUpdate) {
+              showFirmwareUpdateDialog(
+                  globalKey.currentContext!, this, result.updateUrl);
+            } else {
+              showStatus(
+                buildContext: globalKey.currentContext!,
+                message: 'Firmware is up to date: ${result.currentVersion}',
+                succcess: true,
+              );
+            }
+            return result; // Kết thúc nếu check Online thành công
+          }
+        } else {
+          // Bị thiếu MAC (Đang dùng IP thay thế) -> Dừng luôn không check được
+          showStatus(
+            buildContext: globalKey.currentContext!,
+            message: 'Không thể kiểm tra bản cập nhật: Thiếu địa chỉ MAC của mạch!',
+            succcess: false,
+          );
+          return null;
+        }
+      }
+
+      // 2. OFFLINE CHECK (Dùng làm Fallback nếu không có mạng thật sự, hoặc đang nối Wi-Fi AP không Internet)
+      if (!isOnlineSuccess) {
         if (connectStatus == ConnectStatus.BLE) {
           showStatus(
             buildContext: globalKey.currentContext!,
@@ -771,7 +857,7 @@ class AppProvider extends ChangeNotifier {
           );
           return null;
         }
-        // OFFLINE CHECK
+
         final offlineData = await OfflineOTAService.getReadyOfflineUpdate(
             deviceMac,
             currentVersion: version);
@@ -811,46 +897,13 @@ class AppProvider extends ChangeNotifier {
           showStatus(
             buildContext: globalKey.currentContext!,
             message:
-                'No cached updates available. Please connect to internet first.',
+                'Không thể kết nối máy chủ và không có bản lưu Offline.',
             succcess: false,
           );
         }
-        return null;
       }
 
-      // ONLINE CHECK
-      if (deviceMac.isEmpty || deviceMac.contains('.')) {
-        showStatus(
-          buildContext: globalKey.currentContext!,
-          message: 'Cannot check firmware: no device MAC address',
-          succcess: false,
-        );
-        return null;
-      }
-
-      final result = await CheckFirmwareService.checkFirmware(
-        mac: deviceMac,
-        currentVersion: version!,
-      );
-
-      if (result != null) {
-        firmwareCheckResult = result;
-        // Show firmware check result to user
-        if (!result.noUpdate) {
-          showFirmwareUpdateDialog(
-              globalKey.currentContext!, this, result.updateUrl);
-        } else {
-          showStatus(
-            buildContext: globalKey.currentContext!,
-            message: 'Firmware is up to date: ${result.currentVersion}',
-            succcess: true,
-          );
-        }
-
-        // Log the manual firmware check
-      }
-
-      return result;
+      return null;
     } catch (e) {
       showStatus(
         buildContext: globalKey.currentContext!,

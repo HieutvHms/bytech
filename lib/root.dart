@@ -4,6 +4,7 @@ import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/new_screen/connect_screen.dart';
 import 'package:new_renitek/new_screen/home/home_screen.dart';
 import 'package:new_renitek/new_screen/personal/profile_screen.dart';
+import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 final screenList = [
@@ -24,7 +25,8 @@ class RootState extends State<Root> {
   @override
   void initState() {
     super.initState();
-     _initPermission();
+    _initPermission();
+    OfflineOTAService.syncFirmwareBackground();
   }
 
   int currentTab = 1;
