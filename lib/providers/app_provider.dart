@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:new_renitek/const/ble_const.dart';
@@ -15,8 +16,10 @@ import 'package:new_renitek/models/saved_device_model.dart';
 import 'package:new_renitek/models/status_of_motor.dart';
 import 'package:new_renitek/models/wifi.dart';
 import 'package:new_renitek/models/wifi_status.dart';
+import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:new_renitek/root.dart';
 import 'package:new_renitek/service/check_firmware_service.dart';
+import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:new_renitek/service/mdns_service.dart';
 import 'package:new_renitek/service/socket_service.dart';
 import 'package:new_renitek/service/storage_service.dart';
@@ -407,9 +410,9 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void updateFirmWare(String url) {
+  void updateFirmWare({String? url, String? offlineFilePath}) {
     // Check if firmware check was performed and update is available
-    if (firmwareCheckResult == null) {
+    if (firmwareCheckResult == null && offlineFilePath == null) {
       showStatus(
         buildContext: globalKey.currentContext!,
         message: 'Please check for firmware updates first',
@@ -418,7 +421,7 @@ class AppProvider extends ChangeNotifier {
       return;
     }
 
-    if (firmwareCheckResult!.noUpdate) {
+    if (firmwareCheckResult != null && firmwareCheckResult!.noUpdate) {
       showStatus(
         buildContext: globalKey.currentContext!,
         message: 'Firmware is already up to date',
@@ -430,13 +433,13 @@ class AppProvider extends ChangeNotifier {
     try {
       showStatus(
         buildContext: globalKey.currentContext!,
-        message:
-            'Starting firmware update to ${firmwareCheckResult!.latestVersion}...',
+        message: 'Starting firmware update...',
         succcess: true,
       );
 
       if (connectStatus == ConnectStatus.BLE &&
-          bluetoothCharacteristic != null) {
+          bluetoothCharacteristic != null &&
+          url != null) {
         // Use reactive_ble for firmware update
         final updateCommand = getFirmwareUpdateCommand(url);
         _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
@@ -444,24 +447,32 @@ class AppProvider extends ChangeNotifier {
         print(updateCommand);
         print(String.fromCharCodes(updateCommand));
 
-        // Đánh dấu đã gửi lệnh update thành công và ẩn bảng BLE vĩnh viễn
-        isLatestFirmware = true;
-        StorageService.saveIsLatestFirmware(true);
         // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
         toggleExpertMode(false);
         notifyListeners();
       } else if (socketTCP != null) {
-        socketService.updateFirmWare(
-          socket: socketTCP!,
-          url: firmwareCheckResult?.updateUrl,
-        );
-
-        // [NEW CODE] Đánh dấu đã gửi lệnh update thành công qua WiFi
-        isLatestFirmware = true;
-        StorageService.saveIsLatestFirmware(true);
-        // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
-        toggleExpertMode(false);
-        notifyListeners();
+        if (offlineFilePath != null) {
+          // OFFLINE OTA PUSH via TCP Socket
+          OfflineOTAService.pushFirmwareViaSocket(socketTCP!, offlineFilePath)
+              .then((_) {
+            toggleExpertMode(false);
+            notifyListeners();
+          }).catchError((e) {
+            showStatus(
+              buildContext: globalKey.currentContext!,
+              message: 'Failed to push firmware: $e',
+              succcess: false,
+            );
+          });
+        } else if (url != null) {
+          socketService.updateFirmWare(
+            socket: socketTCP!,
+            url: url,
+          );
+          // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
+          toggleExpertMode(false);
+          notifyListeners();
+        }
       } else {
         showStatus(
           buildContext: globalKey.currentContext!,
@@ -600,48 +611,82 @@ class AppProvider extends ChangeNotifier {
     } else if (bulletin is FirmwareVersionBulletin) {
       version = bulletin.payload;
 
-      // Check firmware version and log
-      CheckFirmwareService.checkFirmware(
-              mac: bluetoothDevice!.id.toString(),
-              currentVersion: version ?? "0.0.0")
-          .then((result) {
-        if (result != null) {
-          if (result.noUpdate == false) {
-            firmwareCheckResult = result;
-            showDialog(
-              context: globalKey.currentContext!,
-              builder: (ctx) {
-                return AlertDialog(
-                  title: const Text('Firmware Update'),
-                  content: Text(
-                      'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                      },
-                      child: const Text('Later'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        updateFirmWare(result.updateUrl);
-                      },
-                      child: const Text('Update'),
-                    ),
-                  ],
-                );
-              },
-            );
-          } else {
-            ScaffoldMessenger.of(globalKey.currentContext!).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Firmware is up to date.',
-                ),
-              ),
-            );
-          }
+      // Determine MAC or empty string for AP
+      String mac = "";
+      if (bluetoothDevice != null) mac = bluetoothDevice!.id.toString();
+
+      // Save device for background sync if we have a MAC
+      if (mac.isNotEmpty) {
+        OfflineOTAService.saveDevice(mac, version ?? "0.0.0");
+      }
+
+      // Check online or offline depending on connectivity
+      Connectivity().checkConnectivity().then((connectivityResult) {
+        if (connectivityResult.contains(ConnectivityResult.none)) {
+          // NO INTERNET -> Check OFFLINE Cache
+          OfflineOTAService.getReadyOfflineUpdate(mac, currentVersion: version)
+              .then((offlineData) {
+            if (offlineData != null) {
+              final latestVersion = offlineData['latestVersion'];
+              final localFilePath = offlineData['localFilePath'];
+
+              showDialog(
+                context: globalKey.currentContext!,
+                builder: (ctx) {
+                  return AlertDialog(
+                    title: const Text('Offline Firmware Update'),
+                    content: Text(
+                        'A cached firmware version ($latestVersion) is available on your phone. Would you like to push it to the mount now?'),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('Later')),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          updateFirmWare(offlineFilePath: localFilePath);
+                        },
+                        child: const Text('Update via Wi-Fi AP'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            }
+          });
+        } else if (mac.isNotEmpty) {
+          // HAS INTERNET -> Check ONLINE Server
+          CheckFirmwareService.checkFirmware(
+                  mac: mac, currentVersion: version ?? "0.0.0")
+              .then((result) {
+            if (result != null && !result.noUpdate) {
+              firmwareCheckResult = result;
+              // showDialog(
+              //   context: globalKey.currentContext!,
+              //   builder: (ctx) {
+              //     return AlertDialog(
+              //       title: const Text('Firmware Update'),
+              //       content: Text(
+              //           'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
+              //       actions: [
+              //         TextButton(
+              //             onPressed: () => Navigator.of(ctx).pop(),
+              //             child: const Text('Later')),
+              //         TextButton(
+              //           onPressed: () {
+              //             Navigator.of(ctx).pop();
+              //             updateFirmWare(url: result.updateUrl);
+              //           },
+              //           child: const Text('Update'),
+              //         ),
+              //       ],
+              //     );
+              //   },
+              // );
+              showFirmwareUpdateDialog(
+                  globalKey.currentContext!, this, result.updateUrl);
+            }
+          });
         }
       });
 
@@ -712,16 +757,77 @@ class AppProvider extends ChangeNotifier {
     }
 
     final deviceMac = _getCurrentDeviceMac();
-    if (deviceMac.isEmpty) {
-      showStatus(
-        buildContext: globalKey.currentContext!,
-        message: 'Cannot check firmware: no device MAC address',
-        succcess: false,
-      );
-      return null;
-    }
     print("Checking firmware for device: $deviceMac, version: $version");
     try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        
+        if (connectStatus == ConnectStatus.BLE) {
+          showStatus(
+            buildContext: globalKey.currentContext!,
+            message:
+                'Please connect to Internet to check for updates via Bluetooth.',
+            succcess: false,
+          );
+          return null;
+        }
+        // OFFLINE CHECK
+        final offlineData = await OfflineOTAService.getReadyOfflineUpdate(
+            deviceMac,
+            currentVersion: version);
+        if (offlineData != null) {
+          if (offlineData['latestVersion'] == version) {
+            showStatus(
+              buildContext: globalKey.currentContext!,
+              message: 'Firmware is already up to date ($version).',
+              succcess: true,
+            );
+            return null;
+          }
+          showDialog(
+            context: globalKey.currentContext!,
+            builder: (ctx) {
+              return AlertDialog(
+                title: const Text('Offline Firmware Update'),
+                content: Text(
+                    'A cached firmware version (${offlineData['latestVersion']}) is available. Update now?'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Later')),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      updateFirmWare(
+                          offlineFilePath: offlineData['localFilePath']);
+                    },
+                    child: const Text('Update via Wi-Fi AP'),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          showStatus(
+            buildContext: globalKey.currentContext!,
+            message:
+                'No cached updates available. Please connect to internet first.',
+            succcess: false,
+          );
+        }
+        return null;
+      }
+
+      // ONLINE CHECK
+      if (deviceMac.isEmpty || deviceMac.contains('.')) {
+        showStatus(
+          buildContext: globalKey.currentContext!,
+          message: 'Cannot check firmware: no device MAC address',
+          succcess: false,
+        );
+        return null;
+      }
+
       final result = await CheckFirmwareService.checkFirmware(
         mac: deviceMac,
         currentVersion: version!,
@@ -731,11 +837,8 @@ class AppProvider extends ChangeNotifier {
         firmwareCheckResult = result;
         // Show firmware check result to user
         if (!result.noUpdate) {
-          showStatus(
-            buildContext: globalKey.currentContext!,
-            message: 'Update available: ${result.latestVersion}',
-            succcess: true,
-          );
+          showFirmwareUpdateDialog(
+              globalKey.currentContext!, this, result.updateUrl);
         } else {
           showStatus(
             buildContext: globalKey.currentContext!,

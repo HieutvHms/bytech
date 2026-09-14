@@ -107,43 +107,41 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             height: MediaQuery.of(context).size.height * 0.5,
                             child: ListView.separated(
                               itemBuilder: (ctx, index) {
-                                print('UI: Building item $index');
-                                return DeviceConnectCard(
-                                  connect: () async {
-                                    await provider
-                                        .connectToDevice(
-                                      provider.bleDeviceList[index],
-                                    )
-                                        .then((value) {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => NewControllerScreen(
-                                            deviceParam: DeviceParam(
-                                              deviceName: provider
-                                                      .bluetoothDevice?.name ??
-                                                  "",
-                                              connectStatus: ConnectStatus.BLE,
+                                  print('UI: Building item $index');
+                                  
+                                  // Tính toán tên thiết bị hiển thị chuẩn
+                                  final originalName =
+                                      provider.bleDeviceList[index].name;
+                                  final savedName =
+                                      provider.renameMap[originalName];
+                                  final displayDeviceName = savedName ??
+                                      (originalName.isNotEmpty
+                                          ? originalName
+                                          : 'Unknown Device (${provider.bleDeviceList[index].id.substring(0, 8)}...)');
+
+                                  return DeviceConnectCard(
+                                    connect: () async {
+                                      await provider
+                                          .connectToDevice(
+                                        provider.bleDeviceList[index],
+                                      )
+                                          .then((value) {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => NewControllerScreen(
+                                              deviceParam: DeviceParam(
+                                                deviceName: displayDeviceName,
+                                                connectStatus: ConnectStatus.BLE,
+                                              ),
+                                              connectType: ConnectType.bluetooth,
                                             ),
-                                            connectType: ConnectType.bluetooth,
                                           ),
-                                        ),
-                                      );
-                                    });
-                                  },
-                                  devicename: () {
-                                    final originalName =
-                                        provider.bleDeviceList[index].name;
-                                    final savedName =
-                                        provider.renameMap[originalName];
-                                    print(
-                                        'Device lookup: "$originalName" -> savedName: "$savedName"');
-                                    return savedName ??
-                                        (originalName.isNotEmpty
-                                            ? originalName
-                                            : 'Unknown Device (${provider.bleDeviceList[index].id.substring(0, 8)}...}');
-                                  }(),
-                                );
-                              },
+                                        );
+                                      });
+                                    },
+                                    devicename: displayDeviceName,
+                                  );
+                                },
                               itemCount: provider.bleDeviceList.length,
                               separatorBuilder: (context, index) =>
                                   const Divider(),
@@ -279,7 +277,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                     await provider
                                         .connectSocket(
                                       context,
-                                      consumer.localService[index].host ?? '',
+                                      consumer.localService[index].host ??
+                                          '192.168.1.1',
                                       //consumer.localService[index].port ?? 2000,
                                       23, // Cổng TCP thực sự của Firmware (đã xác nhận) thay vì lấy mDNS (cổng 80)
                                       consumer.localService[index].name ?? "",

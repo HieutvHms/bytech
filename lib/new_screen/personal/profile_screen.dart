@@ -132,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           const Expanded(
                             child: Text(
-                              'Expert Mode (Legacy)',
+                              'Expert Mode',
                               style: CustomTextStyle.bodyMedium,
                             ),
                           ),

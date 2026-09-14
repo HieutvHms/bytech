@@ -261,32 +261,34 @@ class ConnectDeviceWidget extends StatelessWidget {
                                 if (result != null) {
                                   if (result.noUpdate == false) {
                                     value.firmwareCheckResult = result;
-                                    showDialog(
-                                      context: context,
-                                      builder: (ctx) {
-                                        return AlertDialog(
-                                          title: const Text('Firmware Update'),
-                                          content: Text(
-                                              'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(ctx).pop();
-                                              },
-                                              child: const Text('Later'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(ctx).pop();
-                                                value.updateFirmWare(
-                                                    result.updateUrl);
-                                              },
-                                              child: const Text('Update'),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
+                                    // showDialog(
+                                    //   context: context,
+                                    //   builder: (ctx) {
+                                    //     return AlertDialog(
+                                    //       title: const Text('Firmware Update'),
+                                    //       content: Text(
+                                    //           'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
+                                    //       actions: [
+                                    //         TextButton(
+                                    //           onPressed: () {
+                                    //             Navigator.of(ctx).pop();
+                                    //           },
+                                    //           child: const Text('Later'),
+                                    //         ),
+                                    //         TextButton(
+                                    //           onPressed: () {
+                                    //             Navigator.of(ctx).pop();
+                                    //             value.updateFirmWare(
+                                    //                 url: result.updateUrl);
+                                    //           },
+                                    //           child: const Text('Update'),
+                                    //         ),
+                                    //       ],
+                                    //     );
+                                    //   },
+                                    // );
+                                    showFirmwareUpdateDialog(
+                                        context, value, result.updateUrl);
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
@@ -411,7 +413,7 @@ void showFirmwareUpdateDialog(
                       title: 'Update',
                       onTap: () {
                         Navigator.of(ctx).pop();
-                        provider.updateFirmWare(url);
+                        provider.updateFirmWare(url: url);
                       },
                       enable: true,
                     ),
