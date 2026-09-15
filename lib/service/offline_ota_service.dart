@@ -160,4 +160,51 @@ class OfflineOTAService {
       rethrow;
     }
   }
+
+  static Future<void> pushFirmwareViaHttp(String ip, String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception("Firmware file not found at $filePath");
+      }
+
+      print(
+          'Offline OTA: Pushing firmware via HTTP POST to http://$ip/update-firmware');
+
+      final url = Uri.parse('http://$ip/update-firmware');
+
+      // Đọc toàn bộ file nhị phân
+      final bytes = await file.readAsBytes();
+
+      // Giống hệt code Web UI (xhr.setRequestHeader('Content-Type', 'application/octet-stream'))
+      var response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/octet-stream',
+            },
+            body: bytes,
+          )
+          .timeout(const Duration(seconds: 60));
+
+      if (response.statusCode == 200) {
+        final respStr = response.body;
+        print('Offline OTA: Push HTTP completed successfully. FW Response: $respStr');
+      } else {
+        throw Exception("HTTP Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      // Khi Firmware update thành công, nó thường sẽ lập tức Reset (khởi động lại) 
+      // Việc khởi động lại đột ngột sẽ ngắt kết nối HTTP khiến App văng lỗi SocketException / ClientException
+      // Do đó, nếu gặp lỗi ngắt kết nối đột ngột, ta có thể ngầm hiểu là Mạch đã nạp thành công và đang Reset!
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('connection abort') || errorStr.contains('connection reset') || errorStr.contains('socketexception')) {
+        print('Offline OTA: Mạch ngắt kết nối đột ngột (Khả năng cao là update thành công và đang Reboot). Bỏ qua lỗi!');
+        return; // Coi như thành công
+      }
+      
+      print('Offline OTA: Failed to push firmware via HTTP: $e');
+      rethrow;
+    }
+  }
 }

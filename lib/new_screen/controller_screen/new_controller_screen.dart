@@ -1,3 +1,5 @@
+import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/material.dart';
 import 'package:new_renitek/const/asset_const.dart';
 import 'package:new_renitek/const/ble_const.dart';
@@ -49,6 +51,27 @@ class NewControllerScreen extends StatelessWidget {
           provider.renameMap[deviceParam.deviceName] ?? deviceParam.deviceName,
           style: CustomTextStyle.h4Medium,
         ),
+        actions: [
+          if (connectType == ConnectType.mdns &&
+              provider.mdnsConnectedClient?.host != null)
+            IconButton(
+              icon: const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
+              tooltip: 'Upload Local .bin',
+              onPressed: () async {
+                FilePickerResult? result = await FilePicker.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['bin'],
+                );
+
+                if (result != null && result.files.isNotEmpty) {
+                  String? filePath = result.files.single.path;
+                  if (filePath != null) {
+                    provider.updateFirmWare(offlineFilePath: filePath);
+                  }
+                }
+              },
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),

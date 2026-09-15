@@ -1,3 +1,5 @@
+import 'package:url_launcher/url_launcher.dart';
+
 // ignore_for_file: constant_identifier_names
 
 import 'dart:async';
@@ -423,7 +425,10 @@ class AppProvider extends ChangeNotifier {
       return;
     }
 
-    if (firmwareCheckResult != null && firmwareCheckResult!.noUpdate) {
+    // Nếu người dùng chọn file local (offlineFilePath != null) thì bỏ qua check noUpdate
+    if (firmwareCheckResult != null &&
+        firmwareCheckResult!.noUpdate &&
+        offlineFilePath == null) {
       showStatus(
         buildContext: globalKey.currentContext!,
         message: 'Firmware is already up to date',
@@ -454,15 +459,52 @@ class AppProvider extends ChangeNotifier {
         notifyListeners();
       } else if (socketTCP != null) {
         if (offlineFilePath != null) {
-          // OFFLINE OTA PUSH via TCP Socket
-          OfflineOTAService.pushFirmwareViaSocket(socketTCP!, offlineFilePath)
-              .then((_) {
-            toggleExpertMode(false);
-            notifyListeners();
-          }).catchError((e) {
+          // OFFLINE OTA PUSH via HTTP POST
+          final ip = mdnsConnectedClient?.host ?? tcpIP;
+          if (ip.isEmpty) {
             showStatus(
               buildContext: globalKey.currentContext!,
-              message: 'Failed to push firmware: $e',
+              message: 'Failed to push firmware: IP Address is unknown',
+              succcess: false,
+            );
+            return;
+          }
+
+          // Hiển thị vòng xoay loading
+          showDialog(
+            context: globalKey.currentContext!,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return const Dialog(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(width: 20),
+                      Text("Đang gửi Firmware..."),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+
+          OfflineOTAService.pushFirmwareViaHttp(ip, offlineFilePath).then((_) {
+            Navigator.pop(globalKey.currentContext!); // Close loading
+            toggleExpertMode(false);
+            notifyListeners();
+            showStatus(
+              buildContext: globalKey.currentContext!,
+              message: 'Gửi thành công! Thiết bị đang khởi động lại.',
+              succcess: true,
+            );
+          }).catchError((e) {
+            Navigator.pop(globalKey.currentContext!); // Close loading
+            showStatus(
+              buildContext: globalKey.currentContext!,
+              message: 'Lỗi tải lên: $e',
               succcess: false,
             );
           });
@@ -839,7 +881,8 @@ class AppProvider extends ChangeNotifier {
           // Bị thiếu MAC (Đang dùng IP thay thế) -> Dừng luôn không check được
           showStatus(
             buildContext: globalKey.currentContext!,
-            message: 'Không thể kiểm tra bản cập nhật: Thiếu địa chỉ MAC của mạch!',
+            message:
+                'Không thể kiểm tra bản cập nhật: Thiếu địa chỉ MAC của mạch!',
             succcess: false,
           );
           return null;
@@ -896,8 +939,7 @@ class AppProvider extends ChangeNotifier {
         } else {
           showStatus(
             buildContext: globalKey.currentContext!,
-            message:
-                'Không thể kết nối máy chủ và không có bản lưu Offline.',
+            message: 'Không thể kết nối máy chủ và không có bản lưu Offline.',
             succcess: false,
           );
         }
