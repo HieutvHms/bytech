@@ -1,5 +1,3 @@
-import 'package:url_launcher/url_launcher.dart';
-
 // ignore_for_file: constant_identifier_names
 
 import 'dart:async';
@@ -10,6 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/const/values.dart';
@@ -54,6 +53,7 @@ class AppProvider extends ChangeNotifier {
   MdnsConnectedClient? mdnsConnectedClient;
   Map<String, dynamic> renameMap = {};
   List<SavedDeviceModel> saveDeviceList = [];
+  bool _hasAutoCheckedFirmware = false; // Flag to prevent multiple auto-checks
 
   bool isLatestFirmware = false;
   //trạng thái Expert Mode
@@ -71,6 +71,20 @@ class AppProvider extends ChangeNotifier {
   final mdnsService = MdnsService();
   final socketService = SocketService.instance;
   String? version = "Not found";
+  String? get hardwareVersion {
+    if (version == null || version == 'Not found' || !version!.contains('-')) {
+      return null;
+    }
+    final parts = version!.split('-');
+    if (parts.length >= 2) {
+      final hw = '${parts[0]}_${parts[1]}';
+      if (hw == 'AV01_NEW_HW' || hw == 'AV03_NEW_HW') {
+        return hw;
+      }
+    }
+    return null;
+  }
+
   FirmwareCheckResult? firmwareCheckResult;
   Future<void> scanDevice() async {
     // Cancel previous scan if running
@@ -163,6 +177,7 @@ class AppProvider extends ChangeNotifier {
   Future<void> connectToDevice(DiscoveredDevice device) async {
     try {
       version = 'Not found';
+      _hasAutoCheckedFirmware = false;
       saveDeviceList.addAll(
         bleDeviceList
             .where(
@@ -202,10 +217,8 @@ class AppProvider extends ChangeNotifier {
               _requestMtu(device.id);
             });
 
-            // Auto check firmware after successful connection
-            Timer(const Duration(seconds: 3), () {
-              checkCurrentFirmware();
-            });
+            // Auto check firmware will now be triggered dynamically
+            // when the Firmware Version is successfully received in convertDataToStatus.
 
             // Auto check firmware after successful connection
             // Timer(const Duration(seconds: 5), () {
@@ -416,7 +429,7 @@ class AppProvider extends ChangeNotifier {
 
   void updateFirmWare({String? url, String? offlineFilePath}) {
     // Check if firmware check was performed and update is available
-    if (firmwareCheckResult == null && offlineFilePath == null) {
+    if (firmwareCheckResult == null && offlineFilePath == null && url == null) {
       showStatus(
         buildContext: globalKey.currentContext!,
         message: 'Please check for firmware updates first',
@@ -438,99 +451,129 @@ class AppProvider extends ChangeNotifier {
     }
 
     try {
-      showStatus(
-        buildContext: globalKey.currentContext!,
-        message: 'Starting firmware update...',
-        succcess: true,
-      );
-
+      // BLE: Gửi URL qua BLE characteristic
       if (connectStatus == ConnectStatus.BLE &&
           bluetoothCharacteristic != null &&
           url != null) {
-        // Use reactive_ble for firmware update
         final updateCommand = getFirmwareUpdateCommand(url);
         _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: updateCommand);
         print(updateCommand);
         print(String.fromCharCodes(updateCommand));
-
-        // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
         toggleExpertMode(false);
         notifyListeners();
-      } else if (socketTCP != null) {
-        if (offlineFilePath != null) {
-          // OFFLINE OTA PUSH via HTTP POST
-          final ip = mdnsConnectedClient?.host ?? tcpIP;
-          if (ip.isEmpty) {
-            showStatus(
-              buildContext: globalKey.currentContext!,
-              message: 'Failed to push firmware: IP Address is unknown',
-              succcess: false,
-            );
-            return;
-          }
-
-          // Hiển thị vòng xoay loading
-          showDialog(
-            context: globalKey.currentContext!,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return const Dialog(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(width: 20),
-                      Text("Đang gửi Firmware..."),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-
-          OfflineOTAService.pushFirmwareViaHttp(ip, offlineFilePath).then((_) {
-            Navigator.pop(globalKey.currentContext!); // Close loading
-            toggleExpertMode(false);
-            notifyListeners();
-            showStatus(
-              buildContext: globalKey.currentContext!,
-              message: 'Gửi thành công! Thiết bị đang khởi động lại.',
-              succcess: true,
-            );
-          }).catchError((e) {
-            Navigator.pop(globalKey.currentContext!); // Close loading
-            showStatus(
-              buildContext: globalKey.currentContext!,
-              message: 'Lỗi tải lên: $e',
-              succcess: false,
-            );
-          });
-        } else if (url != null) {
-          socketService.updateFirmWare(
-            socket: socketTCP!,
-            url: url,
-          );
-          // Tự động tắt Expert Mode sau khi cập nhật thành công để dọn UI
-          toggleExpertMode(false);
-          notifyListeners();
-        }
-      } else {
         showStatus(
           buildContext: globalKey.currentContext!,
-          message: 'No device connection available for update',
+          message: 'Firmware update command sent via BLE.',
+          succcess: true,
+        );
+        return;
+      }
+
+      // Wi-Fi (Online/Offline): Gửi file qua HTTP POST
+      // Lấy IP của thiết bị
+      final ip = mdnsConnectedClient?.host ?? tcpIP;
+      if (ip.isEmpty) {
+        showStatus(
+          buildContext: globalKey.currentContext!,
+          message: 'Failed to update firmware: IP Address is unknown',
           succcess: false,
         );
         return;
       }
 
-      showStatus(
-        buildContext: globalKey.currentContext!,
-        message: 'Firmware update command sent successfully',
-        succcess: true,
+      // Hiển thị vòng xoay loading
+      showDialog(
+        context: globalKey.currentContext!,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Dialog(
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text("Đang gửi Firmware..."),
+                ],
+              ),
+            ),
+          );
+        },
       );
+
+      Future<void> doUpdate(String filePath) async {
+        await OfflineOTAService.pushFirmwareViaHttp(ip, filePath);
+      }
+
+      Future<String> getFilePath() async {
+        if (offlineFilePath != null) {
+          // OFFLINE: Dùng file đã lưu sẵn trong máy
+          return offlineFilePath;
+        } else if (url != null) {
+          // ONLINE: Tải file .bin từ URL về máy trước rồi push qua HTTP
+          showStatus(
+            buildContext: globalKey.currentContext!,
+            message: 'Đang tải firmware từ server...',
+            succcess: true,
+          );
+          final response = await http.get(Uri.parse(url));
+          if (response.statusCode != 200) {
+            throw Exception(
+                'Không tải được file từ server: HTTP ${response.statusCode}');
+          }
+          final directory = await getApplicationDocumentsDirectory();
+          final tempPath = '${directory.path}/fw_temp_update.bin';
+          final tempFile = File(tempPath);
+          await tempFile.writeAsBytes(response.bodyBytes);
+          return tempPath;
+        } else {
+          throw Exception('Không có file hoặc URL để cập nhật');
+        }
+      }
+
+      getFilePath().then((filePath) {
+        return doUpdate(filePath);
+      }).then((_) {
+        Navigator.pop(globalKey.currentContext!); // Close loading dialog
+        notifyListeners();
+
+        showDialog(
+          context: globalKey.currentContext!,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Cập nhật thành công'),
+              content: const Text(
+                  'Thiết bị đã nhận bản cập nhật và đang khởi động lại.\n\n'
+                  'Vui lòng vào Cài đặt Wi-Fi của điện thoại để kết nối lại với mạng của thiết bị (nếu cần), sau đó quay lại màn hình Connect để tiếp tục sử dụng.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Đóng dialog
+                    disconnectTCP(); // Ngắt kết nối cũ
+                    // Pop toàn bộ màn hình về root (màn hình Connect)
+                    final rootContext = globalKey.currentContext;
+                    if (rootContext != null) {
+                      Navigator.of(rootContext)
+                          .popUntil((route) => route.isFirst);
+                    }
+                  },
+                  child: const Text('Đã hiểu'),
+                ),
+              ],
+            );
+          },
+        );
+      }).catchError((e) {
+        Navigator.pop(globalKey.currentContext!); // Close loading
+        showStatus(
+          buildContext: globalKey.currentContext!,
+          message: 'Lỗi cập nhật firmware: $e',
+          succcess: false,
+        );
+      });
     } catch (e) {
       showStatus(
         buildContext: globalKey.currentContext!,
@@ -633,7 +676,8 @@ class AppProvider extends ChangeNotifier {
             }
           }
 
-          print('Lấy thông tin thành công: MAC=$wifiApMac, Version=$version');
+          print(
+              'Lấy thông tin thành công: MAC=$wifiApMac, FW=$version, HW=$hardwareVersion');
 
           // Lưu vào bộ nhớ cục bộ để dùng cho Offline OTA
           if (wifiApMac != null && wifiApMac!.isNotEmpty) {
@@ -643,11 +687,10 @@ class AppProvider extends ChangeNotifier {
       } catch (e) {
         print('Lỗi khi gọi HTTP GET lấy thông tin mạch: $e');
       }
-      // ---------------------------------------------
 
       // Gửi 1 lệnh STOP xuống Firmware để yêu cầu Firmware trả về trạng thái Motor hiện tại
-      print('Sending initial STOP command to fetch Motor Status...');
-      socketService.controlDevice(socketTCP!, ControlType.STOP);
+      // print('Sending initial STOP command to fetch Motor Status...');
+      // socketService.controlDevice(socketTCP!, ControlType.STOP);
 
       mdnsConnectedClient =
           MdnsConnectedClient(name: name, host: ip, port: port);
@@ -658,6 +701,11 @@ class AppProvider extends ChangeNotifier {
         succcess: true,
       );
       connectStatus = ConnectStatus.SOCKET;
+
+      if (!_hasAutoCheckedFirmware) {
+        _hasAutoCheckedFirmware = true;
+        checkCurrentFirmware();
+      }
 
       notifyListeners();
 
@@ -709,75 +757,10 @@ class AppProvider extends ChangeNotifier {
         OfflineOTAService.saveDevice(mac, version ?? "0.0.0");
       }
 
-      // Check online or offline depending on connectivity
-      Connectivity().checkConnectivity().then((connectivityResult) {
-        if (connectivityResult.contains(ConnectivityResult.none)) {
-          // NO INTERNET -> Check OFFLINE Cache
-          OfflineOTAService.getReadyOfflineUpdate(mac, currentVersion: version)
-              .then((offlineData) {
-            if (offlineData != null) {
-              final latestVersion = offlineData['latestVersion'];
-              final localFilePath = offlineData['localFilePath'];
-
-              showDialog(
-                context: globalKey.currentContext!,
-                builder: (ctx) {
-                  return AlertDialog(
-                    title: const Text('Offline Firmware Update'),
-                    content: Text(
-                        'A cached firmware version ($latestVersion) is available on your phone. Would you like to push it to the mount now?'),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          child: const Text('Later')),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          updateFirmWare(offlineFilePath: localFilePath);
-                        },
-                        child: const Text('Update via Wi-Fi AP'),
-                      ),
-                    ],
-                  );
-                },
-              );
-            }
-          });
-        } else if (mac.isNotEmpty) {
-          // HAS INTERNET -> Check ONLINE Server
-          CheckFirmwareService.checkFirmware(
-                  mac: mac, currentVersion: version ?? "0.0.0")
-              .then((result) {
-            if (result != null && !result.noUpdate) {
-              firmwareCheckResult = result;
-              // showDialog(
-              //   context: globalKey.currentContext!,
-              //   builder: (ctx) {
-              //     return AlertDialog(
-              //       title: const Text('Firmware Update'),
-              //       content: Text(
-              //           'A new firmware version for ${result.latestVersion} is available. Would you like to update now?'),
-              //       actions: [
-              //         TextButton(
-              //             onPressed: () => Navigator.of(ctx).pop(),
-              //             child: const Text('Later')),
-              //         TextButton(
-              //           onPressed: () {
-              //             Navigator.of(ctx).pop();
-              //             updateFirmWare(url: result.updateUrl);
-              //           },
-              //           child: const Text('Update'),
-              //         ),
-              //       ],
-              //     );
-              //   },
-              // );
-              showFirmwareUpdateDialog(
-                  globalKey.currentContext!, this, result.updateUrl);
-            }
-          });
-        }
-      });
+      if (!_hasAutoCheckedFirmware) {
+        _hasAutoCheckedFirmware = true;
+        checkCurrentFirmware();
+      }
 
       notifyListeners();
     }
@@ -787,40 +770,40 @@ class AppProvider extends ChangeNotifier {
   // Logging and Firmware Check Methods
 
   /// Check firmware version and log the check
-  void _checkAndLogFirmware() async {
-    if (version == null) return;
+  // void _checkAndLogFirmware() async {
+  //   if (version == null) return;
 
-    try {
-      final deviceMac = _getCurrentDeviceMac();
-      if (deviceMac.isEmpty) {
-        print('Cannot check firmware: no device MAC address');
-        return;
-      }
+  //   try {
+  //     final deviceMac = _getCurrentDeviceMac();
+  //     if (deviceMac.isEmpty) {
+  //       print('Cannot check firmware: no device MAC address');
+  //       return;
+  //     }
 
-      print('Firmware check result: Current $version');
+  //     print('Firmware check result: Current $version');
 
-      final firmwareResult = await CheckFirmwareService.checkFirmware(
-        mac: deviceMac,
-        currentVersion: version!,
-      );
+  //     final firmwareResult = await CheckFirmwareService.checkFirmware(
+  //       mac: deviceMac,
+  //       currentVersion: version!,
+  //     );
 
-      if (firmwareResult != null) {
-        if (!firmwareResult.noUpdate) {
-          showStatus(
-            buildContext: globalKey.currentContext!,
-            message:
-                'Firmware update available: ${firmwareResult.latestVersion}',
-            succcess: true,
-          );
-          if (firmwareResult.updateUrl.isNotEmpty) {
-            print('Update URL: ${firmwareResult.updateUrl}');
-          }
-        }
-      }
-    } catch (e) {
-      print('Failed to check firmware: $e');
-    }
-  }
+  //     if (firmwareResult != null) {
+  //       if (!firmwareResult.noUpdate) {
+  //         showStatus(
+  //           buildContext: globalKey.currentContext!,
+  //           message:
+  //               'Firmware update available: ${firmwareResult.latestVersion}',
+  //           succcess: true,
+  //         );
+  //         if (firmwareResult.updateUrl.isNotEmpty) {
+  //           print('Update URL: ${firmwareResult.updateUrl}');
+  //         }
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print('Failed to check firmware: $e');
+  //   }
+  // }
 
   /// Get current device MAC address for firmware checking
   String _getCurrentDeviceMac() {
@@ -856,6 +839,14 @@ class AppProvider extends ChangeNotifier {
 
       // 1. ONLINE CHECK (Thử check online nếu điện thoại báo đang có mạng Wi-Fi/4G)
       if (!connectivityResult.contains(ConnectivityResult.none)) {
+        if (hardwareVersion == null) {
+          // TRƯỜNG HỢP 2: Kết nối được nhưng không xác định được hardware
+          // Gọi API (tạm thời Mock) để lấy danh sách tất cả FW
+          final listFirmwares = await CheckFirmwareService.getAllFirmwares();
+          _showFallbackFirmwareDialog(listFirmwares);
+          return null;
+        }
+
         if (deviceMac.isNotEmpty && !deviceMac.contains('.')) {
           final result = await CheckFirmwareService.checkFirmware(
             mac: deviceMac,
@@ -878,7 +869,7 @@ class AppProvider extends ChangeNotifier {
             return result; // Kết thúc nếu check Online thành công
           }
         } else {
-          // Bị thiếu MAC (Đang dùng IP thay thế) -> Dừng luôn không check được
+          // Bị thiếu MAC -> Dừng luôn không check được
           showStatus(
             buildContext: globalKey.currentContext!,
             message:
@@ -939,7 +930,8 @@ class AppProvider extends ChangeNotifier {
         } else {
           showStatus(
             buildContext: globalKey.currentContext!,
-            message: 'Không thể kết nối máy chủ và không có bản lưu Offline.',
+            message:
+                'Không có kết nối Internet. Vui lòng bật Internet để kiểm tra bản cập nhật',
             succcess: false,
           );
         }
@@ -1007,5 +999,45 @@ class AppProvider extends ChangeNotifier {
     command.addAll(BLERequestConst.ID_PAYLOAD_DIVIVDER);
     command.addAll(BLERequestConst.FOOTER);
     return command;
+  }
+
+  // Giao diện chọn Firmware khi không xác định được Hardware
+  void _showFallbackFirmwareDialog(List<Map<String, dynamic>> listFirmwares) {
+    if (globalKey.currentContext == null) return;
+    showDialog(
+      context: globalKey.currentContext!,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Chọn Firmware Cập Nhật'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: listFirmwares.length,
+              itemBuilder: (context, index) {
+                final fw = listFirmwares[index];
+                return ListTile(
+                  title: Text(fw['version'] ?? 'Unknown Version'),
+                  subtitle: Text(fw['description'] ?? ''),
+                  trailing: const Icon(Icons.download),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    if (fw['update_url'] != null) {
+                      updateFirmWare(url: fw['update_url']);
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Hủy'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

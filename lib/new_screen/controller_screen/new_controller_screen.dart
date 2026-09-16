@@ -55,7 +55,8 @@ class NewControllerScreen extends StatelessWidget {
           if (connectType == ConnectType.mdns &&
               provider.mdnsConnectedClient?.host != null)
             IconButton(
-              icon: const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
+              icon: const Icon(Icons.upload_file,
+                  color: CustomColor.neutralBlack),
               tooltip: 'Upload Local .bin',
               onPressed: () async {
                 FilePickerResult? result = await FilePicker.pickFiles(
@@ -74,7 +75,7 @@ class NewControllerScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -254,6 +255,9 @@ class ConnectDeviceWidget extends StatelessWidget {
                         )
                       ],
                     ),
+                  const Divider(),
+                  _infoRow(
+                      "Hardware Version", value.hardwareVersion ?? "Not found"),
                   const Divider(),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

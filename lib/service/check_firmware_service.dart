@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'logs_service.dart';
 
 class CheckFirmwareService {
@@ -22,9 +24,9 @@ class CheckFirmwareService {
           final deviceMac = response['mac'] as String;
           bool noUpdate = response['no_update'] as bool? ?? false;
           // Compare versions locally
-          if (currentVersion.trim() == serverVersion.trim()) {
-            noUpdate = true;
-          }
+          // if (currentVersion.trim() == serverVersion.trim()) {
+          //   noUpdate = true;
+          // }
 
           final result = FirmwareCheckResult(
             deviceMac: deviceMac,
@@ -56,6 +58,29 @@ class CheckFirmwareService {
       print('Failed to check firmware: $e');
       return null;
     }
+  }
+
+  static Future<List<Map<String, dynamic>>> getAllFirmwares() async {
+    // Hard-coded list of firmwares provided by partner
+    final Map<String, String> fallbackFirmwareMap = {
+      "AV03-NEW_HW-002": "http://27.71.226.192:2602/AV03_NEW_HW_12102025.bin",
+      "AV01-NEW_HW-002": "http://27.71.226.192:2602/AV01_NEW_HW_12102025.bin",
+      "AV01-OLD_HW-001": "http://27.71.226.192:2602/AV01_OLD_HW_12102025.bin",
+      "20250328-AV01-NL-PCBA-02_R01":
+          "http://27.71.226.192:2602/AV01_OLD_HW_12102025.bin",
+      "20250328-AV01-NL-PCBA-02_R02":
+          "http://27.71.226.192:2602/AV01_OLD_HW_12172025_signed.bin",
+      "AV03-OLD_HW_0_3":
+          "http://27.71.226.192:2602/AV03-OLD_HW_0_3_12102025.bin",
+    };
+
+    return fallbackFirmwareMap.entries
+        .map((e) => {
+              "version": e.key,
+              "update_url": e.value,
+              "description": "Firmware ${e.key}",
+            })
+        .toList();
   }
 }
 

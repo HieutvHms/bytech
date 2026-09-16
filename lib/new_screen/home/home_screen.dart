@@ -486,6 +486,7 @@ class _CustomOutLineButtonState extends State<CustomOutLineButton> {
                 widget.title,
                 style: CustomTextStyle.bodyMedium.copyWith(
                   color: widget.color ?? CustomColor.primaryColor,
+                  fontSize: 12,
                 ),
               ),
       ),

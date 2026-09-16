@@ -132,34 +132,34 @@ class OfflineOTAService {
     return null;
   }
 
-  static Future<void> pushFirmwareViaSocket(
-      Socket socket, String filePath) async {
-    try {
-      final file = File(filePath);
-      if (!await file.exists()) {
-        throw Exception("Firmware file not found at $filePath");
-      }
+  // static Future<void> pushFirmwareViaSocket(
+  //     Socket socket, String filePath) async {
+  //   try {
+  //     final file = File(filePath);
+  //     if (!await file.exists()) {
+  //       throw Exception("Firmware file not found at $filePath");
+  //     }
 
-      print('Offline OTA: Pushing firmware via Socket from $filePath');
+  //     print('Offline OTA: Pushing firmware via Socket from $filePath');
 
-      // IMPORTANT: The firmware must be updated to handle this raw binary stream!
-      // Currently, we just stream the file chunks.
-      final bytes = await file.readAsBytes();
+  //     // IMPORTANT: The firmware must be updated to handle this raw binary stream!
+  //     // Currently, we just stream the file chunks.
+  //     final bytes = await file.readAsBytes();
 
-      int chunkSize = 1024; // Send 1KB at a time
-      for (int i = 0; i < bytes.length; i += chunkSize) {
-        int end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
-        socket.add(bytes.sublist(i, end));
-        await Future.delayed(const Duration(
-            milliseconds: 20)); // Delay to prevent buffer overflow
-      }
+  //     int chunkSize = 1024; // Send 1KB at a time
+  //     for (int i = 0; i < bytes.length; i += chunkSize) {
+  //       int end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+  //       socket.add(bytes.sublist(i, end));
+  //       await Future.delayed(const Duration(
+  //           milliseconds: 20)); // Delay to prevent buffer overflow
+  //     }
 
-      print('Offline OTA: Push completed.');
-    } catch (e) {
-      print('Offline OTA: Failed to push firmware via Socket: $e');
-      rethrow;
-    }
-  }
+  //     print('Offline OTA: Push completed.');
+  //   } catch (e) {
+  //     print('Offline OTA: Failed to push firmware via Socket: $e');
+  //     rethrow;
+  //   }
+  // }
 
   static Future<void> pushFirmwareViaHttp(String ip, String filePath) async {
     try {
@@ -189,20 +189,24 @@ class OfflineOTAService {
 
       if (response.statusCode == 200) {
         final respStr = response.body;
-        print('Offline OTA: Push HTTP completed successfully. FW Response: $respStr');
+        print(
+            'Offline OTA: Push HTTP completed successfully. FW Response: $respStr');
       } else {
         throw Exception("HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
-      // Khi Firmware update thành công, nó thường sẽ lập tức Reset (khởi động lại) 
+      // Khi Firmware update thành công, nó thường sẽ lập tức Reset (khởi động lại)
       // Việc khởi động lại đột ngột sẽ ngắt kết nối HTTP khiến App văng lỗi SocketException / ClientException
       // Do đó, nếu gặp lỗi ngắt kết nối đột ngột, ta có thể ngầm hiểu là Mạch đã nạp thành công và đang Reset!
       final errorStr = e.toString().toLowerCase();
-      if (errorStr.contains('connection abort') || errorStr.contains('connection reset') || errorStr.contains('socketexception')) {
-        print('Offline OTA: Mạch ngắt kết nối đột ngột (Khả năng cao là update thành công và đang Reboot). Bỏ qua lỗi!');
+      if (errorStr.contains('connection abort') ||
+          errorStr.contains('connection reset') ||
+          errorStr.contains('socketexception')) {
+        print(
+            'Offline OTA: Mạch ngắt kết nối đột ngột (Khả năng cao là update thành công và đang Reboot). Bỏ qua lỗi!');
         return; // Coi như thành công
       }
-      
+
       print('Offline OTA: Failed to push firmware via HTTP: $e');
       rethrow;
     }
