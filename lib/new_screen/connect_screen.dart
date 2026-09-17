@@ -6,6 +6,7 @@ import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:new_renitek/new_screen/home/home_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
+import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:provider/provider.dart';
 
 class ConnectScreen extends StatefulWidget {
@@ -16,6 +17,13 @@ class ConnectScreen extends StatefulWidget {
 }
 
 class _ConnectScreenState extends State<ConnectScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Tự động đồng bộ Firmware khi mở App
+    OfflineOTAService.syncFirmwareBackground();
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -107,41 +115,41 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             height: MediaQuery.of(context).size.height * 0.5,
                             child: ListView.separated(
                               itemBuilder: (ctx, index) {
-                                  print('UI: Building item $index');
-                                  
-                                  // Tính toán tên thiết bị hiển thị chuẩn
-                                  final originalName =
-                                      provider.bleDeviceList[index].name;
-                                  final savedName =
-                                      provider.renameMap[originalName];
-                                  final displayDeviceName = savedName ??
-                                      (originalName.isNotEmpty
-                                          ? originalName
-                                          : 'Unknown Device (${provider.bleDeviceList[index].id.substring(0, 8)}...)');
+                                print('UI: Building item $index');
 
-                                  return DeviceConnectCard(
-                                    connect: () async {
-                                      await provider
-                                          .connectToDevice(
-                                        provider.bleDeviceList[index],
-                                      )
-                                          .then((value) {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => NewControllerScreen(
-                                              deviceParam: DeviceParam(
-                                                deviceName: displayDeviceName,
-                                                connectStatus: ConnectStatus.BLE,
-                                              ),
-                                              connectType: ConnectType.bluetooth,
+                                // Tính toán tên thiết bị hiển thị chuẩn
+                                final originalName =
+                                    provider.bleDeviceList[index].name;
+                                final savedName =
+                                    provider.renameMap[originalName];
+                                final displayDeviceName = savedName ??
+                                    (originalName.isNotEmpty
+                                        ? originalName
+                                        : 'Unknown Device (${provider.bleDeviceList[index].id.substring(0, 8)}...)');
+
+                                return DeviceConnectCard(
+                                  connect: () async {
+                                    await provider
+                                        .connectToDevice(
+                                      provider.bleDeviceList[index],
+                                    )
+                                        .then((value) {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => NewControllerScreen(
+                                            deviceParam: DeviceParam(
+                                              deviceName: displayDeviceName,
+                                              connectStatus: ConnectStatus.BLE,
                                             ),
+                                            connectType: ConnectType.bluetooth,
                                           ),
-                                        );
-                                      });
-                                    },
-                                    devicename: displayDeviceName,
-                                  );
-                                },
+                                        ),
+                                      );
+                                    });
+                                  },
+                                  devicename: displayDeviceName,
+                                );
+                              },
                               itemCount: provider.bleDeviceList.length,
                               separatorBuilder: (context, index) =>
                                   const Divider(),

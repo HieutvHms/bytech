@@ -524,10 +524,20 @@ class AppProvider extends ChangeNotifier {
                 'Không tải được file từ server: HTTP ${response.statusCode}');
           }
           final directory = await getApplicationDocumentsDirectory();
-          final tempPath = '${directory.path}/fw_temp_update.bin';
-          final tempFile = File(tempPath);
-          await tempFile.writeAsBytes(response.bodyBytes);
-          return tempPath;
+          // Lấy tên file gốc từ URL (VD: AV01_NEW_HW_12102025.bin)
+          final fileName = Uri.parse(url).pathSegments.last;
+          final permanentPath = '${directory.path}/fw_$fileName';
+          final permanentFile = File(permanentPath);
+          await permanentFile.writeAsBytes(response.bodyBytes);
+
+          // Kích hoạt tính năng DYNAMIC HARDWARE SHARING (Lưu chéo)
+          // Lưu file này vào Rổ cứu hộ của dòng máy này để dùng cho mạch khác Offline
+          if (hardwareVersion != null) {
+            await OfflineOTAService.saveDynamicHardwareMapping(
+                hardwareVersion!, url, permanentPath);
+          }
+
+          return permanentPath;
         } else {
           throw Exception('Không có file hoặc URL để cập nhật');
         }
@@ -644,6 +654,7 @@ class AppProvider extends ChangeNotifier {
     try {
       //Remove connect to BLE
       disconnectBLE();
+      tcpIP = ip;
 
       socketTCP = await socketService.connect(
         ip,
@@ -927,13 +938,51 @@ class AppProvider extends ChangeNotifier {
               );
             },
           );
+        } else if (hardwareVersion != null) {
+          // KHÔNG TÌM THẤY MAC, NHƯNG LẠI BIẾT HARDWARE VERSION!
+          // Thử check xem trong máy có tải sẵn file cứu hộ cho Hardware này chưa
+          Map<String, String>? autoFallbackData =
+              await OfflineOTAService.getFallbackOfflineFilePath(
+                  hardwareVersion!);
+          if (autoFallbackData != null) {
+            String autoFallbackFile = autoFallbackData['localFilePath']!;
+            String url = autoFallbackData['url']!;
+            String fileName = Uri.parse(url).pathSegments.last;
+
+            showDialog(
+              context: globalKey.currentContext!,
+              builder: (ctx) {
+                return AlertDialog(
+                  title: const Text('Cập Nhật Firmware Tự Động'),
+                  content: Text(
+                      'Tìm thấy bản cập nhật: $fileName lưu sẵn trong điện thoại. Bạn có muốn nạp không?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Bỏ qua')),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        updateFirmWare(offlineFilePath: autoFallbackFile);
+                      },
+                      child: const Text('Nạp Firmware'),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            // ĐÃ BIẾT HW nhưng KHÔNG CÓ FILE TẢI SẴN -> Báo lỗi luôn chứ không hiện danh sách cứu hộ nữa
+            showStatus(
+              buildContext: globalKey.currentContext!,
+              message:
+                  'Không có kết nối Internet và không tìm thấy bản cập nhật Offline cho dòng máy $hardwareVersion',
+              succcess: false,
+            );
+          }
         } else {
-          showStatus(
-            buildContext: globalKey.currentContext!,
-            message:
-                'Không có kết nối Internet. Vui lòng bật Internet để kiểm tra bản cập nhật',
-            succcess: false,
-          );
+          // KHÔNG XÁC ĐỊNH ĐƯỢC HW VÀ KHÔNG CÓ MAC -> Mới hiện Danh sách cứu hộ để User tự chọn
+          _showNoInternetFallbackPrompt();
         }
       }
 
@@ -946,6 +995,33 @@ class AppProvider extends ChangeNotifier {
       );
       return null;
     }
+  }
+
+  void _showNoInternetFallbackPrompt() {
+    showDialog(
+      context: globalKey.currentContext!,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Lỗi kết nối mạng'),
+          content: const Text(
+              'Không có Internet để kiểm tra mạch này.\nBạn có muốn chọn bản cập nhật đã lưu sẵn trong máy không?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Hủy')),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final listFirmwares =
+                    await CheckFirmwareService.getAllFirmwares();
+                _showFallbackFirmwareDialog(listFirmwares);
+              },
+              child: const Text('Chọn Firmware Cứu Hộ'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Helper methods for BLE commands
@@ -1020,9 +1096,19 @@ class AppProvider extends ChangeNotifier {
                   title: Text(fw['version'] ?? 'Unknown Version'),
                   subtitle: Text(fw['description'] ?? ''),
                   trailing: const Icon(Icons.download),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(ctx).pop();
                     if (fw['update_url'] != null) {
+                      if (socketTCP != null) {
+                        Map<String, String>? fallbackData =
+                            await OfflineOTAService.getFallbackOfflineFilePath(
+                                fw['version']);
+                        if (fallbackData != null) {
+                          String localFile = fallbackData['localFilePath']!;
+                          updateFirmWare(offlineFilePath: localFile);
+                          return;
+                        }
+                      }
                       updateFirmWare(url: fw['update_url']);
                     }
                   },

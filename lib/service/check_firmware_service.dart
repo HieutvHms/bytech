@@ -23,10 +23,10 @@ class CheckFirmwareService {
           final updateUrl = (response['update_url'] as String?) ?? "";
           final deviceMac = response['mac'] as String;
           bool noUpdate = response['no_update'] as bool? ?? false;
-          // Compare versions locally
-          // if (currentVersion.trim() == serverVersion.trim()) {
-          //   noUpdate = true;
-          // }
+          // Compare versions locally để tránh server báo ảo
+          if (currentVersion.trim() == serverVersion.trim()) {
+            noUpdate = true;
+          }
 
           final result = FirmwareCheckResult(
             deviceMac: deviceMac,

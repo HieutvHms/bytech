@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:flutter/material.dart';
 import 'package:new_renitek/const/asset_const.dart';
@@ -68,6 +69,24 @@ class NewControllerScreen extends StatelessWidget {
                   String? filePath = result.files.single.path;
                   if (filePath != null) {
                     provider.updateFirmWare(offlineFilePath: filePath);
+                  }
+                }
+              },
+            ),
+          if (provider.socketTCP != null && provider.isExpertMode)
+            IconButton(
+              icon: const Icon(Icons.language, color: CustomColor.neutralBlack),
+              tooltip: 'Open Web UI',
+              onPressed: () async {
+                final ip = provider.mdnsConnectedClient?.host ?? provider.tcpIP;
+                if (ip.isNotEmpty) {
+                  final url = Uri.parse('http://$ip');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open Web UI')),
+                    );
                   }
                 }
               },

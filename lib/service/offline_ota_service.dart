@@ -8,6 +8,7 @@ import 'package:new_renitek/service/check_firmware_service.dart';
 
 class OfflineOTAService {
   static const String otaDevicesKey = 'offline_ota_devices';
+  static const String otaFallbackKey = 'offline_ota_fallback_devices';
 
   static Future<void> saveDevice(String mac, String currentVersion) async {
     final prefs = await SharedPreferences.getInstance();
@@ -75,18 +76,26 @@ class OfflineOTAService {
                 print('Offline OTA: Failed to delete old firmware file: $e');
               }
             }
-            final response = await http.get(Uri.parse(result.updateUrl));
-            if (response.statusCode == 200) {
-              final directory = await getApplicationDocumentsDirectory();
-              final filePath =
-                  '${directory.path}/fw_${mac.replaceAll(':', '')}_${result.latestVersion}.bin';
-              final file = File(filePath);
-              await file.writeAsBytes(response.bodyBytes);
+            final directory = await getApplicationDocumentsDirectory();
+            // Lấy tên file gốc từ URL (VD: AV01_NEW_HW_12102025.bin)
+            final fileName = Uri.parse(result.updateUrl).pathSegments.last;
+            final filePath = '${directory.path}/fw_$fileName';
+            final file = File(filePath);
 
+            if (await file.exists()) {
+              print('Offline OTA: Firmware already downloaded for URL: ${result.updateUrl}');
               device['localFilePath'] = filePath;
               device['latestVersion'] = result.latestVersion;
               updated = true;
-              print('Offline OTA: Firmware downloaded and saved to $filePath');
+            } else {
+              final response = await http.get(Uri.parse(result.updateUrl));
+              if (response.statusCode == 200) {
+                await file.writeAsBytes(response.bodyBytes);
+                device['localFilePath'] = filePath;
+                device['latestVersion'] = result.latestVersion;
+                updated = true;
+                print('Offline OTA: Firmware downloaded and saved to $filePath');
+              }
             }
           }
         }
@@ -98,6 +107,134 @@ class OfflineOTAService {
     if (updated) {
       await prefs.setString(otaDevicesKey, json.encode(devices));
     }
+
+    // 2. Download Fallback Firmwares
+    try {
+      final fallbacks = await CheckFirmwareService.getAllFirmwares();
+      final fallbackDataStr = prefs.getString(otaFallbackKey);
+      Map<String, dynamic> fallbackCache = fallbackDataStr != null ? json.decode(fallbackDataStr) : {};
+      bool fallbackUpdated = false;
+
+      for (var fw in fallbacks) {
+        String version = fw['version'];
+        String url = fw['update_url'];
+        
+        // Nếu URL này chưa được tải hoặc bị mất file
+        bool needDownload = true;
+        if (fallbackCache.containsKey(version)) {
+          final cachedInfo = fallbackCache[version];
+          if (cachedInfo['url'] == url) {
+            final oldFile = File(cachedInfo['localFilePath']);
+            if (await oldFile.exists()) {
+              needDownload = false;
+            }
+          }
+        }
+
+        if (needDownload) {
+          print('Offline OTA: Downloading FALLBACK firmware $version from $url');
+          final response = await http.get(Uri.parse(url));
+          if (response.statusCode == 200) {
+            final directory = await getApplicationDocumentsDirectory();
+            final fileName = Uri.parse(url).pathSegments.last;
+            final filePath = '${directory.path}/fw_fallback_$fileName';
+            final file = File(filePath);
+            await file.writeAsBytes(response.bodyBytes);
+
+            fallbackCache[version] = {
+              'url': url,
+              'localFilePath': filePath,
+            };
+            fallbackUpdated = true;
+            print('Offline OTA: Fallback firmware downloaded to $filePath');
+          }
+        }
+      }
+
+      if (fallbackUpdated) {
+        await prefs.setString(otaFallbackKey, json.encode(fallbackCache));
+      }
+    } catch (e) {
+      print('Offline OTA: Failed to download fallback firmwares: $e');
+    }
+  }
+
+  static Future<void> saveDynamicHardwareMapping(String hardwareVersion, String url, String localFilePath) async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(otaFallbackKey);
+    Map<String, dynamic> fallbackCache = data != null ? json.decode(data) : {};
+
+    // Tạo key với tiền tố DYNAMIC_ và timestamp để phân biệt với 6 bản cứng và ưu tiên bản mới nhất
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    String key = 'DYNAMIC_${hardwareVersion}_$timestamp';
+    
+    fallbackCache[key] = {
+      'version': hardwareVersion,
+      'url': url,
+      'localFilePath': localFilePath,
+      'timestamp': timestamp,
+    };
+    
+    await prefs.setString(otaFallbackKey, json.encode(fallbackCache));
+    print('Offline OTA: Saved Dynamic Hardware Mapping for $hardwareVersion -> $localFilePath');
+  }
+
+  static Future<Map<String, String>?> getFallbackOfflineFilePath(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(otaFallbackKey);
+    if (data == null) return null;
+    
+    Map<String, dynamic> fallbackCache = json.decode(data);
+    
+    // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới để không bị trật chữ)
+    String normalizedVersion = version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+
+    // Lọc ra tất cả các key khớp với hardwareVersion
+    List<String> matchingKeys = [];
+    for (var key in fallbackCache.keys) {
+      String normalizedKey = key.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+      // Nếu Hardware khai báo (AV01NEWHW) khớp với tên file Cứu hộ (AV01NEWHW002)
+      if (normalizedKey.contains(normalizedVersion) || normalizedVersion.contains(normalizedKey)) {
+        matchingKeys.add(key);
+      }
+    }
+
+    if (matchingKeys.isEmpty) return null;
+
+    // Sắp xếp các key ưu tiên: 
+    // 1. Những file có tiền tố DYNAMIC_ (được người dùng tải thực tế) xếp trên các file Code cứng
+    // 2. Nếu cùng là DYNAMIC_, file nào có timestamp mới hơn thì xếp trên
+    matchingKeys.sort((a, b) {
+      bool isADynamic = a.startsWith('DYNAMIC_');
+      bool isBDynamic = b.startsWith('DYNAMIC_');
+      
+      if (isADynamic && !isBDynamic) return -1;
+      if (!isADynamic && isBDynamic) return 1;
+      
+      if (isADynamic && isBDynamic) {
+         // Trích xuất timestamp từ key
+         String timeA = a.split('_').last;
+         String timeB = b.split('_').last;
+         return timeB.compareTo(timeA); // Mới nhất xếp trước
+      }
+      return 0; // Cùng là code cứng thì giữ nguyên
+    });
+
+    // Thử lấy file đầu tiên (mới nhất), nếu file còn tồn tại thì dùng
+    for (var key in matchingKeys) {
+      final filePath = fallbackCache[key]['localFilePath'];
+      final url = fallbackCache[key]['url'];
+      final file = File(filePath);
+      if (await file.exists()) {
+        print('Offline OTA: Found Auto Fallback using key: $key');
+        return {
+          'localFilePath': filePath,
+          'url': url ?? '',
+        };
+      }
+    }
+    
+    return null;
   }
 
   static Future<Map<String, dynamic>?> getReadyOfflineUpdate(String mac,
