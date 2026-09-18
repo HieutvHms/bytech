@@ -903,6 +903,9 @@ class AppProvider extends ChangeNotifier {
           return null;
         }
 
+        /* 
+        // [TÍNH NĂNG CŨ] TẠM THỜI COMMENT LẠI
+        // Vì tính năng tải FW mới lưu theo Hardware Version chứ không lưu theo MAC nữa.
         final offlineData = await OfflineOTAService.getReadyOfflineUpdate(
             deviceMac,
             currentVersion: version);
@@ -938,7 +941,9 @@ class AppProvider extends ChangeNotifier {
               );
             },
           );
-        } else if (hardwareVersion != null) {
+        } else 
+        */
+        if (hardwareVersion != null) {
           // KHÔNG TÌM THẤY MAC, NHƯNG LẠI BIẾT HARDWARE VERSION!
           // Thử check xem trong máy có tải sẵn file cứu hộ cho Hardware này chưa
           Map<String, String>? autoFallbackData =
