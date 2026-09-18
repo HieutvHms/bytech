@@ -1088,12 +1088,6 @@ class AppProvider extends ChangeNotifier {
                               )
                             ],
                           ),
-                                  updateFirmWare(
-                                      offlineFilePath: autoFallbackFile);
-                                },
-                                child: const Text(
-                                  'Update',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ),
