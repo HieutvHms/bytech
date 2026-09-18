@@ -12,6 +12,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/const/values.dart';
+import 'package:new_renitek/const/custom_textstyle.dart';
+import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/models/data_bulletin.dart';
 import 'package:new_renitek/models/mdns_connected_model.dart';
 import 'package:new_renitek/models/saved_device_model.dart';
@@ -996,20 +998,19 @@ class AppProvider extends ChangeNotifier {
                         Container(
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
-                            color: Colors.blueAccent.withOpacity(0.1),
+                            color: CustomColor.primaryColor.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.system_update_alt_rounded,
                             size: 40,
-                            color: Colors.blueAccent,
+                            color: CustomColor.primaryColor,
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           'Cập Nhật Firmware',
-                          style: TextStyle(
-                            fontSize: 22.0,
+                          style: CustomTextStyle.h4Medium.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -1018,25 +1019,23 @@ class AppProvider extends ChangeNotifier {
                         Text(
                           'Tìm thấy bản cập nhật lưu sẵn trong máy:',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: Colors.grey, // Sử dụng Colors.grey thay vì Colors.grey[600] để chắc chắn không lỗi null safety trong mọi trường hợp
+                          style: CustomTextStyle.bodyMedium.copyWith(
+                            color: Colors.grey, 
                           ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF5F5F5), // Màu nền xám nhạt an toàn
+                            color: const Color(0xFFF5F5F5), 
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: const Color(0xFFE0E0E0)),
                           ),
                           child: Text(
                             fileName,
-                            style: const TextStyle(
-                              fontSize: 14.0,
+                            style: CustomTextStyle.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.blueAccent,
+                              color: CustomColor.primaryColor,
                             ),
                           ),
                         ),
@@ -1053,9 +1052,9 @@ class AppProvider extends ChangeNotifier {
                                   side: const BorderSide(color: Colors.grey),
                                 ),
                                 onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text(
+                                child: Text(
                                   'Bỏ qua',
-                                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                                  style: CustomTextStyle.bodyMedium.copyWith(color: Colors.grey, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -1063,7 +1062,7 @@ class AppProvider extends ChangeNotifier {
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent,
+                                  backgroundColor: CustomColor.primaryColor,
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
@@ -1074,9 +1073,9 @@ class AppProvider extends ChangeNotifier {
                                   Navigator.of(ctx).pop();
                                   updateFirmWare(offlineFilePath: autoFallbackFile);
                                 },
-                                child: const Text(
+                                child: Text(
                                   'Nạp Ngay',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: CustomTextStyle.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
