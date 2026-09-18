@@ -209,22 +209,27 @@ class OfflineOTAService {
     // Lọc ra tất cả các key khớp với hardwareVersion
     List<String> matchingKeys = [];
     for (var key in fallbackCache.keys) {
-      // Với DYNAMIC key: "DYNAMIC_AV01_NEW_HW_1789638933762"
-      // → bỏ prefix "DYNAMIC_" và suffix "_timestamp" → chỉ lấy "AV01_NEW_HW"
-      // Với key thường: "AV01-NEW_HW-002" → giữ nguyên
       String effectiveKey = key;
+
       if (key.startsWith('DYNAMIC_')) {
-        // Lấy phần hwType nằm giữa: bỏ "DYNAMIC_" đầu, bỏ "_timestamp" cuối
-        final withoutPrefix = key.substring('DYNAMIC_'.length); // "AV01_NEW_HW_1789638933762"
+        // DYNAMIC key: "DYNAMIC_AV01_NEW_HW_1789638933762"
+        // → bỏ "DYNAMIC_" đầu và "_timestamp" cuối → lấy "AV01_NEW_HW"
+        final withoutPrefix = key.substring('DYNAMIC_'.length);
         final lastUnderscoreIdx = withoutPrefix.lastIndexOf('_');
         effectiveKey = lastUnderscoreIdx > 0
-            ? withoutPrefix.substring(0, lastUnderscoreIdx) // "AV01_NEW_HW"
+            ? withoutPrefix.substring(0, lastUnderscoreIdx)
             : withoutPrefix;
+      } else {
+        // Hardcoded key: "AV01-NEW_HW-002" hoặc "AV03-OLD_HW_0_3"
+        // → bỏ phần số revision cuối cùng sau dấu - hoặc _
+        // VD: "AV01-NEW_HW-002" → "AV01-NEW_HW"
+        //     "AV03-OLD_HW_0_3" → giữ nguyên nếu không có số thuần cuối
+        effectiveKey = key.replaceAll(RegExp(r'[-_]\d+$'), '');
       }
 
       // Chuẩn hóa: xóa hết - và _ rồi so sánh
       String normalizedKey = effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
-      // VD: "AV01NEWHW" contains trong "AV01NEWHW003" → MATCH
+      // VD: "AV01NEWHW".contains trong "AV01NEWHW003" → MATCH
       if (normalizedKey.contains(normalizedVersion) || normalizedVersion.contains(normalizedKey)) {
         matchingKeys.add(key);
       }
