@@ -413,7 +413,8 @@ class AppProvider extends ChangeNotifier {
         final commandBytes = getCommandByte(controlType);
         _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: commandBytes);
-      } else if (connectStatus == ConnectStatus.SOCKET && tcpIP == '192.168.4.1') {
+      } else if (connectStatus == ConnectStatus.SOCKET &&
+          tcpIP == '192.168.1.1') {
         // Use HTTP POST for Offline AP mode
         final commandBytes = getCommandByte(controlType);
         final ip = tcpIP;
