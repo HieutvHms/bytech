@@ -12,8 +12,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/const/values.dart';
-import 'package:new_renitek/const/custom_textstyle.dart';
-import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/models/data_bulletin.dart';
 import 'package:new_renitek/models/mdns_connected_model.dart';
 import 'package:new_renitek/models/saved_device_model.dart';
@@ -976,106 +974,90 @@ class AppProvider extends ChangeNotifier {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  elevation: 0,
-                  backgroundColor: Colors.transparent,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10.0,
-                          offset: Offset(0.0, 10.0),
-                        ),
-                      ],
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: CustomColor.primaryColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.system_update_alt_rounded,
-                            size: 40,
-                            color: CustomColor.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Tiêu đề đậm - căn giữa
+                        const Text(
                           'Cập Nhật Firmware',
-                          style: CustomTextStyle.h4Medium.copyWith(
-                            fontWeight: FontWeight.bold,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 15),
-                        Text(
-                          'Tìm thấy bản cập nhật lưu sẵn trong máy:',
-                          textAlign: TextAlign.center,
-                          style: CustomTextStyle.bodyMedium.copyWith(
-                            color: Colors.grey, 
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF5F5F5), 
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE0E0E0)),
-                          ),
-                          child: Text(
-                            fileName,
-                            style: CustomTextStyle.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: CustomColor.primaryColor,
+                        const SizedBox(height: 12),
+
+                        // Nội dung - căn trái
+                        RichText(
+                          textAlign: TextAlign.left,
+                          text: TextSpan(
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              height: 1.45,
+                              color: Colors.grey[700],
                             ),
+                            children: [
+                              const TextSpan(text: 'Tìm thấy bản cập nhật '),
+                              TextSpan(
+                                text: fileName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const TextSpan(
+                                  text:
+                                      ' đã lưu sẵn trong điện thoại. Bạn có muốn nạp ngay không?'),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 24),
+
+                        // Hai nút cùng 1 hàng, chia đều
                         Row(
-                          children: <Widget>[
+                          children: [
                             Expanded(
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  foregroundColor: Colors.grey[700],
+                                  side: BorderSide(color: Colors.grey[300]!),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8), // Đã giảm từ 13 xuống 8
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  side: const BorderSide(color: Colors.grey),
                                 ),
                                 onPressed: () => Navigator.of(ctx).pop(),
-                                child: Text(
-                                  'Bỏ qua',
-                                  style: CustomTextStyle.bodyMedium.copyWith(color: Colors.grey, fontWeight: FontWeight.bold),
+                                child: const Text(
+                                  'Later',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: CustomColor.primaryColor,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8), // Đã giảm từ 13 xuống 8
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  elevation: 0,
                                 ),
                                 onPressed: () {
                                   Navigator.of(ctx).pop();
-                                  updateFirmWare(offlineFilePath: autoFallbackFile);
+                                  updateFirmWare(
+                                      offlineFilePath: autoFallbackFile);
                                 },
-                                child: Text(
-                                  'Nạp Ngay',
-                                  style: CustomTextStyle.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                child: const Text(
+                                  'Update',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ),
