@@ -167,10 +167,11 @@ class OfflineOTAService {
     // Key cố định cho dòng máy (ghi đè thay vì tạo mới)
     String key = 'DYNAMIC_$hardwareVersion';
     
-    // Nếu đã có file cũ, xoá file vật lý đi cho đỡ tốn dung lượng
+    // Nếu đã có file cũ (và file cũ khác file mới), xoá file vật lý đi cho đỡ tốn dung lượng
     if (fallbackCache.containsKey(key)) {
       final oldPath = fallbackCache[key]['localFilePath'];
-      if (oldPath != null) {
+      // Cần check oldPath != localFilePath vì nếu tải lại cùng 1 file, file mới vừa tải xong sẽ bị xoá nhầm
+      if (oldPath != null && oldPath != localFilePath) {
         final oldFile = File(oldPath);
         if (await oldFile.exists()) {
           try {
