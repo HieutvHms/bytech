@@ -525,6 +525,18 @@ class AppProvider extends ChangeNotifier {
           // OFFLINE: Dùng file đã lưu sẵn trong máy
           return offlineFilePath;
         } else if (url != null) {
+          // CHẶN TẢI LẠI: Kiểm tra xem URL này đã được lưu trong bộ nhớ DYNAMIC chưa
+          if (hardwareVersion != null) {
+            final fallbackData = await OfflineOTAService.getFallbackOfflineFilePath(hardwareVersion!);
+            if (fallbackData != null && fallbackData['url'] == url) {
+              final cachedFile = File(fallbackData['localFilePath']!);
+              if (await cachedFile.exists()) {
+                print('Đã có sẵn file trong máy, bỏ qua download!');
+                return fallbackData['localFilePath']!;
+              }
+            }
+          }
+
           // ONLINE: Tải file .bin từ URL về máy trước rồi push qua HTTP
           showStatus(
             buildContext: globalKey.currentContext!,

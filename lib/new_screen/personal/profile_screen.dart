@@ -28,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
                   style: CustomTextStyle.h4Bold,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -58,7 +58,7 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.only(left: 48),
                 child: Text(
@@ -98,7 +98,7 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.only(left: 48),
                 child: Text(
@@ -156,9 +156,9 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 36),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
                     ElevatedButton.icon(
@@ -169,7 +169,7 @@ class ProfileScreen extends StatelessWidget {
                         backgroundColor: CustomColor.primaryColor,
                         minimumSize: const Size.fromHeight(50),
                       ),
-                      label: const Text('Tải FW Mới Nhất (Tự động API)',
+                      label: const Text('Tải FW Mới Nhất (Server)',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -193,17 +193,17 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Container(
-                alignment: Alignment.center,
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                    color: CustomColor.neutralWhite90,
-                    borderRadius: BorderRadius.circular(12)),
-                child: const Text('Log out'),
-              )
+              // const SizedBox(height: 10),
+              // Container(
+              //   alignment: Alignment.center,
+              //   margin:
+              //       const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              //   padding: const EdgeInsets.symmetric(vertical: 12),
+              //   decoration: BoxDecoration(
+              //       color: CustomColor.neutralWhite90,
+              //       borderRadius: BorderRadius.circular(12)),
+              //   child: const Text('Log out'),
+              // )
             ],
           ),
         ),
@@ -257,7 +257,8 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       // CHẶN TẢI LẠI: Kiểm tra xem file đã tồn tại trong máy chưa
       if (await File(localPath).exists()) {
         // Đã có file -> Chỉ cập nhật danh bạ rồi BỎ QUA tải
-        await OfflineOTAService.saveDynamicHardwareMapping(hwType, url, localPath);
+        await OfflineOTAService.saveDynamicHardwareMapping(
+            hwType, url, localPath);
         successCount++;
         continue; // Chuyển sang file tiếp theo luôn
       }
