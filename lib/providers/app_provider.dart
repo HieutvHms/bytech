@@ -970,22 +970,121 @@ class AppProvider extends ChangeNotifier {
             showDialog(
               context: globalKey.currentContext!,
               builder: (ctx) {
-                return AlertDialog(
-                  title: const Text('Cập Nhật Firmware Tự Động'),
-                  content: Text(
-                      'Tìm thấy bản cập nhật: $fileName lưu sẵn trong điện thoại. Bạn có muốn nạp không?'),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Bỏ qua')),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        updateFirmWare(offlineFilePath: autoFallbackFile);
-                      },
-                      child: const Text('Nạp Firmware'),
+                return Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10.0,
+                          offset: Offset(0.0, 10.0),
+                        ),
+                      ],
                     ),
-                  ],
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.system_update_alt_rounded,
+                            size: 40,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Cập Nhật Firmware',
+                          style: TextStyle(
+                            fontSize: 22.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        Text(
+                          'Tìm thấy bản cập nhật lưu sẵn trong máy:',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.grey, // Sử dụng Colors.grey thay vì Colors.grey[600] để chắc chắn không lỗi null safety trong mọi trường hợp
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F5F5), // Màu nền xám nhạt an toàn
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE0E0E0)),
+                          ),
+                          child: Text(
+                            fileName,
+                            style: const TextStyle(
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  side: const BorderSide(color: Colors.grey),
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text(
+                                  'Bỏ qua',
+                                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  updateFirmWare(offlineFilePath: autoFallbackFile);
+                                },
+                                child: const Text(
+                                  'Nạp Ngay',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             );

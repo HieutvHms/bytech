@@ -83,7 +83,8 @@ class OfflineOTAService {
             final file = File(filePath);
 
             if (await file.exists()) {
-              print('Offline OTA: Firmware already downloaded for URL: ${result.updateUrl}');
+              print(
+                  'Offline OTA: Firmware already downloaded for URL: ${result.updateUrl}');
               device['localFilePath'] = filePath;
               device['latestVersion'] = result.latestVersion;
               updated = true;
@@ -94,7 +95,8 @@ class OfflineOTAService {
                 device['localFilePath'] = filePath;
                 device['latestVersion'] = result.latestVersion;
                 updated = true;
-                print('Offline OTA: Firmware downloaded and saved to $filePath');
+                print(
+                    'Offline OTA: Firmware downloaded and saved to $filePath');
               }
             }
           }
@@ -112,13 +114,14 @@ class OfflineOTAService {
     try {
       final fallbacks = await CheckFirmwareService.getAllFirmwares();
       final fallbackDataStr = prefs.getString(otaFallbackKey);
-      Map<String, dynamic> fallbackCache = fallbackDataStr != null ? json.decode(fallbackDataStr) : {};
+      Map<String, dynamic> fallbackCache =
+          fallbackDataStr != null ? json.decode(fallbackDataStr) : {};
       bool fallbackUpdated = false;
 
       for (var fw in fallbacks) {
         String version = fw['version'];
         String url = fw['update_url'];
-        
+
         // Nếu URL này chưa được tải hoặc bị mất file
         bool needDownload = true;
         if (fallbackCache.containsKey(version)) {
@@ -132,7 +135,8 @@ class OfflineOTAService {
         }
 
         if (needDownload) {
-          print('Offline OTA: Downloading FALLBACK firmware $version from $url');
+          print(
+              'Offline OTA: Downloading FALLBACK firmware $version from $url');
           final response = await http.get(Uri.parse(url));
           if (response.statusCode == 200) {
             final directory = await getApplicationDocumentsDirectory();
@@ -159,14 +163,15 @@ class OfflineOTAService {
     }
   }
 
-  static Future<void> saveDynamicHardwareMapping(String hardwareVersion, String url, String localFilePath) async {
+  static Future<void> saveDynamicHardwareMapping(
+      String hardwareVersion, String url, String localFilePath) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(otaFallbackKey);
     Map<String, dynamic> fallbackCache = data != null ? json.decode(data) : {};
 
     // Key cố định cho dòng máy (ghi đè thay vì tạo mới)
     String key = 'DYNAMIC_$hardwareVersion';
-    
+
     // Nếu đã có file cũ (và file cũ khác file mới), xoá file vật lý đi cho đỡ tốn dung lượng
     if (fallbackCache.containsKey(key)) {
       final oldPath = fallbackCache[key]['localFilePath'];
@@ -183,16 +188,17 @@ class OfflineOTAService {
         }
       }
     }
-    
+
     // Lưu thông tin file mới
     fallbackCache[key] = {
       'version': hardwareVersion,
       'url': url,
       'localFilePath': localFilePath,
     };
-    
+
     await prefs.setString(otaFallbackKey, json.encode(fallbackCache));
-    print('Offline OTA: Saved Dynamic Hardware Mapping for $hardwareVersion -> $localFilePath');
+    print(
+        'Offline OTA: Saved Dynamic Hardware Mapping for $hardwareVersion -> $localFilePath');
   }
 
   /// Trích xuất số phiên bản cuối cùng trong chuỗi
@@ -209,16 +215,17 @@ class OfflineOTAService {
     return int.tryParse(matches.last.group(0)!) ?? 0;
   }
 
-
-  static Future<Map<String, String>?> getFallbackOfflineFilePath(String version) async {
+  static Future<Map<String, String>?> getFallbackOfflineFilePath(
+      String version) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(otaFallbackKey);
     if (data == null) return null;
-    
+
     Map<String, dynamic> fallbackCache = json.decode(data);
-    
+
     // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới)
-    String normalizedVersion = version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+    String normalizedVersion =
+        version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
     // Trích xuất số phiên bản hiện tại của mạch
     int deviceVersionNum = extractVersionNumber(version);
 
@@ -240,21 +247,23 @@ class OfflineOTAService {
       }
 
       // Chuẩn hóa: xóa hết - và _ rồi so sánh
-      String normalizedKey = effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+      String normalizedKey =
+          effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
       // VD: "AV01NEWHW".contains trong "AV01NEWHW003" → MATCH
-      if (normalizedKey.contains(normalizedVersion) || normalizedVersion.contains(normalizedKey)) {
+      if (normalizedKey.contains(normalizedVersion) ||
+          normalizedVersion.contains(normalizedKey)) {
         matchingKeys.add(key);
       }
     }
 
     if (matchingKeys.isEmpty) return null;
 
-    // Sắp xếp các key ưu tiên: 
+    // Sắp xếp các key ưu tiên:
     // Những file có tiền tố DYNAMIC_ (được tải thực tế) xếp trên các file Code cứng
     matchingKeys.sort((a, b) {
       bool isADynamic = a.startsWith('DYNAMIC_');
       bool isBDynamic = b.startsWith('DYNAMIC_');
-      
+
       if (isADynamic && !isBDynamic) return -1;
       if (!isADynamic && isBDynamic) return 1;
       return 0;
@@ -273,11 +282,13 @@ class OfflineOTAService {
           : filePath.split('/').last;
       int fileVersionNum = extractVersionNumber(fileName);
 
-      print('Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $fileName)');
+      print(
+          'Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $fileName)');
 
       if (fileVersionNum != deviceVersionNum) {
         // File khác version (lớn hơn hoặc nhỏ hơn đều cho nạp) → hiện thông báo cập nhật!
-        print('Offline OTA: Found different version! File ($fileVersionNum) != Device ($deviceVersionNum). Key: $key');
+        print(
+            'Offline OTA: Found different version! File ($fileVersionNum) != Device ($deviceVersionNum). Key: $key');
         return {
           'localFilePath': filePath,
           'url': url,
@@ -402,18 +413,21 @@ class OfflineOTAService {
     }
   }
 
-  static Future<void> controlDeviceViaHttp(String ip, List<int> commandBytes) async {
+  static Future<void> controlDeviceViaHttp(
+      String ip, List<int> commandBytes) async {
     try {
       final url = Uri.parse('http://$ip/control');
-      
+
       print('HTTP Control: Sending POST request to $url');
-      var response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-        body: commandBytes,
-      ).timeout(const Duration(seconds: 3));
+      var response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/octet-stream',
+            },
+            body: commandBytes,
+          )
+          .timeout(const Duration(seconds: 3));
 
       if (response.statusCode != 200) {
         throw Exception("HTTP Error: ${response.statusCode}");
