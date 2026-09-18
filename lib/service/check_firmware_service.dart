@@ -68,6 +68,15 @@ class CheckFirmwareService {
   ///   {"hardware": "AV02_NEW_HW", "version": "12172025", "url": "http://server/AV02_NEW_HW_12172025.bin"}
   /// ]
   static Future<List<Map<String, dynamic>>> getLatestFirmwaresFromServer() async {
+    // FIX CỨNG ĐỂ TEST (Mock API Response)
+    // Trả về 1 file có sẵn trên server để tải thành công và lưu vào DYNAMIC
+    return [
+      {
+        "url": "http://27.71.226.192:2602/AV01_NEW_HW_12172025.bin" 
+      }
+    ];
+
+    /* Đoạn code gọi API thật tạm ẩn đi
     const String apiUrl = 'http://27.71.226.192:2602/api/firmware/latest';
     try {
       final response = await http
@@ -82,6 +91,7 @@ class CheckFirmwareService {
     }
     // Fallback: dùng danh sách cứng khi API chưa sẵn sàng
     return getAllFirmwares();
+    */
   }
 
   static Future<List<Map<String, dynamic>>> getAllFirmwares() async {
