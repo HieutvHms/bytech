@@ -163,7 +163,7 @@ class ProfileScreen extends StatelessWidget {
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.system_update_alt, color: Colors.white),
                   onPressed: () async {
-                    // Hiện dialog đang tải
+                    // Hiện dialog đang kiểm tra
                     showDialog(
                       context: context,
                       barrierDismissible: false,
@@ -179,11 +179,11 @@ class ProfileScreen extends StatelessWidget {
                     );
 
                     try {
-                      // Bước 1: Gọi API lấy danh sách FW mới nhất
+                      // Gọi API lấy danh sách FW mới nhất từ server
                       final firmwares = await CheckFirmwareService.getLatestFirmwaresFromServer();
 
                       if (!context.mounted) return;
-                      Navigator.pop(context); // Tắt dialog đang tải
+                      Navigator.pop(context); // Tắt dialog kiểm tra
 
                       if (firmwares.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -193,97 +193,61 @@ class ProfileScreen extends StatelessWidget {
                         return;
                       }
 
-                      // Bước 2: Hiện danh sách FW để người dùng chọn tải
-                      if (!context.mounted) return;
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Chọn Firmware để Tải Về'),
-                          content: SizedBox(
-                            width: double.maxFinite,
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              itemCount: firmwares.length,
-                              separatorBuilder: (_, __) => const Divider(height: 1),
-                              itemBuilder: (_, i) {
-                                final fw = firmwares[i];
-                                final hw = fw['hardware'] ?? fw['version'] ?? 'Unknown';
-                                final url = fw['url'] ?? fw['update_url'] ?? '';
-                                final fileName = Uri.parse(url).pathSegments.last;
-                                return ListTile(
-                                  leading: const Icon(Icons.memory, color: Colors.blue),
-                                  title: Text(hw, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(fileName, style: const TextStyle(fontSize: 12)),
-                                  trailing: const Icon(Icons.download, color: Colors.green),
-                                  onTap: () async {
-                                    Navigator.pop(ctx); // Đóng dialog danh sách
+                      // Server đã trả về bản mới nhất → tự động tải tất cả về
+                      int successCount = 0;
 
-                                    // Hiện dialog đang tải file
-                                    showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (_) => AlertDialog(
-                                        content: Row(
-                                          children: [
-                                            const CircularProgressIndicator(),
-                                            const SizedBox(width: 16),
-                                            Expanded(child: Text('Đang tải $fileName...')),
-                                          ],
-                                        ),
-                                      ),
-                                    );
+                      for (final fw in firmwares) {
+                        final hw = fw['hardware'] ?? fw['version'] ?? 'Unknown';
+                        final url = fw['url'] ?? fw['update_url'] ?? '';
+                        if (url.isEmpty) continue;
+                        final fileName = Uri.parse(url).pathSegments.last;
 
-                                    try {
-                                      final res = await http
-                                          .get(Uri.parse(url))
-                                          .timeout(const Duration(seconds: 60));
-
-                                      if (res.statusCode == 200) {
-                                        final dir = await getApplicationDocumentsDirectory();
-                                        final localPath = '${dir.path}/$fileName';
-                                        await File(localPath).writeAsBytes(res.bodyBytes);
-
-                                        await OfflineOTAService.saveDynamicHardwareMapping(
-                                          hw, url, localPath);
-
-                                        if (context.mounted) Navigator.pop(context);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                            content: Text('Đã tải xong: $fileName'),
-                                            backgroundColor: Colors.green,
-                                          ));
-                                        }
-                                      } else {
-                                        if (context.mounted) Navigator.pop(context);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                            content: Text('Lỗi Server: ${res.statusCode}'),
-                                            backgroundColor: Colors.red,
-                                          ));
-                                        }
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) Navigator.pop(context);
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                          content: Text('Vui lòng kết nối Internet!'),
-                                          backgroundColor: Colors.red,
-                                        ));
-                                      }
-                                    }
-                                  },
-                                );
-                              },
+                        // Hiện progress từng file
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => AlertDialog(
+                              content: Row(
+                                children: [
+                                  const CircularProgressIndicator(),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: Text('Đang tải $fileName...')),
+                                ],
+                              ),
                             ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('Hủy'),
-                            ),
-                          ],
-                        ),
-                      );
+                          );
+                        }
+
+                        try {
+                          final res = await http
+                              .get(Uri.parse(url))
+                              .timeout(const Duration(seconds: 60));
+
+                          if (context.mounted) Navigator.pop(context);
+
+                          if (res.statusCode == 200) {
+                            final dir = await getApplicationDocumentsDirectory();
+                            final localPath = '${dir.path}/$fileName';
+                            await File(localPath).writeAsBytes(res.bodyBytes);
+                            await OfflineOTAService.saveDynamicHardwareMapping(hw, url, localPath);
+                            successCount++;
+                          }
+                        } catch (_) {
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                      }
+
+                      // Thông báo kết quả tổng
+                      if (context.mounted) {
+                        final msg = successCount > 0
+                            ? 'Đã tải xong $successCount file FW mới nhất!'
+                            : 'Tải thất bại. Vui lòng kiểm tra kết nối!';
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(msg),
+                          backgroundColor: successCount > 0 ? Colors.green : Colors.red,
+                        ));
+                      }
                     } catch (e) {
                       if (context.mounted) Navigator.pop(context);
                       if (context.mounted) {
