@@ -8,6 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:http/http.dart' as http;
+import 'package:new_renitek/const/custom_color.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
@@ -527,7 +528,9 @@ class AppProvider extends ChangeNotifier {
         } else if (url != null) {
           // CHẶN TẢI LẠI: Kiểm tra xem URL này đã được lưu trong bộ nhớ DYNAMIC chưa
           if (hardwareVersion != null) {
-            final fallbackData = await OfflineOTAService.getFallbackOfflineFilePath(hardwareVersion!);
+            final fallbackData =
+                await OfflineOTAService.getFallbackOfflineFilePath(
+                    hardwareVersion!);
             if (fallbackData != null && fallbackData['url'] == url) {
               final cachedFile = File(fallbackData['localFilePath']!);
               if (await cachedFile.exists()) {
@@ -974,127 +977,131 @@ class AppProvider extends ChangeNotifier {
           Map<String, String>? autoFallbackData =
               await OfflineOTAService.getFallbackOfflineFilePath(
                   hardwareVersion!);
-                  
+
           if (autoFallbackData != null) {
             String autoFallbackFile = autoFallbackData['localFilePath']!;
             String url = autoFallbackData['url']!;
             String fileName = Uri.parse(url).pathSegments.last;
-            
+
             // So sánh tên file (đã tải) với version của mạch
             // Ví dụ file: AV03_NEW_HW_12102025.bin -> Bỏ đuôi .bin
             String fileVersion = fileName.replaceAll('.bin', '');
-            
+
             if (fileVersion != version) {
               showDialog(
-                context: globalKey.currentContext!,
-                builder: (ctx) {
-                  return Dialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Cập Nhật Firmware',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                height: 1.45,
-                                color: Colors.grey[700],
-                              ),
-                              children: [
-                                const TextSpan(text: 'Tìm thấy bản '),
-                                TextSpan(
-                                  text: fileName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const TextSpan(
-                                    text:
-                                        ' đã lưu sẵn trong điện thoại.\n\nBản hiện tại của mạch:\n'),
-                                TextSpan(
-                                  text: version ?? 'Không xác định',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.redAccent,
-                                  ),
-                                ),
-                                const TextSpan(text: '\n\nBạn có muốn nạp ngay không?'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
+                  context: globalKey.currentContext!,
+                  builder: (ctx) {
+                    return Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.grey[700],
-                                    side: BorderSide(color: Colors.grey[300]!),
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  onPressed: () => Navigator.of(ctx).pop(),
-                                  child: const Text(
-                                    'Later',
-                                    style: TextStyle(fontWeight: FontWeight.w500),
-                                  ),
+                              const Text(
+                                'Cập Nhật Firmware',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: CustomColor.primaryColor,
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                              const SizedBox(height: 16),
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    height: 1.45,
+                                    color: Colors.grey[700],
                                   ),
-                                  onPressed: () {
-                                    Navigator.of(ctx).pop();
-                                    updateFirmWare(
-                                        offlineFilePath: autoFallbackFile,
-                                        url: url);
-                                  },
-                                  child: const Text(
-                                    'Nạp Ngay',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                  children: [
+                                    const TextSpan(text: 'Tìm thấy bản '),
+                                    TextSpan(
+                                      text: fileName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black87,
+                                      ),
                                     ),
-                                  ),
+                                    const TextSpan(
+                                        text:
+                                            ' đã lưu sẵn trong điện thoại.\nBản hiện tại của mạch:\n'),
+                                    TextSpan(
+                                      text: version ?? 'Không xác định',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                        text: '\nBạn có muốn nạp ngay không?'),
+                                  ],
                                 ),
-                              )
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.grey[700],
+                                        side: BorderSide(
+                                            color: Colors.grey[300]!),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      onPressed: () => Navigator.of(ctx).pop(),
+                                      child: const Text(
+                                        'Later',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor:
+                                            CustomColor.primaryColor,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(ctx).pop();
+                                        updateFirmWare(
+                                            offlineFilePath: autoFallbackFile,
+                                            url: url);
+                                      },
+                                      child: const Text(
+                                        'Update',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
+                        ));
+                  });
+            }
           } else {
             // ĐÃ BIẾT HW nhưng KHÔNG CÓ FILE TẢI SẴN -> Báo lỗi luôn chứ không hiện danh sách cứu hộ nữa
             showStatus(
