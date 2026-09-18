@@ -209,8 +209,22 @@ class OfflineOTAService {
     // Lọc ra tất cả các key khớp với hardwareVersion
     List<String> matchingKeys = [];
     for (var key in fallbackCache.keys) {
-      String normalizedKey = key.replaceAll('-', '').replaceAll('_', '').toUpperCase();
-      // Nếu Hardware khai báo (AV01NEWHW) khớp với tên file Cứu hộ (AV01NEWHW002)
+      // Với DYNAMIC key: "DYNAMIC_AV01_NEW_HW_1789638933762"
+      // → bỏ prefix "DYNAMIC_" và suffix "_timestamp" → chỉ lấy "AV01_NEW_HW"
+      // Với key thường: "AV01-NEW_HW-002" → giữ nguyên
+      String effectiveKey = key;
+      if (key.startsWith('DYNAMIC_')) {
+        // Lấy phần hwType nằm giữa: bỏ "DYNAMIC_" đầu, bỏ "_timestamp" cuối
+        final withoutPrefix = key.substring('DYNAMIC_'.length); // "AV01_NEW_HW_1789638933762"
+        final lastUnderscoreIdx = withoutPrefix.lastIndexOf('_');
+        effectiveKey = lastUnderscoreIdx > 0
+            ? withoutPrefix.substring(0, lastUnderscoreIdx) // "AV01_NEW_HW"
+            : withoutPrefix;
+      }
+
+      // Chuẩn hóa: xóa hết - và _ rồi so sánh
+      String normalizedKey = effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+      // VD: "AV01NEWHW" contains trong "AV01NEWHW003" → MATCH
       if (normalizedKey.contains(normalizedVersion) || normalizedVersion.contains(normalizedKey)) {
         matchingKeys.add(key);
       }
