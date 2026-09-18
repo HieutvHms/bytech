@@ -60,6 +60,30 @@ class CheckFirmwareService {
     }
   }
 
+  /// Gọi API lên server để lấy danh sách FW mới nhất cho tất cả dòng máy
+  /// BE cần tạo endpoint: GET /api/firmware/latest
+  /// Response mẫu:
+  /// [
+  ///   {"hardware": "AV01_NEW_HW", "version": "12172025", "url": "http://server/AV01_NEW_HW_12172025.bin"},
+  ///   {"hardware": "AV02_NEW_HW", "version": "12172025", "url": "http://server/AV02_NEW_HW_12172025.bin"}
+  /// ]
+  static Future<List<Map<String, dynamic>>> getLatestFirmwaresFromServer() async {
+    const String apiUrl = 'http://27.71.226.192:2602/api/firmware/latest';
+    try {
+      final response = await http
+          .get(Uri.parse(apiUrl))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      print('getLatestFirmwaresFromServer: Lỗi gọi API, dùng fallback. Error: $e');
+    }
+    // Fallback: dùng danh sách cứng khi API chưa sẵn sàng
+    return getAllFirmwares();
+  }
+
   static Future<List<Map<String, dynamic>>> getAllFirmwares() async {
     // Hard-coded list of firmwares provided by partner
     final Map<String, String> fallbackFirmwareMap = {

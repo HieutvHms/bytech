@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/const/custom_textstyle.dart';
 import 'package:new_renitek/providers/app_provider.dart';
+import 'package:new_renitek/service/check_firmware_service.dart';
 import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:provider/provider.dart';
 
@@ -156,62 +157,137 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              // NÚT TEST TẠM THỜI DÀNH CHO BẠN
+              // NÚT KIỂM TRA & TẢI FW MỚI NHẤT TỪ SERVER
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 36),
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.system_update_alt, color: Colors.white),
                   onPressed: () async {
+                    // Hiện dialog đang tải
                     showDialog(
                       context: context,
-                      builder: (ctx) =>
-                          const Center(child: CircularProgressIndicator()),
+                      barrierDismissible: false,
+                      builder: (ctx) => const AlertDialog(
+                        content: Row(
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(width: 16),
+                            Expanded(child: Text('Đang kiểm tra FW mới nhất...')),
+                          ],
+                        ),
+                      ),
                     );
-                    // Giả lập Server vừa trả về file mới tinh cho AV01_NEW_HW
-                    const hardwareVersion = "AV01_NEW_HW";
-                    // Đổi thành URL có thật (đuôi 12102025) để tải thành công
-                    const url =
-                        "http://27.71.226.192:2602/AV01_NEW_HW_12102025.bin";
+
                     try {
-                      final response = await http
-                          .get(Uri.parse(url))
-                          .timeout(const Duration(seconds: 15));
-                      if (response.statusCode == 200) {
-                        final directory =
-                            await getApplicationDocumentsDirectory();
-                        final permanentPath =
-                            '${directory.path}/fw_TEST_AV01_NEW_HW.bin';
-                        final permanentFile = File(permanentPath);
-                        await permanentFile.writeAsBytes(response.bodyBytes);
+                      // Bước 1: Gọi API lấy danh sách FW mới nhất
+                      final firmwares = await CheckFirmwareService.getLatestFirmwaresFromServer();
 
-                        // Kích hoạt hàm lưu Dynamic
-                        await OfflineOTAService.saveDynamicHardwareMapping(
-                            hardwareVersion, url, permanentPath);
+                      if (!context.mounted) return;
+                      Navigator.pop(context); // Tắt dialog đang tải
 
-                        if (context.mounted) Navigator.pop(context); // Tắt xoay
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(const SnackBar(
-                            content: Text(
-                                'TEST: Đã tải xong file DYNAMIC cho AV01_NEW_HW!'),
-                            backgroundColor: Colors.green,
-                          ));
-                        }
-                      } else {
-                        if (context.mounted)
-                          Navigator.pop(context); // Tắt xoay nếu lỗi 404
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('Lỗi Server: ${response.statusCode}'),
-                            backgroundColor: Colors.red,
-                          ));
-                        }
+                      if (firmwares.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Không tìm thấy FW nào trên server.'),
+                          backgroundColor: Colors.orange,
+                        ));
+                        return;
                       }
+
+                      // Bước 2: Hiện danh sách FW để người dùng chọn tải
+                      if (!context.mounted) return;
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Chọn Firmware để Tải Về'),
+                          content: SizedBox(
+                            width: double.maxFinite,
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: firmwares.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (_, i) {
+                                final fw = firmwares[i];
+                                final hw = fw['hardware'] ?? fw['version'] ?? 'Unknown';
+                                final url = fw['url'] ?? fw['update_url'] ?? '';
+                                final fileName = Uri.parse(url).pathSegments.last;
+                                return ListTile(
+                                  leading: const Icon(Icons.memory, color: Colors.blue),
+                                  title: Text(hw, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text(fileName, style: const TextStyle(fontSize: 12)),
+                                  trailing: const Icon(Icons.download, color: Colors.green),
+                                  onTap: () async {
+                                    Navigator.pop(ctx); // Đóng dialog danh sách
+
+                                    // Hiện dialog đang tải file
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (_) => AlertDialog(
+                                        content: Row(
+                                          children: [
+                                            const CircularProgressIndicator(),
+                                            const SizedBox(width: 16),
+                                            Expanded(child: Text('Đang tải $fileName...')),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+
+                                    try {
+                                      final res = await http
+                                          .get(Uri.parse(url))
+                                          .timeout(const Duration(seconds: 60));
+
+                                      if (res.statusCode == 200) {
+                                        final dir = await getApplicationDocumentsDirectory();
+                                        final localPath = '${dir.path}/$fileName';
+                                        await File(localPath).writeAsBytes(res.bodyBytes);
+
+                                        await OfflineOTAService.saveDynamicHardwareMapping(
+                                          hw, url, localPath);
+
+                                        if (context.mounted) Navigator.pop(context);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                            content: Text('Đã tải xong: $fileName'),
+                                            backgroundColor: Colors.green,
+                                          ));
+                                        }
+                                      } else {
+                                        if (context.mounted) Navigator.pop(context);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                            content: Text('Lỗi Server: ${res.statusCode}'),
+                                            backgroundColor: Colors.red,
+                                          ));
+                                        }
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) Navigator.pop(context);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                          content: Text('Vui lòng kết nối Internet!'),
+                                          backgroundColor: Colors.red,
+                                        ));
+                                      }
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Hủy'),
+                            ),
+                          ],
+                        ),
+                      );
                     } catch (e) {
-                      if (context.mounted)
-                        Navigator.pop(context); // Tắt xoay nếu mất mạng
+                      if (context.mounted) Navigator.pop(context);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('Vui lòng kết nối Internet!'),
                           backgroundColor: Colors.red,
                         ));
@@ -219,10 +295,10 @@ class ProfileScreen extends StatelessWidget {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: CustomColor.primaryColor,
                     minimumSize: const Size.fromHeight(50),
                   ),
-                  child: const Text('Tải DYNAMIC FW',
+                  label: const Text('Kiểm tra & Tải FW mới nhất',
                       style: TextStyle(color: Colors.white)),
                 ),
               ),
