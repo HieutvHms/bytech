@@ -197,10 +197,16 @@ class ProfileScreen extends StatelessWidget {
                       int successCount = 0;
 
                       for (final fw in firmwares) {
-                        final hw = fw['hardware'] ?? fw['version'] ?? 'Unknown';
                         final url = fw['url'] ?? fw['update_url'] ?? '';
                         if (url.isEmpty) continue;
                         final fileName = Uri.parse(url).pathSegments.last;
+
+                        // Trích xuất hardware type thuần từ tên file .bin
+                        // VD: "AV01_NEW_HW_12102025.bin" → "AV01_NEW_HW"
+                        // Bỏ phần .bin và bỏ phần số version cuối (8 chữ số ngày tháng)
+                        final fileBase = fileName.replaceAll('.bin', '');
+                        // Tách bỏ phần số ở cuối (version/date) → lấy hardware type
+                        final hwType = fileBase.replaceAll(RegExp(r'_\d+$'), '');
 
                         // Hiện progress từng file
                         if (context.mounted) {
@@ -230,7 +236,8 @@ class ProfileScreen extends StatelessWidget {
                             final dir = await getApplicationDocumentsDirectory();
                             final localPath = '${dir.path}/$fileName';
                             await File(localPath).writeAsBytes(res.bodyBytes);
-                            await OfflineOTAService.saveDynamicHardwareMapping(hw, url, localPath);
+                            // Lưu với hwType thuần (VD: "AV01_NEW_HW") thay vì key có revision
+                            await OfflineOTAService.saveDynamicHardwareMapping(hwType, url, localPath);
                             successCount++;
                           }
                         } catch (_) {
