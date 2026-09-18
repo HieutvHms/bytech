@@ -179,6 +179,21 @@ class OfflineOTAService {
     print('Offline OTA: Saved Dynamic Hardware Mapping for $hardwareVersion -> $localFilePath');
   }
 
+  /// Trích xuất số phiên bản cuối cùng trong chuỗi
+  /// VD: "AV03_NEW_HW_12102025.bin" → 12102025
+  ///     "AV03-NEW_HW-002"         → 2
+  ///     "AV01-NEW_HW-003"         → 3
+  static int extractVersionNumber(String s) {
+    // Bỏ phần .bin nếu có
+    final clean = s.replaceAll('.bin', '');
+    // Tìm tất cả cụm số trong chuỗi
+    final matches = RegExp(r'\d+').allMatches(clean).toList();
+    if (matches.isEmpty) return 0;
+    // Lấy cụm số CUỐI CÙNG
+    return int.tryParse(matches.last.group(0)!) ?? 0;
+  }
+
+
   static Future<Map<String, String>?> getFallbackOfflineFilePath(String version) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(otaFallbackKey);
@@ -186,8 +201,10 @@ class OfflineOTAService {
     
     Map<String, dynamic> fallbackCache = json.decode(data);
     
-    // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới để không bị trật chữ)
+    // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới)
     String normalizedVersion = version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+    // Trích xuất số phiên bản hiện tại của mạch
+    int deviceVersionNum = extractVersionNumber(version);
 
     // Lọc ra tất cả các key khớp với hardwareVersion
     List<String> matchingKeys = [];
@@ -220,21 +237,36 @@ class OfflineOTAService {
       return 0; // Cùng là code cứng thì giữ nguyên
     });
 
-    // Thử lấy file đầu tiên (mới nhất), nếu file còn tồn tại thì dùng
+    // Thử lấy file đầu tiên (mới nhất), kiểm tra version rồi mới trả về
     for (var key in matchingKeys) {
       final filePath = fallbackCache[key]['localFilePath'];
-      final url = fallbackCache[key]['url'];
+      final url = fallbackCache[key]['url'] ?? '';
       final file = File(filePath);
-      if (await file.exists()) {
-        print('Offline OTA: Found Auto Fallback using key: $key');
+      if (!await file.exists()) continue;
+
+      // ===== SO SÁNH VERSION =====
+      final fileName = Uri.parse(url).pathSegments.isNotEmpty
+          ? Uri.parse(url).pathSegments.last
+          : filePath.split('/').last;
+      int fileVersionNum = extractVersionNumber(fileName);
+
+      print('Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $fileName)');
+
+      if (fileVersionNum > deviceVersionNum) {
+        // File mới hơn → có bản cập nhật!
+        print('Offline OTA: Found newer version! $fileVersionNum > $deviceVersionNum. Key: $key');
         return {
           'localFilePath': filePath,
-          'url': url ?? '',
+          'url': url,
         };
+      } else if (fileVersionNum == deviceVersionNum) {
+        print('Offline OTA: Same version ($fileVersionNum). No update needed.');
+      } else {
+        print('Offline OTA: File version ($fileVersionNum) OLDER than device ($deviceVersionNum). Skip.');
       }
     }
-    
-    return null;
+
+    return null; // Không có bản mới nào
   }
 
   static Future<Map<String, dynamic>?> getReadyOfflineUpdate(String mac,
