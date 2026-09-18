@@ -164,15 +164,30 @@ class OfflineOTAService {
     final data = prefs.getString(otaFallbackKey);
     Map<String, dynamic> fallbackCache = data != null ? json.decode(data) : {};
 
-    // Tạo key với tiền tố DYNAMIC_ và timestamp để phân biệt với 6 bản cứng và ưu tiên bản mới nhất
-    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    String key = 'DYNAMIC_${hardwareVersion}_$timestamp';
+    // Key cố định cho dòng máy (ghi đè thay vì tạo mới)
+    String key = 'DYNAMIC_$hardwareVersion';
     
+    // Nếu đã có file cũ, xoá file vật lý đi cho đỡ tốn dung lượng
+    if (fallbackCache.containsKey(key)) {
+      final oldPath = fallbackCache[key]['localFilePath'];
+      if (oldPath != null) {
+        final oldFile = File(oldPath);
+        if (await oldFile.exists()) {
+          try {
+            await oldFile.delete();
+            print('Offline OTA: Deleted old file -> $oldPath');
+          } catch (e) {
+            print('Offline OTA: Could not delete old file -> $e');
+          }
+        }
+      }
+    }
+    
+    // Lưu thông tin file mới
     fallbackCache[key] = {
       'version': hardwareVersion,
       'url': url,
       'localFilePath': localFilePath,
-      'timestamp': timestamp,
     };
     
     await prefs.setString(otaFallbackKey, json.encode(fallbackCache));
@@ -212,13 +227,9 @@ class OfflineOTAService {
       String effectiveKey = key;
 
       if (key.startsWith('DYNAMIC_')) {
-        // DYNAMIC key: "DYNAMIC_AV01_NEW_HW_1789638933762"
-        // → bỏ "DYNAMIC_" đầu và "_timestamp" cuối → lấy "AV01_NEW_HW"
-        final withoutPrefix = key.substring('DYNAMIC_'.length);
-        final lastUnderscoreIdx = withoutPrefix.lastIndexOf('_');
-        effectiveKey = lastUnderscoreIdx > 0
-            ? withoutPrefix.substring(0, lastUnderscoreIdx)
-            : withoutPrefix;
+        // DYNAMIC key: "DYNAMIC_AV01_NEW_HW"
+        // → bỏ "DYNAMIC_" đầu → lấy "AV01_NEW_HW"
+        effectiveKey = key.substring('DYNAMIC_'.length);
       } else {
         // Hardcoded key: "AV01-NEW_HW-002" hoặc "AV03-OLD_HW_0_3"
         // → bỏ phần số revision cuối cùng sau dấu - hoặc _
@@ -238,22 +249,14 @@ class OfflineOTAService {
     if (matchingKeys.isEmpty) return null;
 
     // Sắp xếp các key ưu tiên: 
-    // 1. Những file có tiền tố DYNAMIC_ (được người dùng tải thực tế) xếp trên các file Code cứng
-    // 2. Nếu cùng là DYNAMIC_, file nào có timestamp mới hơn thì xếp trên
+    // Những file có tiền tố DYNAMIC_ (được tải thực tế) xếp trên các file Code cứng
     matchingKeys.sort((a, b) {
       bool isADynamic = a.startsWith('DYNAMIC_');
       bool isBDynamic = b.startsWith('DYNAMIC_');
       
       if (isADynamic && !isBDynamic) return -1;
       if (!isADynamic && isBDynamic) return 1;
-      
-      if (isADynamic && isBDynamic) {
-         // Trích xuất timestamp từ key
-         String timeA = a.split('_').last;
-         String timeB = b.split('_').last;
-         return timeB.compareTo(timeA); // Mới nhất xếp trước
-      }
-      return 0; // Cùng là code cứng thì giữ nguyên
+      return 0;
     });
 
     // Thử lấy file đầu tiên (mới nhất), kiểm tra version rồi mới trả về
