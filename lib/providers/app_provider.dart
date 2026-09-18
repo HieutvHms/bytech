@@ -1088,12 +1088,8 @@ class AppProvider extends ChangeNotifier {
                               )
                             ],
                           ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
