@@ -72,7 +72,7 @@ class CheckFirmwareService {
     // Trả về 1 file có sẵn trên server để tải thành công và lưu vào DYNAMIC
     return [
       {
-        "url": "http://27.71.226.192:2602/AV01_NEW_HW_12172025.bin" 
+        "url": "http://27.71.226.192:2602/AV01_NEW_HW_12102025.bin" 
       }
     ];
 
