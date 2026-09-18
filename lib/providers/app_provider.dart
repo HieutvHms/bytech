@@ -986,7 +986,7 @@ class AppProvider extends ChangeNotifier {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 19,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             color: Colors.black87,
                           ),
                         ),
@@ -1027,7 +1027,7 @@ class AppProvider extends ChangeNotifier {
                                   foregroundColor: Colors.grey[700],
                                   side: BorderSide(color: Colors.grey[300]!),
                                   padding:
-                                      const EdgeInsets.symmetric(vertical: 8), // Đã giảm từ 13 xuống 8
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -1045,7 +1045,7 @@ class AppProvider extends ChangeNotifier {
                                 style: FilledButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   padding:
-                                      const EdgeInsets.symmetric(vertical: 8), // Đã giảm từ 13 xuống 8
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),

@@ -298,7 +298,7 @@ class OfflineOTAService {
       }
     }
 
-    return null; // Không có bản mới nào
+    return null;
   }
 
   static Future<Map<String, dynamic>?> getReadyOfflineUpdate(String mac,
