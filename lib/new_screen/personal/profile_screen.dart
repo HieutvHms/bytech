@@ -162,18 +162,23 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.cloud_download, color: Colors.white),
+                      icon:
+                          const Icon(Icons.cloud_download, color: Colors.white),
                       onPressed: () => _downloadFirmwares(context, true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CustomColor.primaryColor,
                         minimumSize: const Size.fromHeight(50),
                       ),
                       label: const Text('Tải FW Mới Nhất (Tự động API)',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15)),
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.save_alt, color: CustomColor.primaryColor),
+                      icon: const Icon(Icons.save_alt,
+                          color: CustomColor.primaryColor),
                       onPressed: () => _downloadFirmwares(context, false),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
@@ -182,7 +187,8 @@ class ProfileScreen extends StatelessWidget {
                         minimumSize: const Size.fromHeight(50),
                       ),
                       label: const Text('Tải Kho Dự Phòng (Bản ổn định)',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
                   ],
                 ),
@@ -210,9 +216,9 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => const AlertDialog(
       content: Row(
-        children: const [
+        children: [
           CircularProgressIndicator(),
           SizedBox(width: 16),
           Expanded(child: Text('Đang lấy danh sách FW...')),
@@ -245,6 +251,17 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       final fileBase = fileName.replaceAll('.bin', '');
       final hwType = fileBase.replaceAll(RegExp(r'_\d+$'), '');
 
+      final dir = await getApplicationDocumentsDirectory();
+      final localPath = '${dir.path}/$fileName';
+
+      // CHẶN TẢI LẠI: Kiểm tra xem file đã tồn tại trong máy chưa
+      if (await File(localPath).exists()) {
+        // Đã có file -> Chỉ cập nhật danh bạ rồi BỎ QUA tải
+        await OfflineOTAService.saveDynamicHardwareMapping(hwType, url, localPath);
+        successCount++;
+        continue; // Chuyển sang file tiếp theo luôn
+      }
+
       if (context.mounted) {
         showDialog(
           context: context,
@@ -262,14 +279,14 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       }
 
       try {
-        final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
+        final res =
+            await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
         if (context.mounted) Navigator.pop(context);
 
         if (res.statusCode == 200) {
-          final dir = await getApplicationDocumentsDirectory();
-          final localPath = '${dir.path}/$fileName';
           await File(localPath).writeAsBytes(res.bodyBytes);
-          await OfflineOTAService.saveDynamicHardwareMapping(hwType, url, localPath);
+          await OfflineOTAService.saveDynamicHardwareMapping(
+              hwType, url, localPath);
           successCount++;
         }
       } catch (_) {
