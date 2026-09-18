@@ -403,4 +403,27 @@ class OfflineOTAService {
       rethrow;
     }
   }
+
+  static Future<void> controlDeviceViaHttp(String ip, List<int> commandBytes) async {
+    try {
+      final url = Uri.parse('http://$ip/control');
+      
+      print('HTTP Control: Sending POST request to $url');
+      var response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+        body: commandBytes,
+      ).timeout(const Duration(seconds: 3));
+
+      if (response.statusCode != 200) {
+        throw Exception("HTTP Error: ${response.statusCode}");
+      }
+      print('HTTP Control: Success, Response: ${response.body}');
+    } catch (e) {
+      print('HTTP Control: Failed to send command: $e');
+      rethrow;
+    }
+  }
 }

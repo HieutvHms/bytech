@@ -405,7 +405,7 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void controlMotor(ControlType controlType) {
+  void controlMotor(ControlType controlType) async {
     try {
       if (connectStatus == ConnectStatus.BLE &&
           bluetoothCharacteristic != null) {
@@ -413,8 +413,20 @@ class AppProvider extends ChangeNotifier {
         final commandBytes = getCommandByte(controlType);
         _ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: commandBytes);
+      } else if (connectStatus == ConnectStatus.OFFLINE_AP) {
+        // Use HTTP POST for Offline AP mode
+        final commandBytes = getCommandByte(controlType);
+        final ip = tcpIP;
+        if (ip.isNotEmpty) {
+          await OfflineOTAService.controlDeviceViaHttp(ip, commandBytes);
+        } else {
+          throw Exception("Unknown IP address for HTTP control");
+        }
       } else {
-        socketService.controlDevice(socketTCP!, controlType);
+        // Use TCP Socket for LAN/Online mode
+        if (socketTCP != null) {
+          socketService.controlDevice(socketTCP!, controlType);
+        }
       }
 
       // Log the motor control action
