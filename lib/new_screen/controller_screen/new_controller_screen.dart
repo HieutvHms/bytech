@@ -1,4 +1,4 @@
-import 'package:file_picker/file_picker.dart';
+import 'package:new_renitek/providers/mixins/app_provider_state.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:flutter/material.dart';
@@ -10,7 +10,6 @@ import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/models/wifi.dart';
 import 'package:new_renitek/new_screen/home/home_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
-import 'package:new_renitek/service/check_firmware_service.dart';
 import 'package:new_renitek/utils/widgets/custom_buttom.dart';
 import 'package:provider/provider.dart';
 
@@ -53,26 +52,6 @@ class NewControllerScreen extends StatelessWidget {
           style: CustomTextStyle.h4Medium,
         ),
         actions: [
-          if (connectType == ConnectType.mdns &&
-              provider.mdnsConnectedClient?.host != null)
-            IconButton(
-              icon: const Icon(Icons.upload_file,
-                  color: CustomColor.neutralBlack),
-              tooltip: 'Upload Local .bin',
-              onPressed: () async {
-                FilePickerResult? result = await FilePicker.pickFiles(
-                  type: FileType.custom,
-                  allowedExtensions: ['bin'],
-                );
-
-                if (result != null && result.files.isNotEmpty) {
-                  String? filePath = result.files.single.path;
-                  if (filePath != null) {
-                    provider.updateFirmWare(offlineFilePath: filePath);
-                  }
-                }
-              },
-            ),
           if (provider.socketTCP != null && provider.isExpertMode)
             IconButton(
               icon: const Icon(Icons.language, color: CustomColor.neutralBlack),

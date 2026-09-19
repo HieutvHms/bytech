@@ -32,6 +32,7 @@ class OfflineOTAService {
     syncFirmwareBackground();
   }
 
+  // Đồng bộ firmware cho các thiết bị đã lưu
   static Future<void> syncFirmwareBackground() async {
     try {
       final List<ConnectivityResult> connectivityResult =
@@ -163,16 +164,17 @@ class OfflineOTAService {
     }
   }
 
+  // Luu thông tin mới nhất từ server xuống điện thoại
   static Future<void> saveDynamicHardwareMapping(
       String hardwareVersion, String url, String localFilePath) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(otaFallbackKey);
     Map<String, dynamic> fallbackCache = data != null ? json.decode(data) : {};
 
-    // Key cố định cho dòng máy (ghi đè thay vì tạo mới)
+    // Key cố định cho dòng máy
     String key = 'DYNAMIC_$hardwareVersion';
 
-    // Nếu đã có file cũ (và file cũ khác file mới), xoá file vật lý đi cho đỡ tốn dung lượng
+    // Nếu đã có file cũ xoá file cũ đi
     if (fallbackCache.containsKey(key)) {
       final oldPath = fallbackCache[key]['localFilePath'];
       // Cần check oldPath != localFilePath vì nếu tải lại cùng 1 file, file mới vừa tải xong sẽ bị xoá nhầm
@@ -181,10 +183,7 @@ class OfflineOTAService {
         if (await oldFile.exists()) {
           try {
             await oldFile.delete();
-            print('Offline OTA: Deleted old file -> $oldPath');
-          } catch (e) {
-            print('Offline OTA: Could not delete old file -> $e');
-          }
+          } catch (e) {}
         }
       }
     }
@@ -197,8 +196,6 @@ class OfflineOTAService {
     };
 
     await prefs.setString(otaFallbackKey, json.encode(fallbackCache));
-    print(
-        'Offline OTA: Saved Dynamic Hardware Mapping for $hardwareVersion -> $localFilePath');
   }
 
   /// Trích xuất số phiên bản cuối cùng trong chuỗi
@@ -206,12 +203,9 @@ class OfflineOTAService {
   ///     "AV03-NEW_HW-002"         → 2
   ///     "AV01-NEW_HW-003"         → 3
   static int extractVersionNumber(String s) {
-    // Bỏ phần .bin nếu có
     final clean = s.replaceAll('.bin', '');
-    // Tìm tất cả cụm số trong chuỗi
     final matches = RegExp(r'\d+').allMatches(clean).toList();
     if (matches.isEmpty) return 0;
-    // Lấy cụm số CUỐI CÙNG
     return int.tryParse(matches.last.group(0)!) ?? 0;
   }
 
@@ -223,7 +217,7 @@ class OfflineOTAService {
 
     Map<String, dynamic> fallbackCache = json.decode(data);
 
-    // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới)
+    // Chuẩn hóa chuỗi để so sánh
     String normalizedVersion =
         version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
     // Trích xuất số phiên bản hiện tại của mạch
@@ -235,18 +229,11 @@ class OfflineOTAService {
       String effectiveKey = key;
 
       if (key.startsWith('DYNAMIC_')) {
-        // DYNAMIC key: "DYNAMIC_AV01_NEW_HW"
-        // → bỏ "DYNAMIC_" đầu → lấy "AV01_NEW_HW"
         effectiveKey = key.substring('DYNAMIC_'.length);
       } else {
-        // Hardcoded key: "AV01-NEW_HW-002" hoặc "AV03-OLD_HW_0_3"
-        // → bỏ phần số revision cuối cùng sau dấu - hoặc _
-        // VD: "AV01-NEW_HW-002" → "AV01-NEW_HW"
-        //     "AV03-OLD_HW_0_3" → giữ nguyên nếu không có số thuần cuối
         effectiveKey = key.replaceAll(RegExp(r'[-_]\d+$'), '');
       }
 
-      // Chuẩn hóa: xóa hết - và _ rồi so sánh
       String normalizedKey =
           effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
       // VD: "AV01NEWHW".contains trong "AV01NEWHW003" → MATCH
@@ -276,26 +263,19 @@ class OfflineOTAService {
       final file = File(filePath);
       if (!await file.exists()) continue;
 
-      // ===== SO SÁNH VERSION =====
+      // SO SÁNH VERSION
       final fileName = Uri.parse(url).pathSegments.isNotEmpty
           ? Uri.parse(url).pathSegments.last
           : filePath.split('/').last;
       int fileVersionNum = extractVersionNumber(fileName);
-
-      print(
-          'Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $fileName)');
-
+      // Nếu khác version thì trả về để thực hiện update
       if (fileVersionNum != deviceVersionNum) {
         // File khác version (lớn hơn hoặc nhỏ hơn đều cho nạp) → hiện thông báo cập nhật!
-        print(
-            'Offline OTA: Found different version! File ($fileVersionNum) != Device ($deviceVersionNum). Key: $key');
         return {
           'localFilePath': filePath,
           'url': url,
         };
-      } else {
-        print('Offline OTA: Same version ($fileVersionNum). No update needed.');
-      }
+      } else {}
     }
 
     return null;

@@ -7,6 +7,8 @@ import 'package:new_renitek/const/custom_textstyle.dart';
 import 'package:new_renitek/models/saved_device_model.dart';
 import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
+import 'package:new_renitek/providers/mixins/app_provider_state.dart'
+    show ConnectStatus;
 import 'package:new_renitek/root.dart';
 import 'package:provider/provider.dart';
 
@@ -455,11 +457,20 @@ class CustomOutLineButton extends StatefulWidget {
 class _CustomOutLineButtonState extends State<CustomOutLineButton> {
   bool isLoading = false;
   void ontap() async {
-    isLoading = true;
-    setState(() {});
-    await widget.ontap();
-    isLoading = false;
-    setState(() {});
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
+    try {
+      await widget.ontap();
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override

@@ -6,6 +6,8 @@ import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.dart';
 import 'package:new_renitek/new_screen/home/home_screen.dart';
 import 'package:new_renitek/providers/app_provider.dart';
+import 'package:new_renitek/providers/mixins/app_provider_state.dart'
+    show ConnectStatus, MDNSStatus;
 import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:provider/provider.dart';
 

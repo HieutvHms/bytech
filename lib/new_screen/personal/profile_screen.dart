@@ -7,6 +7,7 @@ import 'package:new_renitek/const/custom_textstyle.dart';
 import 'package:new_renitek/providers/app_provider.dart';
 import 'package:new_renitek/service/check_firmware_service.dart';
 import 'package:new_renitek/service/offline_ota_service.dart';
+import 'package:new_renitek/utils/snackbar_helper.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -213,6 +214,7 @@ class ProfileScreen extends StatelessWidget {
 }
 
 Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
+  // Hiển thị 1 Dialog duy nhất cho toàn bộ quá trình
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -221,7 +223,7 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
         children: [
           CircularProgressIndicator(),
           SizedBox(width: 16),
-          Expanded(child: Text('Đang lấy danh sách FW...')),
+          Expanded(child: Text('Đang tải dữ liệu. Vui lòng đợi...')),
         ],
       ),
     ),
@@ -232,14 +234,11 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
         ? await CheckFirmwareService.getLatestFirmwaresFromServer()
         : await CheckFirmwareService.getAllFirmwares();
 
-    if (!context.mounted) return;
-    Navigator.pop(context); // Tắt dialog kiểm tra
-
     if (firmwares.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Không tìm thấy FW nào.'),
-        backgroundColor: Colors.orange,
-      ));
+      if (context.mounted) Navigator.pop(context); // Tắt dialog
+      if (context.mounted) {
+        SnackbarHelper.showInfo(context, 'Thông báo', 'Không tìm thấy FW nào.');
+      }
       return;
     }
 
@@ -256,61 +255,45 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
 
       // CHẶN TẢI LẠI: Kiểm tra xem file đã tồn tại trong máy chưa
       if (await File(localPath).exists()) {
-        // Đã có file -> Chỉ cập nhật danh bạ rồi BỎ QUA tải
         await OfflineOTAService.saveDynamicHardwareMapping(
             hwType, url, localPath);
         successCount++;
-        continue; // Chuyển sang file tiếp theo luôn
-      }
-
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            content: Row(
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(width: 16),
-                Expanded(child: Text('Đang tải $fileName...')),
-              ],
-            ),
-          ),
-        );
+        continue;
       }
 
       try {
         final res =
-            await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
-        if (context.mounted) Navigator.pop(context);
-
+            await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
         if (res.statusCode == 200) {
           await File(localPath).writeAsBytes(res.bodyBytes);
           await OfflineOTAService.saveDynamicHardwareMapping(
               hwType, url, localPath);
           successCount++;
         }
-      } catch (_) {
-        if (context.mounted) Navigator.pop(context);
+      } catch (e) {
+        print('Lỗi tải $fileName: $e');
+        // Tiếp tục thử tải file khác nếu có
       }
     }
 
+    if (context.mounted) Navigator.pop(context); // Tắt dialog
+
     if (context.mounted) {
-      final msg = successCount > 0
-          ? 'Đã tải xong $successCount file FW!'
-          : 'Tải thất bại. Vui lòng kiểm tra kết nối!';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(msg),
-        backgroundColor: successCount > 0 ? Colors.green : Colors.red,
-      ));
+      if (successCount > 0) {
+        final message = useApi
+            ? 'Đã tải xong $successCount file FW mới nhất từ server!'
+            : 'Đã tải xong $successCount file FW dự phòng!';
+        SnackbarHelper.showSuccess(context, 'Hoàn tất', message);
+      } else {
+        SnackbarHelper.showError(context, 'Tải thất bại',
+            'Không tải được file nào. Vui lòng kiểm tra kết nối mạng!');
+      }
     }
   } catch (e) {
-    if (context.mounted) Navigator.pop(context);
+    if (context.mounted) Navigator.pop(context); // Tắt dialog
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Vui lòng kết nối Internet!'),
-        backgroundColor: Colors.red,
-      ));
+      SnackbarHelper.showError(
+          context, 'Lỗi kết nối', 'Vui lòng kiểm tra lại kết nối Internet!');
     }
   }
 }
