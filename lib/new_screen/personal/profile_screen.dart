@@ -93,7 +93,7 @@ class ProfileScreen extends StatelessWidget {
                         backgroundColor: CustomColor.primaryColor,
                         minimumSize: const Size.fromHeight(50),
                       ),
-                      label: const Text('Tải FW Mới Nhất (Server)',
+                      label: const Text('Download Latest FW (Server)',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -110,7 +110,7 @@ class ProfileScreen extends StatelessWidget {
                         side: const BorderSide(color: CustomColor.primaryColor),
                         minimumSize: const Size.fromHeight(50),
                       ),
-                      label: const Text('Tải Kho Dự Phòng (Bản ổn định)',
+                      label: const Text('Download Backup (Stable)',
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                     ),

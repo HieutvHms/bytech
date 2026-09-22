@@ -272,17 +272,17 @@ class OfflineOTAService {
       print(
           'Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $savedVersion)');
 
-      // Nếu khác version thì trả về để thực hiện update
-      if (savedVersion.isNotEmpty && fileVersionNum != deviceVersionNum) {
+      // Nếu phiên bản file lớn hơn phiên bản hiện tại thì trả về để update
+      if (savedVersion.isNotEmpty && fileVersionNum > deviceVersionNum) {
         print(
-            'Offline OTA: Found different version! File ($fileVersionNum) != Device ($deviceVersionNum). Key: $key');
+            'Offline OTA: Found newer version! File ($fileVersionNum) > Device ($deviceVersionNum). Key: $key');
         return {
           'localFilePath': filePath,
           'url': url,
           'version': savedVersion, // TRẢ VỀ VERSION THẬT
         };
       } else {
-        print('Offline OTA: Same version ($fileVersionNum). No update needed.');
+        print('Offline OTA: File version ($fileVersionNum) <= Device ($deviceVersionNum). No update needed.');
       }
     }
 
