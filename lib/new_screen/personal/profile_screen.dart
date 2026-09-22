@@ -29,77 +29,7 @@ class ProfileScreen extends StatelessWidget {
                   style: CustomTextStyle.h4Bold,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      child: Icon(
-                        Icons.person,
-                        size: 28,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 12,
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'David Nguyen',
-                          style: CustomTextStyle.h5Medium,
-                        ),
-                        Text('davidnguyen@gmail.com'),
-                      ],
-                    ),
-                    Spacer(),
-                    Icon(Icons.arrow_forward_ios),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.only(left: 48),
-                child: Text(
-                  'Help',
-                  style: CustomTextStyle.captionMedium
-                      .copyWith(color: CustomColor.neutralBlack50),
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 36),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'FAQ',
-                      style: CustomTextStyle.bodyMedium,
-                    ),
-                    Divider(
-                      thickness: 0.3,
-                    ),
-                    Text(
-                      'Hotline',
-                      style: CustomTextStyle.bodyMedium,
-                    ),
-                    Divider(
-                      thickness: 0.3,
-                    ),
-                    Text(
-                      'Support Center',
-                      style: CustomTextStyle.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
+
               Padding(
                 padding: const EdgeInsets.only(left: 48),
                 child: Text(
@@ -118,13 +48,6 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Interface Settings',
-                      style: CustomTextStyle.bodyMedium,
-                    ),
-                    const Divider(
-                      thickness: 0.3,
-                    ),
                     const Text(
                       'Upgrade firmware',
                       style: CustomTextStyle.bodyMedium,
@@ -231,8 +154,8 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
 
   try {
     final firmwares = useApi
-        ? await CheckFirmwareService.getLatestFirmwaresFromServer()
-        : await CheckFirmwareService.getAllFirmwares();
+        ? await CheckFirmwareService.getNewestFirmwares()
+        : await CheckFirmwareService.getBackupFirmwares();
 
     if (firmwares.isEmpty) {
       if (context.mounted) Navigator.pop(context); // Tắt dialog
@@ -247,8 +170,11 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       final url = fw['url'] ?? fw['update_url'] ?? '';
       if (url.isEmpty) continue;
       final fileName = Uri.parse(url).pathSegments.last;
-      final fileBase = fileName.replaceAll('.bin', '');
-      final hwType = fileBase.replaceAll(RegExp(r'_\d+$'), '');
+      final hwType = (fw['hardware'] ?? fw['version'] ?? fileName)
+          .toString()
+          .replaceAll('.bin', '');
+      final exactVersion =
+          (fw['version'] ?? hwType).toString(); // THÊM DÒNG NÀY
 
       final dir = await getApplicationDocumentsDirectory();
       final localPath = '${dir.path}/$fileName';
@@ -256,7 +182,7 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       // CHẶN TẢI LẠI: Kiểm tra xem file đã tồn tại trong máy chưa
       if (await File(localPath).exists()) {
         await OfflineOTAService.saveDynamicHardwareMapping(
-            hwType, url, localPath);
+            hwType, exactVersion, url, localPath);
         successCount++;
         continue;
       }
@@ -267,7 +193,7 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
         if (res.statusCode == 200) {
           await File(localPath).writeAsBytes(res.bodyBytes);
           await OfflineOTAService.saveDynamicHardwareMapping(
-              hwType, url, localPath);
+              hwType, exactVersion, url, localPath);
           successCount++;
         }
       } catch (e) {
@@ -276,7 +202,7 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       }
     }
 
-    if (context.mounted) Navigator.pop(context); // Tắt dialog
+    if (context.mounted) Navigator.pop(context);
 
     if (context.mounted) {
       if (successCount > 0) {

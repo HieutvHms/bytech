@@ -16,15 +16,15 @@ mixin DeviceControlMixin on AppProviderState {
         final commandBytes = getCommandByte(controlType);
         ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: commandBytes);
-      } else if (connectStatus == ConnectStatus.SOCKET &&
-          tcpIP == '192.168.1.1') {
+      } else if (connectStatus == ConnectStatus.SOCKET && socketTCP != null) {
+        socketService.controlDevice(socketTCP!, controlType);
+      } else if (connectStatus == ConnectStatus.SOCKET) {
         final commandBytes = getCommandByte(controlType);
-        final ip = tcpIP;
-        if (ip.isNotEmpty) {
-          await OfflineOTAService.controlDeviceViaHttp(ip, commandBytes);
-        } else {
+        final ip = mdnsConnectedClient?.host ?? tcpIP;
+        if (ip.isEmpty) {
           throw Exception("Unknown IP address for HTTP control");
         }
+        await OfflineOTAService.controlDeviceViaHttp(ip, commandBytes);
       } else {
         if (socketTCP != null) {
           socketService.controlDevice(socketTCP!, controlType);

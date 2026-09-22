@@ -1,5 +1,5 @@
 import 'package:new_renitek/providers/mixins/app_provider_state.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:new_renitek/new_screen/webview_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:new_renitek/const/asset_const.dart';
@@ -52,21 +52,26 @@ class NewControllerScreen extends StatelessWidget {
           style: CustomTextStyle.h4Medium,
         ),
         actions: [
-          if (provider.socketTCP != null && provider.isExpertMode)
+          if (provider.connectStatus == ConnectStatus.SOCKET)
             IconButton(
               icon: const Icon(Icons.language, color: CustomColor.neutralBlack),
               tooltip: 'Open Web UI',
-              onPressed: () async {
+              onPressed: () {
                 final ip = provider.mdnsConnectedClient?.host ?? provider.tcpIP;
                 if (ip.isNotEmpty) {
-                  final url = Uri.parse('http://$ip');
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Could not open Web UI')),
-                    );
-                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => WebViewScreen(
+                        url: 'http://$ip',
+                        title: 'Web UI - $ip',
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Không tìm thấy địa chỉ IP của mạch!')),
+                  );
                 }
               },
             ),
@@ -96,56 +101,66 @@ class NewControllerScreen extends StatelessWidget {
             const SizedBox(height: 8),
             StreamBuilder(
               stream: Provider.of<AppProvider>(context).motorStatus,
-              builder: (ctx, snapshot) => Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                alignment: Alignment.center,
-                // margin: const EdgeInsets.symmetric(horizontal: 32),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: [
-                    Center(
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.3,
-                        child: Image.asset(AssetConst.screenImage),
+              builder: (ctx, snapshot) {
+                final isHttpControl =
+                    provider.connectStatus == ConnectStatus.SOCKET &&
+                        provider.socketTCP == null;
+                final canMoveIn =
+                    isHttpControl || snapshot.data?.canMoveIn() == true;
+                final canMoveOut =
+                    isHttpControl || snapshot.data?.canMoveOut() == true;
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  alignment: Alignment.center,
+                  // margin: const EdgeInsets.symmetric(horizontal: 32),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white,
+                  ),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.3,
+                          child: Image.asset(AssetConst.screenImage),
+                        ),
                       ),
-                    ),
-                    const Text('Press and hold button to control device'),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ControlerButton(
-                          onTap: () {},
-                          iconData: Icons.arrow_back,
-                          title: 'Move in',
-                          enable: snapshot.data?.canMoveIn() == true,
-                          onLongPressStart: () {
-                            provider.controlMotor(ControlType.GO_IN);
-                          },
-                          onLongPressEnd: () {
-                            provider.controlMotor(ControlType.STOP);
-                          },
-                        ),
-                        ControlerButton(
-                          onTap: () {},
-                          iconData: Icons.arrow_forward,
-                          title: 'Move out',
-                          enable: snapshot.data?.canMoveOut() == true,
-                          onLongPressStart: () {
-                            provider.controlMotor(ControlType.GO_OUT);
-                          },
-                          onLongPressEnd: () {
-                            provider.controlMotor(ControlType.STOP);
-                          },
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
+                      const Text('Press and hold button to control device'),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ControlerButton(
+                            onTap: () {},
+                            iconData: Icons.arrow_back,
+                            title: 'Move in',
+                            enable: canMoveIn,
+                            onLongPressStart: () {
+                              provider.controlMotor(ControlType.GO_IN);
+                            },
+                            onLongPressEnd: () {
+                              provider.controlMotor(ControlType.STOP);
+                            },
+                          ),
+                          ControlerButton(
+                            onTap: () {},
+                            iconData: Icons.arrow_forward,
+                            title: 'Move out',
+                            enable: canMoveOut,
+                            onLongPressStart: () {
+                              provider.controlMotor(ControlType.GO_OUT);
+                            },
+                            onLongPressEnd: () {
+                              provider.controlMotor(ControlType.STOP);
+                            },
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 30),
           ],
@@ -189,7 +204,7 @@ class ConnectDeviceWidget extends StatelessWidget {
       ),
       child: Consumer<AppProvider>(
         builder: (context, value, child) => value.bluetoothDevice != null ||
-                value.socketTCP != null
+                value.connectStatus == ConnectStatus.SOCKET
             ? Column(
                 children: [
                   _infoRow(
@@ -237,7 +252,7 @@ class ConnectDeviceWidget extends StatelessWidget {
                     ),
                     const Divider(),
                   ],
-                  if (value.bluetoothDevice != null)
+                  if (value.bluetoothDevice != null) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -250,13 +265,11 @@ class ConnectDeviceWidget extends StatelessWidget {
                           ontap: () async {
                             showWifiSettingDialog(context);
                           },
-                        )
+                        ),
                       ],
                     ),
-                  const Divider(),
-                  _infoRow(
-                      "Hardware Version", value.hardwareVersion ?? "Not found"),
-                  const Divider(),
+                    const Divider(), // Đặt Divider ở đây (nằm ngoài Row nhưng thuộc khối điều kiện)
+                  ],
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -383,76 +396,76 @@ void showWifiSettingDialog(BuildContext context) {
   );
 }
 
-void showFirmwareUpdateDialog(
-    BuildContext context, AppProvider provider, String url) {
-  if (provider.firmwareCheckResult == null ||
-      !provider.firmwareCheckResult!.noUpdate == false) {
-    return;
-  }
+// void showFirmwareUpdateDialog(
+//     BuildContext context, AppProvider provider, String url) {
+//   if (provider.firmwareCheckResult == null ||
+//       !provider.firmwareCheckResult!.noUpdate == false) {
+//     return;
+//   }
 
-  showDialog(
-    context: context,
-    builder: (ctx) {
-      return Dialog(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Firmware Update Available',
-                style: CustomTextStyle.h5Medium,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Current Version: ${provider.firmwareCheckResult!.currentVersion}',
-                style: CustomTextStyle.bodyLight,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Latest Version: ${provider.firmwareCheckResult!.latestVersion}',
-                style: CustomTextStyle.bodyLight.copyWith(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Do you want to update the firmware now? The device may restart during the update process.',
-                style: CustomTextStyle.bodyLight,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomOutLineButton(
-                      ontap: () async {
-                        Navigator.of(ctx).pop();
-                      },
-                      title: "Cancel",
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: CustomButton(
-                      title: 'Update',
-                      onTap: () {
-                        Navigator.of(ctx).pop();
-                        provider.updateFirmWare(url: url);
-                      },
-                      enable: true,
-                    ),
-                  )
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
+//   showDialog(
+//     context: context,
+//     builder: (ctx) {
+//       return Dialog(
+//         child: Padding(
+//           padding: const EdgeInsets.all(24),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               const Text(
+//                 'Firmware Update Available',
+//                 style: CustomTextStyle.h5Medium,
+//               ),
+//               const SizedBox(height: 16),
+//               Text(
+//                 'Current Version: ${provider.firmwareCheckResult!.currentVersion}',
+//                 style: CustomTextStyle.bodyLight,
+//               ),
+//               const SizedBox(height: 8),
+//               Text(
+//                 'Latest Version: ${provider.firmwareCheckResult!.latestVersion}',
+//                 style: CustomTextStyle.bodyLight.copyWith(
+//                   color: Colors.green,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//               const SizedBox(height: 16),
+//               const Text(
+//                 'Do you want to update the firmware now? The device may restart during the update process.',
+//                 style: CustomTextStyle.bodyLight,
+//               ),
+//               const SizedBox(height: 24),
+//               Row(
+//                 children: [
+//                   Expanded(
+//                     child: CustomOutLineButton(
+//                       ontap: () async {
+//                         Navigator.of(ctx).pop();
+//                       },
+//                       title: "Cancel",
+//                     ),
+//                   ),
+//                   const SizedBox(width: 12),
+//                   Expanded(
+//                     child: CustomButton(
+//                       title: 'Update',
+//                       onTap: () {
+//                         Navigator.of(ctx).pop();
+//                         provider.updateFirmWare(url: url);
+//                       },
+//                       enable: true,
+//                     ),
+//                   )
+//                 ],
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     },
+//   );
+// }
 
 void showRenameDialog(String currentName, BuildContext context) {
   final myModel = Provider.of<AppProvider>(context, listen: false);
@@ -725,58 +738,50 @@ class InputInfoWidget extends StatelessWidget {
 }
 
 class ControlerButton extends StatelessWidget {
-  const ControlerButton(
-      {super.key,
-      required this.title,
-      required this.onTap,
-      required this.iconData,
-      this.onLongPressStart,
-      this.onLongPressEnd,
-      required this.enable});
+  const ControlerButton({
+    super.key,
+    required this.title,
+    required this.onTap,
+    required this.iconData,
+    this.onLongPressStart,
+    this.onLongPressEnd,
+    required this.enable,
+  });
+
   final String title;
   final VoidCallback onTap;
   final VoidCallback? onLongPressStart;
   final VoidCallback? onLongPressEnd;
   final IconData iconData;
   final bool enable;
+
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (e) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque, // Giúp vùng bắt chạm rộng và nhạy hơn
+      onTap: () {
+        if (enable) {
+          onTap();
+        }
+      },
+      // Khi bắt đầu giữ ngón tay
+      onLongPressStart: (_) {
         if (enable && onLongPressStart != null) {
           onLongPressStart!();
         }
       },
-      onPointerUp: (e) {
+      // Khi nhấc ngón tay ra sau khi giữ
+      onLongPressEnd: (_) {
         if (enable && onLongPressEnd != null) {
           onLongPressEnd!();
         }
       },
-      onPointerCancel: (e) {
+      // Khi thao tác nhấn giữ bị hủy (ví dụ có cuộc gọi đến hoặc vuốt ra ngoài hẳn)
+      onLongPressCancel: () {
         if (enable && onLongPressEnd != null) {
           onLongPressEnd!();
         }
       },
-      // onTap: () {
-      //   if (enable) {
-      //     onTap();
-      //   }
-      // },
-      // onLongPressDown: (s) {
-      //   if (enable && onLongPressStart != null) {
-      //     onLongPressStart!();
-      //   }
-      // },
-      // onLongPressEnd: (e) {
-      //   if (enable && onLongPressEnd != null) {
-      //     onLongPressEnd!();
-      //   }
-      // },
-      // onLongPressCancel: () {
-      //   if (enable && onLongPressEnd != null) {
-      //     onLongPressEnd!();
-      //   }
-      // },
       child: Column(
         children: [
           Container(
@@ -786,7 +791,6 @@ class ControlerButton extends StatelessWidget {
               color: enable
                   ? CustomColor.primaryColor
                   : CustomColor.neutralBlack50,
-              // borderRadius: BorderRadius.circular(60),
             ),
             child: Icon(
               iconData,

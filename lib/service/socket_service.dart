@@ -12,13 +12,23 @@ class SocketService {
     print('====================================');
     print('🛠 DEBUG: Connecting to Socket -> IP: $host, Port: $port');
     print('====================================');
-    final socket =
-        await Socket.connect(host, port, timeout: const Duration(seconds: 5));
-    socket.listen((event) {
-      final listInt = event.toList();
-      alyticData(listInt);
-    });
-    return socket;
+    try {
+      final socket =
+          await Socket.connect(host, port, timeout: const Duration(seconds: 5));
+      print('✅ Socket Connected Successfully!');
+      socket.listen((event) {
+        final listInt = event.toList();
+        alyticData(listInt);
+      }, onError: (error) {
+        print('❌ Socket Listen Error: $error');
+      }, onDone: () {
+        print('⚠️ Socket Connection Closed by server');
+      });
+      return socket;
+    } catch (e) {
+      print('❌ Socket Connection Failed: $e');
+      rethrow;
+    }
   }
 
   void controlDevice(Socket socket, ControlType controlType) {

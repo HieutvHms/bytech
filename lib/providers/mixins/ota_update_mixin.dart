@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 mixin OtaUpdateMixin on AppProviderState {
   @override
+  @override
   void updateFirmWare({String? url, String? offlineFilePath}) {
     if (firmwareCheckResult == null && offlineFilePath == null && url == null) {
       if (globalKey.currentContext != null) {
@@ -49,8 +50,6 @@ mixin OtaUpdateMixin on AppProviderState {
         final updateCommand = getFirmwareUpdateCommand(url);
         ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: updateCommand);
-        print(updateCommand);
-        print(String.fromCharCodes(updateCommand));
         isExpertMode = false;
         notifyListeners();
         if (globalKey.currentContext != null) {
@@ -97,14 +96,42 @@ mixin OtaUpdateMixin on AppProviderState {
         );
       }
 
-      Future<void> doUpdate(String filePath) async {
-        await OfflineOTAService.pushFirmwareViaHttp(ip, filePath);
+      Future<void> doUpdate(String filePath, String expectedVersion) async {
+        await OfflineOTAService.pushFirmwareViaHttp(
+            ip, filePath, expectedVersion);
       }
 
-      Future<String> getFilePath() async {
+      // Trả về CẢ filePath lẫn version tương ứng, để doUpdate() luôn biết
+      // đang mong đợi mạch báo về FW nào sau khi update xong.
+      Future<(String filePath, String version)> getFilePath() async {
         if (offlineFilePath != null) {
-          return offlineFilePath;
+          // Suy version từ tên file cục bộ (vd fw_AV01-NEW_HW-20260921.bin)
+          final fileName = offlineFilePath.split('/').last;
+          final version = fileName
+              .replaceAll('fw_fallback_', '')
+              .replaceAll('fw_', '')
+              .replaceAll('.bin', '');
+          return (offlineFilePath, version);
         } else if (url != null) {
+          final parsedUri = Uri.tryParse(url);
+          final isRemoteUrl = parsedUri != null &&
+              (parsedUri.scheme == 'http' || parsedUri.scheme == 'https') &&
+              parsedUri.host.isNotEmpty;
+
+          if (!isRemoteUrl) {
+            // url thực chất là local path (phòng trường hợp nơi gọi truyền nhầm)
+            final localFile = File(url);
+            if (await localFile.exists()) {
+              final fileName = url.split('/').last;
+              final version = fileName
+                  .replaceAll('fw_fallback_', '')
+                  .replaceAll('fw_', '')
+                  .replaceAll('.bin', '');
+              return (url, version);
+            }
+            throw Exception('Đường dẫn không hợp lệ và không phải URL: $url');
+          }
+
           if (hardwareVersion != null) {
             final fallbackData =
                 await OfflineOTAService.getFallbackOfflineFilePath(
@@ -113,7 +140,12 @@ mixin OtaUpdateMixin on AppProviderState {
               final cachedFile = File(fallbackData['localFilePath']!);
               if (await cachedFile.exists()) {
                 print('Đã có sẵn file trong máy, bỏ qua download!');
-                return fallbackData['localFilePath']!;
+                return (
+                  fallbackData['localFilePath']!,
+                  fallbackData['version'] ??
+                      firmwareCheckResult?.latestVersion ??
+                      ''
+                );
               }
             }
           }
@@ -135,20 +167,23 @@ mixin OtaUpdateMixin on AppProviderState {
           final permanentPath = '${directory.path}/fw_$fileName';
           final permanentFile = File(permanentPath);
           await permanentFile.writeAsBytes(response.bodyBytes);
+          final String exactVersion = fileName.replaceAll('.bin', '');
 
-          String hwToSave = hardwareVersion ??
-              fileName.replaceAll('.bin', '').replaceAll(RegExp(r'_\d+$'), '');
+          final String hwFamily = hardwareVersion ??
+              CheckFirmwareService.getFirmwareFamily(exactVersion);
+
           await OfflineOTAService.saveDynamicHardwareMapping(
-              hwToSave, url, permanentPath);
+              hwFamily, exactVersion, url, permanentPath);
 
-          return permanentPath;
+          return (permanentPath, exactVersion);
         } else {
           throw Exception('Không có file hoặc URL để cập nhật');
         }
       }
 
-      getFilePath().then((filePath) {
-        return doUpdate(filePath);
+      getFilePath().then((result) {
+        final (filePath, expectedVersion) = result;
+        return doUpdate(filePath, expectedVersion);
       }).then((_) {
         if (globalKey.currentContext != null) {
           Navigator.pop(globalKey.currentContext!);
@@ -234,11 +269,30 @@ mixin OtaUpdateMixin on AppProviderState {
     print("Checking firmware for device: $deviceMac, version: $version");
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      bool isOnlineSuccess = false;
+      bool apiCallSucceeded = false; // ✅ khai báo ở scope ngoài cùng
 
       if (!connectivityResult.contains(ConnectivityResult.none)) {
         if (hardwareVersion == null) {
-          final listFirmwares = await CheckFirmwareService.getAllFirmwares();
+          List<Map<String, dynamic>> listFirmwares = [];
+          try {
+            listFirmwares = await CheckFirmwareService.getBackupFirmwares();
+          } catch (e) {
+            // Không có Internet (VD: đang ở WiFi AP riêng của mạch) -> dùng cache cục bộ
+            print('Không lấy được firmware từ server, dùng cache cục bộ: $e');
+            listFirmwares = await OfflineOTAService.getCachedBackupFirmwares();
+          }
+
+          if (listFirmwares.isEmpty) {
+            if (globalKey.currentContext != null) {
+              SnackbarHelper.showError(
+                globalKey.currentContext!,
+                '',
+                'Không xác định được phần cứng và chưa có firmware nào lưu sẵn trong máy.\nVui lòng kết nối Internet ít nhất 1 lần để tải firmware về trước.',
+              );
+            }
+            return null;
+          }
+
           _showFallbackFirmwareDialog(listFirmwares);
           return null;
         }
@@ -250,19 +304,20 @@ mixin OtaUpdateMixin on AppProviderState {
           );
 
           if (result != null) {
+            apiCallSucceeded = true;
             firmwareCheckResult = result;
             if (!result.noUpdate) {
-              isOnlineSuccess = true;
-              if (globalKey.currentContext != null) {
-                // Ignore the 'this' issue since we need AppProvider type, we'll fix it in app_provider
-                // showFirmwareUpdateDialog expects (BuildContext, AppProvider, String)
-                // In mixin, 'this' refers to the Mixin/AppProviderState. We can cast it.
-                // Wait, I can't cast 'this' if AppProvider isn't defined here.
-                // I'll just change the signature of showFirmwareUpdateDialog if needed, but casting to dynamic works or passing this.
-              }
+              _showOnlineUpdateDialog(result);
               return result;
             } else {
-              isOnlineSuccess = false;
+              if (globalKey.currentContext != null) {
+                showStatus(
+                  buildContext: globalKey.currentContext!,
+                  message: 'Firmware is already up to date',
+                  succcess: true,
+                );
+              }
+              return result; // hoặc null tùy bạn muốn xử lý tiếp thế nào
             }
           }
         } else {
@@ -278,7 +333,7 @@ mixin OtaUpdateMixin on AppProviderState {
         }
       }
 
-      if (!isOnlineSuccess) {
+      if (!apiCallSucceeded) {
         if (connectStatus == ConnectStatus.BLE) {
           if (globalKey.currentContext != null) {
             showStatus(
@@ -465,7 +520,7 @@ mixin OtaUpdateMixin on AppProviderState {
               onPressed: () async {
                 Navigator.of(ctx).pop();
                 final listFirmwares =
-                    await CheckFirmwareService.getAllFirmwares();
+                    await CheckFirmwareService.getBackupFirmwares();
                 _showFallbackFirmwareDialog(listFirmwares);
               },
               child: const Text('Chọn Firmware Cứu Hộ'),
@@ -480,6 +535,119 @@ mixin OtaUpdateMixin on AppProviderState {
     List<int> command = [];
     command.addAll(utf8.encode('#5:$url!'));
     return command;
+  }
+
+  void _showOnlineUpdateDialog(FirmwareCheckResult result) {
+    if (globalKey.currentContext == null) return;
+
+    showDialog(
+      context: globalKey.currentContext!,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Cập Nhật Firmware',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      height: 1.45,
+                      color: Colors.grey[700],
+                    ),
+                    children: [
+                      const TextSpan(text: 'Có bản cập nhật mới: '),
+                      TextSpan(
+                        text: result.latestVersion,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const TextSpan(text: '\nBản hiện tại của mạch:\n'),
+                      TextSpan(
+                        text: result.currentVersion,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      const TextSpan(
+                          text: '\nBạn có muốn cập nhật ngay không?'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                          side: BorderSide(color: Colors.grey[300]!),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Later',
+                            style: TextStyle(fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: CustomColor.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          if (result.isOffline) {
+                            // result.updateUrl lúc này là đường dẫn file cục bộ, không phải URL server
+                            updateFirmWare(offlineFilePath: result.updateUrl);
+                          } else {
+                            updateFirmWare(url: result.updateUrl);
+                          }
+                        },
+                        child: const Text(
+                          'Update',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showFallbackFirmwareDialog(

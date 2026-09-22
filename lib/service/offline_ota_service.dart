@@ -113,7 +113,7 @@ class OfflineOTAService {
 
     // 2. Download Fallback Firmwares
     try {
-      final fallbacks = await CheckFirmwareService.getAllFirmwares();
+      final fallbacks = await CheckFirmwareService.getBackupFirmwares();
       final fallbackDataStr = prefs.getString(otaFallbackKey);
       Map<String, dynamic> fallbackCache =
           fallbackDataStr != null ? json.decode(fallbackDataStr) : {};
@@ -147,6 +147,7 @@ class OfflineOTAService {
             await file.writeAsBytes(response.bodyBytes);
 
             fallbackCache[version] = {
+              'version': version,
               'url': url,
               'localFilePath': filePath,
             };
@@ -165,19 +166,17 @@ class OfflineOTAService {
   }
 
   // Luu thông tin mới nhất từ server xuống điện thoại
-  static Future<void> saveDynamicHardwareMapping(
-      String hardwareVersion, String url, String localFilePath) async {
+  // --- Thay toàn bộ hàm saveDynamicHardwareMapping ---
+  static Future<void> saveDynamicHardwareMapping(String hardwareFamily,
+      String exactVersion, String url, String localFilePath) async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(otaFallbackKey);
     Map<String, dynamic> fallbackCache = data != null ? json.decode(data) : {};
 
-    // Key cố định cho dòng máy
-    String key = 'DYNAMIC_$hardwareVersion';
+    String key = 'DYNAMIC_$hardwareFamily';
 
-    // Nếu đã có file cũ xoá file cũ đi
     if (fallbackCache.containsKey(key)) {
       final oldPath = fallbackCache[key]['localFilePath'];
-      // Cần check oldPath != localFilePath vì nếu tải lại cùng 1 file, file mới vừa tải xong sẽ bị xoá nhầm
       if (oldPath != null && oldPath != localFilePath) {
         final oldFile = File(oldPath);
         if (await oldFile.exists()) {
@@ -188,9 +187,10 @@ class OfflineOTAService {
       }
     }
 
-    // Lưu thông tin file mới
     fallbackCache[key] = {
-      'version': hardwareVersion,
+      'version': exactVersion, // SỬA: lưu version THẬT (vd "AV03-NEW_HW-002"),
+      // không phải family nữa, để so sánh version đúng
+      'family': hardwareFamily,
       'url': url,
       'localFilePath': localFilePath,
     };
@@ -209,6 +209,7 @@ class OfflineOTAService {
     return int.tryParse(matches.last.group(0)!) ?? 0;
   }
 
+  // --- Thay toàn bộ hàm getFallbackOfflineFilePath ---
   static Future<Map<String, String>?> getFallbackOfflineFilePath(
       String version) async {
     final prefs = await SharedPreferences.getInstance();
@@ -217,65 +218,54 @@ class OfflineOTAService {
 
     Map<String, dynamic> fallbackCache = json.decode(data);
 
-    // Chuẩn hóa chuỗi để so sánh
-    String normalizedVersion =
-        version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
-    // Trích xuất số phiên bản hiện tại của mạch
+    String normalizedVersion = CheckFirmwareService.getFirmwareFamily(version)
+        .replaceAll('-', '')
+        .replaceAll('_', '')
+        .toUpperCase();
     int deviceVersionNum = extractVersionNumber(version);
 
-    // Lọc ra tất cả các key khớp với hardwareVersion
     List<String> matchingKeys = [];
     for (var key in fallbackCache.keys) {
-      String effectiveKey = key;
+      // SỬA: dùng CHUNG 1 hàm tách family (CheckFirmwareService.getFirmwareFamily)
+      // cho cả key kiểu DYNAMIC_ lẫn key kiểu version thô, thay vì 2 regex khác nhau
+      final rawKey =
+          key.startsWith('DYNAMIC_') ? key.substring('DYNAMIC_'.length) : key;
+      final effectiveFamily = CheckFirmwareService.getFirmwareFamily(rawKey);
+      final normalizedKey =
+          effectiveFamily.replaceAll('-', '').replaceAll('_', '').toUpperCase();
 
-      if (key.startsWith('DYNAMIC_')) {
-        effectiveKey = key.substring('DYNAMIC_'.length);
-      } else {
-        effectiveKey = key.replaceAll(RegExp(r'[-_]\d+$'), '');
-      }
-
-      String normalizedKey =
-          effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
-      // VD: "AV01NEWHW".contains trong "AV01NEWHW003" → MATCH
-      if (normalizedKey.contains(normalizedVersion) ||
-          normalizedVersion.contains(normalizedKey)) {
+      if (normalizedKey == normalizedVersion) {
         matchingKeys.add(key);
       }
     }
 
     if (matchingKeys.isEmpty) return null;
 
-    // Sắp xếp các key ưu tiên:
-    // Những file có tiền tố DYNAMIC_ (được tải thực tế) xếp trên các file Code cứng
     matchingKeys.sort((a, b) {
       bool isADynamic = a.startsWith('DYNAMIC_');
       bool isBDynamic = b.startsWith('DYNAMIC_');
-
       if (isADynamic && !isBDynamic) return -1;
       if (!isADynamic && isBDynamic) return 1;
       return 0;
     });
 
-    // Thử lấy file đầu tiên (mới nhất), kiểm tra version rồi mới trả về
     for (var key in matchingKeys) {
-      final filePath = fallbackCache[key]['localFilePath'];
-      final url = fallbackCache[key]['url'] ?? '';
+      final entry = fallbackCache[key];
+      final filePath = entry['localFilePath'];
+      final url = entry['url'] ?? '';
+      final savedVersion = entry['version']?.toString() ?? '';
       final file = File(filePath);
       if (!await file.exists()) continue;
 
-      // SO SÁNH VERSION
-      final fileName = Uri.parse(url).pathSegments.isNotEmpty
-          ? Uri.parse(url).pathSegments.last
-          : filePath.split('/').last;
-      int fileVersionNum = extractVersionNumber(fileName);
-      // Nếu khác version thì trả về để thực hiện update
-      if (fileVersionNum != deviceVersionNum) {
-        // File khác version (lớn hơn hoặc nhỏ hơn đều cho nạp) → hiện thông báo cập nhật!
+      // SỬA: so đúng version-vs-version (không so version-vs-tên-file-theo-ngày nữa)
+      final savedVersionNum = extractVersionNumber(savedVersion);
+      if (savedVersion.isNotEmpty && savedVersionNum != deviceVersionNum) {
         return {
           'localFilePath': filePath,
           'url': url,
+          'version': savedVersion,
         };
-      } else {}
+      }
     }
 
     return null;
@@ -342,55 +332,107 @@ class OfflineOTAService {
   //   }
   // }
 
-  static Future<void> pushFirmwareViaHttp(String ip, String filePath) async {
+  static Future<void> pushFirmwareViaHttp(
+      String ip, String filePath, String expectedVersion) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception("Firmware file not found at $filePath");
+    }
+
+    print(
+        'Offline OTA: Pushing firmware via HTTP POST to http://$ip/update-firmware');
+
+    final url = Uri.parse('http://$ip/update-firmware');
+    final bytes = await file.readAsBytes();
+
     try {
-      final file = File(filePath);
-      if (!await file.exists()) {
-        throw Exception("Firmware file not found at $filePath");
-      }
-
-      print(
-          'Offline OTA: Pushing firmware via HTTP POST to http://$ip/update-firmware');
-
-      final url = Uri.parse('http://$ip/update-firmware');
-
-      // Đọc toàn bộ file nhị phân
-      final bytes = await file.readAsBytes();
-
-      // Giống hệt code Web UI (xhr.setRequestHeader('Content-Type', 'application/octet-stream'))
       var response = await http
           .post(
             url,
-            headers: {
-              'Content-Type': 'application/octet-stream',
-            },
+            headers: {'Content-Type': 'application/octet-stream'},
             body: bytes,
           )
           .timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
-        final respStr = response.body;
-        print(
-            'Offline OTA: Push HTTP completed successfully. FW Response: $respStr');
+        print('Offline OTA: Push HTTP completed successfully (HTTP 200).');
       } else {
         throw Exception("HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
-      // Khi Firmware update thành công, nó thường sẽ lập tức Reset (khởi động lại)
-      // Việc khởi động lại đột ngột sẽ ngắt kết nối HTTP khiến App văng lỗi SocketException / ClientException
-      // Do đó, nếu gặp lỗi ngắt kết nối đột ngột, ta có thể ngầm hiểu là Mạch đã nạp thành công và đang Reset!
       final errorStr = e.toString().toLowerCase();
-      if (errorStr.contains('connection abort') ||
+      final looksLikeReboot = errorStr.contains('connection abort') ||
           errorStr.contains('connection reset') ||
-          errorStr.contains('socketexception')) {
-        print(
-            'Offline OTA: Mạch ngắt kết nối đột ngột (Khả năng cao là update thành công và đang Reboot). Bỏ qua lỗi!');
-        return; // Coi như thành công
-      }
+          errorStr.contains('socketexception');
+      print(
+          'Offline OTA: Chi tiết lỗi khi push: $e'); // THÊM DÒNG NÀY để xem chính xác lỗi gì
 
-      print('Offline OTA: Failed to push firmware via HTTP: $e');
-      rethrow;
+      if (!looksLikeReboot) {
+        print('Offline OTA: Failed to push firmware via HTTP: $e');
+        rethrow;
+      }
+      print(
+          'Offline OTA: Mất kết nối khi push (có thể đang reboot, có thể lỗi thật) - sẽ verify lại.');
     }
+
+    // --- XÁC MINH THẬT: chờ mạch reboot rồi hỏi lại /status ---
+    final verified = await _verifyFirmwareApplied(ip, expectedVersion);
+    if (!verified) {
+      throw Exception(
+          'Không xác nhận được mạch đã cập nhật firmware (FW không đổi sau khi push).');
+    }
+  }
+
+  /// Đợi mạch khởi động lại rồi gọi GET /status kiểm tra field "FW"
+  /// có bằng đúng [expectedVersion] hay không.
+  static Future<bool> _verifyFirmwareApplied(
+      String ip, String expectedVersion) async {
+    const maxAttempts = 6;
+    const delayBetweenAttempts = Duration(seconds: 5);
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      await Future.delayed(delayBetweenAttempts);
+      try {
+        final response = await http
+            .get(Uri.parse('http://$ip/status'))
+            .timeout(const Duration(seconds: 3));
+
+        if (response.statusCode != 200) {
+          print(
+              'Offline OTA: Verify lần $attempt - HTTP ${response.statusCode}, thử lại...');
+          continue;
+        }
+
+        final jsonData = json.decode(response.body);
+        if (jsonData is! Map<String, dynamic> || jsonData['FW'] == null) {
+          print(
+              'Offline OTA: Verify lần $attempt - response không hợp lệ, thử lại...');
+          continue;
+        }
+
+        final currentFw = jsonData['FW'].toString();
+        print(
+            'Offline OTA: Verify lần $attempt - FW hiện tại: $currentFw (mong đợi: $expectedVersion)');
+
+        if (currentFw == expectedVersion) {
+          print('Offline OTA: Xác nhận update THÀNH CÔNG (FW = $currentFw)');
+          return true;
+        } else {
+          // Mạch đã online lại (trả lời /status) nhưng FW không đổi -> update thất bại thật
+          print(
+              'Offline OTA: Mạch đã online lại nhưng FW chưa đổi -> update THẤT BẠI');
+          return false;
+        }
+      } catch (e) {
+        print(
+            'Offline OTA: Verify lần $attempt chưa kết nối được (mạch có thể đang reboot): $e');
+        // tiếp tục vòng lặp, thử lại lần sau
+      }
+    }
+
+    print(
+        'Offline OTA: Hết ${maxAttempts * delayBetweenAttempts.inSeconds}s chờ verify, không xác nhận được kết quả update.');
+    return false;
   }
 
   static Future<void> controlDeviceViaHttp(
@@ -398,14 +440,23 @@ class OfflineOTAService {
     try {
       final url = Uri.parse('http://$ip/control');
 
-      print('HTTP Control: Sending POST request to $url');
+      // Chuyển mảng byte (ví dụ: [35, 48, 58, 49, 49, 33]) thành chuỗi "#0:11!"
+      final commandString = utf8.decode(commandBytes);
+
+      // Đóng gói thành định dạng JSON mà Firmware đang yêu cầu: {"cmd":"#0:11!"}
+      final bodyMap = {"cmd": commandString};
+
+      print(
+          'HTTP Control: Sending POST request to $url with body: ${jsonEncode(bodyMap)}');
+
       var response = await http
           .post(
             url,
             headers: {
-              'Content-Type': 'application/octet-stream',
+              'Content-Type':
+                  'application/json', // Bắt buộc là application/json vì FW đọc JSON
             },
-            body: commandBytes,
+            body: jsonEncode(bodyMap), // Encode map thành chuỗi JSON string
           )
           .timeout(const Duration(seconds: 3));
 
@@ -417,5 +468,46 @@ class OfflineOTAService {
       print('HTTP Control: Failed to send command: $e');
       rethrow;
     }
+  }
+
+  /// Lấy danh sách firmware đã tải sẵn trong máy (đọc cache, KHÔNG gọi mạng).
+  /// Dùng khi HW không xác định VÀ không có Internet — để vẫn cho người dùng
+  /// chọn 1 trong các bản đã tải trước đó (qua nút Profile hoặc sync nền).
+  static Future<List<Map<String, dynamic>>> getCachedBackupFirmwares() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(otaFallbackKey);
+    if (data == null) return [];
+
+    final Map<String, dynamic> fallbackCache = json.decode(data);
+    final result = <Map<String, dynamic>>[];
+
+    for (final entry in fallbackCache.entries) {
+      final value = entry.value;
+      final localFilePath = value['localFilePath'];
+      if (localFilePath == null) continue;
+
+      final file = File(localFilePath);
+      if (!await file.exists())
+        continue; // file đã bị xoá thì bỏ qua, tránh cho chọn bản không còn tồn tại
+
+      final url = value['url']?.toString() ?? '';
+      final key = entry.key;
+      final family =
+          key.startsWith('DYNAMIC_') ? key.substring('DYNAMIC_'.length) : key;
+      final version = value['version']?.toString() ?? family;
+
+      result.add({
+        'version': version,
+        'update_url': url,
+        'url': url,
+        'hardware': family,
+        'is_newest': false,
+        'description': 'Firmware $version (đã lưu trong máy)',
+      });
+    }
+
+    result.sort(
+        (a, b) => (a['version'] as String).compareTo(b['version'] as String));
+    return result;
   }
 }

@@ -84,43 +84,26 @@ mixin WifiSocketMixin on AppProviderState {
       disconnectBLE();
       tcpIP = ip;
 
-      socketTCP = await socketService.connect(
-        ip,
-        port,
-        convertDataToStatus,
-      );
-
+      var isSocketConnected = false;
+      Object? socketError;
       try {
-        print('Đang gọi HTTP GET để lấy thông tin mạch...');
-        final response = await http
-            .get(Uri.parse('http://$ip/status'))
-            .timeout(const Duration(seconds: 3));
-        if (response.statusCode == 200) {
-          final jsonData = json.decode(response.body);
+        socketTCP = await socketService.connect(
+          ip,
+          port,
+          convertDataToStatus,
+        );
+        isSocketConnected = true;
+      } catch (e) {
+        socketTCP = null;
+        socketError = e;
+        print('Không kết nối được TCP socket, thử HTTP server: $e');
+      }
 
-          if (jsonData['FW'] != null) {
-            version = jsonData['FW'].toString();
-          }
-          if (jsonData['MAC'] != null) {
-            String rawMac = jsonData['MAC'].toString();
-            if (rawMac.contains('WIFI-')) {
-              final parts = rawMac.split('WIFI-');
-              if (parts.length > 1) {
-                wifiApMac = parts[1].split(',')[0].trim();
-              }
-            } else {
-              wifiApMac = rawMac.trim();
-            }
-          }
+      final isHttpConnected = await _loadDeviceStatusViaHttp(ip);
 
-          print(
-              'Lấy thông tin thành công: MAC=$wifiApMac, FW=$version, HW=$hardwareVersion');
-
-          if (wifiApMac != null && wifiApMac!.isNotEmpty) {
-            OfflineOTAService.saveDevice(wifiApMac!, version ?? "0.0.0");
-          }
-        }
-      } catch (e) {}
+      if (!isSocketConnected && !isHttpConnected) {
+        throw socketError ?? Exception('Không thể kết nối HTTP tới mạch');
+      }
 
       mdnsConnectedClient =
           MdnsConnectedClient(name: name, host: ip, port: port);
@@ -158,6 +141,52 @@ mixin WifiSocketMixin on AppProviderState {
         );
       }
       rethrow;
+    }
+  }
+
+  Future<bool> _loadDeviceStatusViaHttp(String ip) async {
+    try {
+      print('Đang gọi HTTP GET để lấy thông tin mạch...');
+      final response = await http
+          .get(Uri.parse('http://$ip/status'))
+          .timeout(const Duration(seconds: 3));
+
+      if (response.statusCode != 200) {
+        print('HTTP status thất bại: ${response.statusCode}');
+        return false;
+      }
+
+      final jsonData = json.decode(response.body);
+      if (jsonData is! Map<String, dynamic>) {
+        print('HTTP status không đúng định dạng JSON object');
+        return false;
+      }
+
+      if (jsonData['FW'] != null) {
+        version = jsonData['FW'].toString();
+      }
+      if (jsonData['MAC'] != null) {
+        String rawMac = jsonData['MAC'].toString();
+        if (rawMac.contains('WIFI-')) {
+          final parts = rawMac.split('WIFI-');
+          if (parts.length > 1) {
+            wifiApMac = parts[1].split(',')[0].trim();
+          }
+        } else {
+          wifiApMac = rawMac.trim();
+        }
+      }
+
+      print(
+          'Lấy thông tin thành công: MAC=$wifiApMac, FW=$version, HW=$hardwareVersion');
+
+      if (wifiApMac != null && wifiApMac!.isNotEmpty) {
+        await OfflineOTAService.saveDevice(wifiApMac!, version ?? "0.0.0");
+      }
+      return true;
+    } catch (e) {
+      print('Không lấy được thông tin mạch qua HTTP: $e');
+      return false;
     }
   }
 

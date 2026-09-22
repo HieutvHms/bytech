@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class LogsService {
-  static const String baseUrl = 'http://42.96.40.74:8899';
+  static const String baseUrl = 'https://rtv.devbt.com';
   static const String logsEndpoint = '/logs';
   static const String firmwareCheckEndpoint = '/firmware/check';
 
@@ -41,14 +41,16 @@ class LogsService {
         'version': version,
       };
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(requestBody),
+          )
+          .timeout(const Duration(seconds: 5));
 
       return response;
     } catch (e) {
