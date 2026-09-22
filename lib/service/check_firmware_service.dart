@@ -93,6 +93,10 @@ class CheckFirmwareService {
       if (fallbackFile != null) {
         print(
             'Offline OTA: Dùng firmware cache theo dòng máy cho $currentVersion');
+        print(
+            'Offline OTA: => File được chọn: ${fallbackFile['localFilePath']}');
+        print(
+            'Offline OTA: => Version của file: ${fallbackFile['version']}');
         return FirmwareCheckResult(
           deviceMac: mac,
           currentVersion: currentVersion,

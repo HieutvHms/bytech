@@ -292,7 +292,9 @@ Widget _deviceCard(
                     ),
                     const SizedBox(width: 16),
                     if (deviceName == provider.bluetoothDevice?.name ||
-                        deviceName == provider.mdnsConnectedClient?.name)
+                        deviceName == provider.mdnsConnectedClient?.name ||
+                        (provider.connectStatus == ConnectStatus.SOCKET &&
+                            deviceName == provider.wifiApMac))
                       Text(
                         "Connected",
                         style: CustomTextStyle.bodyMedium
@@ -317,17 +319,27 @@ Widget _deviceCard(
                 ),
                 const SizedBox(width: 24),
                 if (deviceName == provider.bluetoothDevice?.name ||
-                    deviceName == provider.mdnsConnectedClient?.name)
+                    deviceName == provider.mdnsConnectedClient?.name ||
+                    (provider.connectStatus == ConnectStatus.SOCKET &&
+                        deviceName == provider.wifiApMac))
                   StreamBuilder(
                     stream: Provider.of<AppProvider>(context).motorStatus,
                     builder: (context, snapshot) {
+                      final isHttpControl =
+                          provider.connectStatus == ConnectStatus.SOCKET &&
+                              provider.socketTCP == null;
+                      final canMoveIn =
+                          isHttpControl || snapshot.data?.canMoveIn() == true;
+                      final canMoveOut =
+                          isHttpControl || snapshot.data?.canMoveOut() == true;
+
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           HomeControlButton(
                             onTap: () {},
                             iconData: Icons.arrow_back,
-                            enable: snapshot.data?.canMoveIn() == true,
+                            enable: canMoveIn,
                             onLongPressStart: () {
                               provider.controlMotor(ControlType.GO_IN);
                             },
@@ -339,7 +351,7 @@ Widget _deviceCard(
                           HomeControlButton(
                             onTap: () {},
                             iconData: Icons.arrow_forward,
-                            enable: snapshot.data?.canMoveOut() == true,
+                            enable: canMoveOut,
                             onLongPressStart: () {
                               provider.controlMotor(ControlType.GO_OUT);
                             },

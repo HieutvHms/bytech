@@ -220,11 +220,29 @@ mixin OtaUpdateMixin on AppProviderState {
         }
       }).catchError((e) {
         if (globalKey.currentContext != null) {
+          // Tắt cái dialog "Đang gửi Firmware..."
           Navigator.pop(globalKey.currentContext!);
-          showStatus(
-            buildContext: globalKey.currentContext!,
-            message: 'Lỗi cập nhật firmware: $e',
-            succcess: false,
+          
+          // Hiện Dialog báo lỗi / timeout
+          showDialog(
+            context: globalKey.currentContext!,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Cập nhật thất bại', style: TextStyle(color: Colors.red)),
+                content: Text(
+                    'Đã hết thời gian chờ hoặc có lỗi xảy ra trong quá trình nạp Firmware xuống mạch.\n\n'
+                    'Chi tiết lỗi:\n$e\n\n'
+                    'Vui lòng khởi động lại mạch và thử lại.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Đóng'),
+                  ),
+                ],
+              );
+            },
           );
         }
       });
@@ -355,7 +373,9 @@ mixin OtaUpdateMixin on AppProviderState {
             String autoFallbackFile = autoFallbackData['localFilePath']!;
             String url = autoFallbackData['url']!;
             String fileName = Uri.parse(url).pathSegments.last;
-            String fileVersion = fileName.replaceAll('.bin', '');
+            // DÙNG VERSION THẬT TRẢ VỀ TỪ GET FALLBACK
+            String fileVersion =
+                autoFallbackData['version'] ?? fileName.replaceAll('.bin', '');
 
             if (fileVersion != version) {
               if (globalKey.currentContext != null) {
@@ -393,7 +413,8 @@ mixin OtaUpdateMixin on AppProviderState {
                                     children: [
                                       const TextSpan(text: 'Tìm thấy bản '),
                                       TextSpan(
-                                        text: fileName,
+                                        text:
+                                            fileVersion, // HIỂN THỊ VERSION THẬT THAY VÌ TÊN FILE
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w700,
                                           color: Colors.black87,

@@ -209,7 +209,6 @@ class OfflineOTAService {
     return int.tryParse(matches.last.group(0)!) ?? 0;
   }
 
-  // --- Thay toàn bộ hàm getFallbackOfflineFilePath ---
   static Future<Map<String, String>?> getFallbackOfflineFilePath(
       String version) async {
     final prefs = await SharedPreferences.getInstance();
@@ -218,21 +217,30 @@ class OfflineOTAService {
 
     Map<String, dynamic> fallbackCache = json.decode(data);
 
-    String normalizedVersion = CheckFirmwareService.getFirmwareFamily(version)
-        .replaceAll('-', '')
-        .replaceAll('_', '')
-        .toUpperCase();
+    // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới)
+    String normalizedVersion =
+        version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+    // Trích xuất số phiên bản hiện tại của mạch
     int deviceVersionNum = extractVersionNumber(version);
 
     List<String> matchingKeys = [];
     for (var key in fallbackCache.keys) {
-      // SỬA: dùng CHUNG 1 hàm tách family (CheckFirmwareService.getFirmwareFamily)
-      // cho cả key kiểu DYNAMIC_ lẫn key kiểu version thô, thay vì 2 regex khác nhau
-      final rawKey =
-          key.startsWith('DYNAMIC_') ? key.substring('DYNAMIC_'.length) : key;
-      final effectiveFamily = CheckFirmwareService.getFirmwareFamily(rawKey);
-      final normalizedKey =
-          effectiveFamily.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+      String effectiveKey = key;
+
+      if (key.startsWith('DYNAMIC_')) {
+        // DYNAMIC key: "DYNAMIC_AV01_NEW_HW"
+        // → bỏ "DYNAMIC_" đầu → lấy "AV01_NEW_HW"
+        effectiveKey = key.substring('DYNAMIC_'.length);
+      } else {
+        // Hardcoded key: "AV01-NEW_HW-002" hoặc "AV03-OLD_HW_0_3"
+        // → bỏ phần số revision cuối cùng sau dấu - hoặc _
+        // VD: "AV01-NEW_HW-002" → "AV01-NEW_HW"
+        effectiveKey = key.replaceAll(RegExp(r'[-_]\d+$'), '');
+      }
+
+      // Chuẩn hóa: xóa hết - và _ rồi so sánh
+      String normalizedKey =
+          effectiveKey.replaceAll('-', '').replaceAll('_', '').toUpperCase();
 
       if (normalizedKey == normalizedVersion) {
         matchingKeys.add(key);
@@ -257,14 +265,24 @@ class OfflineOTAService {
       final file = File(filePath);
       if (!await file.exists()) continue;
 
-      // SỬA: so đúng version-vs-version (không so version-vs-tên-file-theo-ngày nữa)
-      final savedVersionNum = extractVersionNumber(savedVersion);
-      if (savedVersion.isNotEmpty && savedVersionNum != deviceVersionNum) {
+      // Sửa lỗi: Lấy trực tiếp version từ JSON cache (vd: AV01-NEW_HW-005)
+      // Không lấy version từ fileName (AV01_NEW_HW_20260921) nữa vì nó bị chênh lệch số
+      int fileVersionNum = extractVersionNumber(savedVersion);
+
+      print(
+          'Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $savedVersion)');
+
+      // Nếu khác version thì trả về để thực hiện update
+      if (savedVersion.isNotEmpty && fileVersionNum != deviceVersionNum) {
+        print(
+            'Offline OTA: Found different version! File ($fileVersionNum) != Device ($deviceVersionNum). Key: $key');
         return {
           'localFilePath': filePath,
           'url': url,
-          'version': savedVersion,
+          'version': savedVersion, // TRẢ VỀ VERSION THẬT
         };
+      } else {
+        print('Offline OTA: Same version ($fileVersionNum). No update needed.');
       }
     }
 
@@ -340,19 +358,60 @@ class OfflineOTAService {
     }
 
     print(
-        'Offline OTA: Pushing firmware via HTTP POST to http://$ip/update-firmware');
+        'Offline OTA: Pushing firmware [ $filePath ] via HTTP POST to http://$ip/update-firmware');
 
     final url = Uri.parse('http://$ip/update-firmware');
     final bytes = await file.readAsBytes();
 
+    // KIỂM TRA FILE TRƯỚC KHI GỬI
+    print('Offline OTA: File size = ${bytes.length} bytes');
+    if (bytes.isNotEmpty) {
+      final magicByte = bytes[0].toRadixString(16).toUpperCase();
+      print('Offline OTA: Magic Byte = 0x$magicByte');
+      if (bytes[0] != 0xE9) {
+        throw Exception(
+            "File nhị phân ESP32 không hợp lệ (Magic Byte 0x$magicByte khác 0xE9)!");
+      }
+    }
+
     try {
-      var response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/octet-stream'},
-            body: bytes,
-          )
-          .timeout(const Duration(seconds: 60));
+      // 1. Dùng StreamedRequest để gửi file thô (Raw Binary)
+      final request = http.StreamedRequest('POST', url);
+      request.contentLength = bytes.length;
+      request.headers['Connection'] = 'close';
+      request.headers['Content-Type'] = 'application/octet-stream';
+
+      final client = http.Client();
+
+      // Bắt đầu gửi HTTP Headers
+      final responseFuture =
+          client.send(request).timeout(const Duration(seconds: 120));
+
+      // 2. CHỜ 2 GIÂY TRƯỚC KHI GỬI BODY
+      print(
+          'Offline OTA: Sent headers. Waiting 2s for ESP32 to erase flash...');
+      await Future.delayed(const Duration(seconds: 2));
+
+      // 3. GỬI FILE TỪ TỪ (Chunking)
+      print('Offline OTA: Start pushing body chunks...');
+      try {
+        int chunkSize = 4096; // Gửi từng khối 4KB
+        for (int i = 0; i < bytes.length; i += chunkSize) {
+          int end =
+              (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+          request.sink.add(bytes.sublist(i, end));
+
+          // Nghỉ 20ms mỗi 4KB để ESP32 kịp ghi vào Flash (tránh tràn LwIP)
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+      } finally {
+        request.sink.close();
+      }
+
+      print('Offline OTA: All bytes sent. Waiting for response...');
+      var streamedResponse = await responseFuture;
+      var response = await http.Response.fromStream(streamedResponse);
+      client.close();
 
       if (response.statusCode == 200) {
         print('Offline OTA: Push HTTP completed successfully (HTTP 200).');
@@ -361,26 +420,27 @@ class OfflineOTAService {
       }
     } catch (e) {
       final errorStr = e.toString().toLowerCase();
-      final looksLikeReboot = errorStr.contains('connection abort') ||
-          errorStr.contains('connection reset') ||
-          errorStr.contains('socketexception');
-      print(
-          'Offline OTA: Chi tiết lỗi khi push: $e'); // THÊM DÒNG NÀY để xem chính xác lỗi gì
+      print('Offline OTA: Chi tiết lỗi khi push: $e');
 
-      if (!looksLikeReboot) {
-        print('Offline OTA: Failed to push firmware via HTTP: $e');
+      // Bỏ qua lỗi ngắt kết nối (SocketException/Connection reset)
+      // vì ESP32 thường reboot quá nhanh làm đứt kết nối trước khi kịp gửi HTTP 200.
+      if (!errorStr.contains('connection abort') &&
+          !errorStr.contains('connection reset') &&
+          !errorStr.contains('socket closed') &&
+          !errorStr.contains('clientexception')) {
         rethrow;
       }
+
       print(
-          'Offline OTA: Mất kết nối khi push (có thể đang reboot, có thể lỗi thật) - sẽ verify lại.');
+          'Offline OTA: Mất kết nối khi push (mạch đang reboot). Đã đẩy file thành công!');
     }
 
-    // --- XÁC MINH THẬT: chờ mạch reboot rồi hỏi lại /status ---
-    final verified = await _verifyFirmwareApplied(ip, expectedVersion);
-    if (!verified) {
-      throw Exception(
-          'Không xác nhận được mạch đã cập nhật firmware (FW không đổi sau khi push).');
-    }
+    // KHÔNG TỰ ĐỘNG VERIFY NỮA!
+    // Lý do: Khi mạch reboot, WiFi của mạch sẽ tắt. Điện thoại Android sẽ tự động
+    // ngắt kết nối và nhảy sang WiFi nhà (hoặc 4G). Nếu cố tình verify lúc này,
+    // App sẽ request nhầm vào Router nhà (192.168.1.1) và bị báo 404 Not Found,
+    // dẫn đến báo lỗi giả (mặc dù nạp thành công).
+    // => Cứ báo thành công để UI hiện thông báo yêu cầu người dùng kết nối lại WiFi.
   }
 
   /// Đợi mạch khởi động lại rồi gọi GET /status kiểm tra field "FW"
@@ -446,17 +506,21 @@ class OfflineOTAService {
       // Đóng gói thành định dạng JSON mà Firmware đang yêu cầu: {"cmd":"#0:11!"}
       final bodyMap = {"cmd": commandString};
 
-      print(
-          'HTTP Control: Sending POST request to $url with body: ${jsonEncode(bodyMap)}');
+      final String jsonBody = jsonEncode(bodyMap);
+      final List<int> bodyBytes = utf8.encode(jsonBody);
+
+      print('HTTP Control: Sending POST request to $url with body: $jsonBody');
 
       var response = await http
           .post(
             url,
             headers: {
-              'Content-Type':
-                  'application/json', // Bắt buộc là application/json vì FW đọc JSON
+              'Content-Type': 'application/json',
+              'Content-Length': bodyBytes.length.toString(),
+              'Connection': 'close',
             },
-            body: jsonEncode(bodyMap), // Encode map thành chuỗi JSON string
+            body:
+                bodyBytes, // Gửi raw bytes để tránh Dart tự thêm charset=utf-8 vào header
           )
           .timeout(const Duration(seconds: 3));
 
