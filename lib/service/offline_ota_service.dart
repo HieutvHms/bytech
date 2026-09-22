@@ -203,10 +203,16 @@ class OfflineOTAService {
   ///     "AV03-NEW_HW-002"         → 2
   ///     "AV01-NEW_HW-003"         → 3
   static int extractVersionNumber(String s) {
-    final clean = s.replaceAll('.bin', '');
-    final matches = RegExp(r'\d+').allMatches(clean).toList();
-    if (matches.isEmpty) return 0;
-    return int.tryParse(matches.last.group(0)!) ?? 0;
+    final clean = s.replaceAll('.bin', '').trim();
+    final parts = clean.split(RegExp(r'[-_]'));
+    if (parts.isEmpty) return 0;
+
+    final lastPart = parts.last;
+    if (RegExp(r'^\d+$').hasMatch(lastPart)) {
+      return int.tryParse(lastPart) ?? 0;
+    }
+
+    return 0; // Trả về 0 nếu không có phần hậu tố là số (VD: AV01_NEW_HW)
   }
 
   static Future<Map<String, String>?> getFallbackOfflineFilePath(
@@ -217,9 +223,10 @@ class OfflineOTAService {
 
     Map<String, dynamic> fallbackCache = json.decode(data);
 
-    // Chuẩn hóa chuỗi để so sánh (xóa hết gạch ngang và gạch dưới)
+    // Loại bỏ số đuôi (VD: AV01-NEW_HW-004 -> AV01-NEW_HW) trước khi chuẩn hóa
+    String effectiveVersion = version.replaceAll(RegExp(r'[-_]\d+$'), '');
     String normalizedVersion =
-        version.replaceAll('-', '').replaceAll('_', '').toUpperCase();
+        effectiveVersion.replaceAll('-', '').replaceAll('_', '').toUpperCase();
     // Trích xuất số phiên bản hiện tại của mạch
     int deviceVersionNum = extractVersionNumber(version);
 
@@ -270,7 +277,7 @@ class OfflineOTAService {
       int fileVersionNum = extractVersionNumber(savedVersion);
 
       print(
-          'Offline OTA: Device version num=$deviceVersionNum, File version num=$fileVersionNum (from $savedVersion)');
+          'Offline OTA: Device version string="$version" -> num=$deviceVersionNum, File version num=$fileVersionNum (from $savedVersion)');
 
       // Nếu phiên bản file lớn hơn phiên bản hiện tại thì trả về để update
       if (savedVersion.isNotEmpty && fileVersionNum > deviceVersionNum) {
