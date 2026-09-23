@@ -190,8 +190,6 @@ class OfflineOTAService {
 
   /// Trích xuất số phiên bản cuối cùng trong chuỗi
   /// VD: "AV03_NEW_HW_12102025.bin" → 12102025
-  ///     "AV03-NEW_HW-002"         → 2
-  ///     "AV01-NEW_HW-003"         → 3
   static double extractVersionNumber(String s) {
     try {
       final clean = s.replaceAll('.bin', '').trim();
@@ -261,7 +259,6 @@ class OfflineOTAService {
       final file = File(filePath);
       if (!await file.exists()) continue;
 
-      // Sửa lỗi: Lấy trực tiếp version từ JSON cache (vd: AV01-NEW_HW-005)
       // Không lấy version từ fileName (AV01_NEW_HW_20260921) nữa vì nó bị chênh lệch số
       double fileVersionNum = extractVersionNumber(savedVersion);
 

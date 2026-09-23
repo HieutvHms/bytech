@@ -132,10 +132,10 @@ mixin OtaUpdateMixin on AppProviderState {
             throw Exception('Đường dẫn không hợp lệ và không phải URL: $url');
           }
 
-          if (hardwareVersion != null) {
+          if (version != null) {
             final fallbackData =
                 await OfflineOTAService.getFallbackOfflineFilePath(
-                    hardwareVersion!);
+                    version!);
             if (fallbackData != null && fallbackData['url'] == url) {
               final cachedFile = File(fallbackData['localFilePath']!);
               if (await cachedFile.exists()) {
@@ -222,13 +222,14 @@ mixin OtaUpdateMixin on AppProviderState {
         if (globalKey.currentContext != null) {
           // Tắt cái dialog "Đang gửi Firmware..."
           Navigator.pop(globalKey.currentContext!);
-          
+
           // Hiện Dialog báo lỗi / timeout
           showDialog(
             context: globalKey.currentContext!,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: const Text('Cập nhật thất bại', style: TextStyle(color: Colors.red)),
+                title: const Text('Cập nhật thất bại',
+                    style: TextStyle(color: Colors.red)),
                 content: Text(
                     'Đã hết thời gian chờ hoặc có lỗi xảy ra trong quá trình nạp Firmware xuống mạch.\n\n'
                     'Chi tiết lỗi:\n$e\n\n'
@@ -287,7 +288,7 @@ mixin OtaUpdateMixin on AppProviderState {
     print("Checking firmware for device: $deviceMac, version: $version");
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      bool apiCallSucceeded = false; // ✅ khai báo ở scope ngoài cùng
+      bool apiCallSucceeded = false;
 
       if (!connectivityResult.contains(ConnectivityResult.none)) {
         if (hardwareVersion == null) {
@@ -364,10 +365,10 @@ mixin OtaUpdateMixin on AppProviderState {
           return null;
         }
 
-        if (hardwareVersion != null) {
+        if (version != null) {
           Map<String, String>? autoFallbackData =
               await OfflineOTAService.getFallbackOfflineFilePath(
-                  hardwareVersion!);
+                  version!);
 
           if (autoFallbackData != null) {
             String autoFallbackFile = autoFallbackData['localFilePath']!;
