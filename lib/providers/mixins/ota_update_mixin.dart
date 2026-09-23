@@ -134,8 +134,7 @@ mixin OtaUpdateMixin on AppProviderState {
 
           if (version != null) {
             final fallbackData =
-                await OfflineOTAService.getFallbackOfflineFilePath(
-                    version!);
+                await OfflineOTAService.getFallbackOfflineFilePath(version!);
             if (fallbackData != null && fallbackData['url'] == url) {
               final cachedFile = File(fallbackData['localFilePath']!);
               if (await cachedFile.exists()) {
@@ -367,8 +366,7 @@ mixin OtaUpdateMixin on AppProviderState {
 
         if (version != null) {
           Map<String, String>? autoFallbackData =
-              await OfflineOTAService.getFallbackOfflineFilePath(
-                  version!);
+              await OfflineOTAService.getFallbackOfflineFilePath(version!);
 
           if (autoFallbackData != null) {
             String autoFallbackFile = autoFallbackData['localFilePath']!;
@@ -500,10 +498,10 @@ mixin OtaUpdateMixin on AppProviderState {
             }
           } else {
             if (globalKey.currentContext != null) {
-              SnackbarHelper.showError(
+              SnackbarHelper.showSuccess(
                 globalKey.currentContext!,
-                '',
-                'Không có kết nối Internet và không tìm thấy bản cập nhật Offline',
+                'Tuyệt vời',
+                'Thiết bị đang sử dụng phiên bản Firmware mới nhất hiện có trong điện thoại.',
               );
             }
           }
