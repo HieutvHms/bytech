@@ -327,7 +327,8 @@ Widget _deviceCard(
                     builder: (context, snapshot) {
                       final isHttpControl =
                           provider.connectStatus == ConnectStatus.SOCKET &&
-                              provider.socketTCP == null;
+                              (provider.socketTCP == null ||
+                                  provider.tcpIP == '192.168.1.1');
                       final canMoveIn =
                           isHttpControl || snapshot.data?.canMoveIn() == true;
                       final canMoveOut =

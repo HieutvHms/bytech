@@ -38,13 +38,9 @@ class OfflineOTAService {
       final List<ConnectivityResult> connectivityResult =
           await (Connectivity().checkConnectivity());
       if (connectivityResult.contains(ConnectivityResult.none)) {
-        print('Offline OTA: No internet, skip background sync');
         return;
       }
-    } catch (e) {
-      print(
-          'Offline OTA: Connectivity check failed, proceeding anyway. Error: $e');
-    }
+    } catch (e) {}
 
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(otaDevicesKey);
@@ -63,19 +59,13 @@ class OfflineOTAService {
         if (result != null && !result.noUpdate && result.updateUrl.isNotEmpty) {
           if (device['latestVersion'] != result.latestVersion ||
               device['localFilePath'] == null) {
-            print(
-                'Offline OTA: Downloading firmware for $mac from ${result.updateUrl}');
-            // Xóa file cũ để dọn dẹp rác bộ nhớ
             if (device['localFilePath'] != null) {
               try {
                 final oldFile = File(device['localFilePath']);
                 if (await oldFile.exists()) {
                   await oldFile.delete();
-                  print('Offline OTA: Deleted old firmware file.');
                 }
-              } catch (e) {
-                print('Offline OTA: Failed to delete old firmware file: $e');
-              }
+              } catch (e) {}
             }
             final directory = await getApplicationDocumentsDirectory();
             // Lấy tên file gốc từ URL (VD: AV01_NEW_HW_12102025.bin)
@@ -202,17 +192,16 @@ class OfflineOTAService {
   /// VD: "AV03_NEW_HW_12102025.bin" → 12102025
   ///     "AV03-NEW_HW-002"         → 2
   ///     "AV01-NEW_HW-003"         → 3
-  static int extractVersionNumber(String s) {
-    final clean = s.replaceAll('.bin', '').trim();
-    final parts = clean.split(RegExp(r'[-_]'));
-    if (parts.isEmpty) return 0;
-
-    final lastPart = parts.last;
-    if (RegExp(r'^\d+$').hasMatch(lastPart)) {
-      return int.tryParse(lastPart) ?? 0;
+  static double extractVersionNumber(String s) {
+    try {
+      final clean = s.replaceAll('.bin', '').trim();
+      final parts = clean.split(RegExp(r'[-_]'));
+      if (parts.isEmpty) return 0.0;
+      final lastPart = parts.last;
+      return double.tryParse(lastPart) ?? 0.0;
+    } catch (e) {
+      return 0.0;
     }
-
-    return 0; // Trả về 0 nếu không có phần hậu tố là số (VD: AV01_NEW_HW)
   }
 
   static Future<Map<String, String>?> getFallbackOfflineFilePath(
@@ -223,12 +212,13 @@ class OfflineOTAService {
 
     Map<String, dynamic> fallbackCache = json.decode(data);
 
-    // Loại bỏ số đuôi (VD: AV01-NEW_HW-004 -> AV01-NEW_HW) trước khi chuẩn hóa
-    String effectiveVersion = version.replaceAll(RegExp(r'[-_]\d+$'), '');
+    // Loại bỏ số đuôi (VD: AV01-NEW_HW-004.1 -> AV01-NEW_HW) trước khi chuẩn hóa
+    String effectiveVersion =
+        version.replaceAll(RegExp(r'[-_]\d+(\.\d+)*$'), '');
     String normalizedVersion =
         effectiveVersion.replaceAll('-', '').replaceAll('_', '').toUpperCase();
     // Trích xuất số phiên bản hiện tại của mạch
-    int deviceVersionNum = extractVersionNumber(version);
+    double deviceVersionNum = extractVersionNumber(version);
 
     List<String> matchingKeys = [];
     for (var key in fallbackCache.keys) {
@@ -240,9 +230,8 @@ class OfflineOTAService {
         effectiveKey = key.substring('DYNAMIC_'.length);
       } else {
         // Hardcoded key: "AV01-NEW_HW-002" hoặc "AV03-OLD_HW_0_3"
-        // → bỏ phần số revision cuối cùng sau dấu - hoặc _
-        // VD: "AV01-NEW_HW-002" → "AV01-NEW_HW"
-        effectiveKey = key.replaceAll(RegExp(r'[-_]\d+$'), '');
+        // → bỏ đoạn cuối từ dấu '-' hoặc '_' kèm số
+        effectiveKey = key.replaceAll(RegExp(r'[-_]\d+(\.\d+)*$'), '');
       }
 
       // Chuẩn hóa: xóa hết - và _ rồi so sánh
@@ -274,7 +263,7 @@ class OfflineOTAService {
 
       // Sửa lỗi: Lấy trực tiếp version từ JSON cache (vd: AV01-NEW_HW-005)
       // Không lấy version từ fileName (AV01_NEW_HW_20260921) nữa vì nó bị chênh lệch số
-      int fileVersionNum = extractVersionNumber(savedVersion);
+      double fileVersionNum = extractVersionNumber(savedVersion);
 
       print(
           'Offline OTA: Device version string="$version" -> num=$deviceVersionNum, File version num=$fileVersionNum (from $savedVersion)');
@@ -289,7 +278,8 @@ class OfflineOTAService {
           'version': savedVersion, // TRẢ VỀ VERSION THẬT
         };
       } else {
-        print('Offline OTA: File version ($fileVersionNum) <= Device ($deviceVersionNum). No update needed.');
+        print(
+            'Offline OTA: File version ($fileVersionNum) <= Device ($deviceVersionNum). No update needed.');
       }
     }
 

@@ -16,7 +16,9 @@ mixin DeviceControlMixin on AppProviderState {
         final commandBytes = getCommandByte(controlType);
         ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: commandBytes);
-      } else if (connectStatus == ConnectStatus.SOCKET && socketTCP != null) {
+      } else if (connectStatus == ConnectStatus.SOCKET &&
+          socketTCP != null &&
+          tcpIP != '192.168.1.1') {
         socketService.controlDevice(socketTCP!, controlType);
       } else if (connectStatus == ConnectStatus.SOCKET) {
         final commandBytes = getCommandByte(controlType);
