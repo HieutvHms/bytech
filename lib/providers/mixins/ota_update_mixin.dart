@@ -17,8 +17,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 mixin OtaUpdateMixin on AppProviderState {
   @override
-  @override
-  void updateFirmWare({String? url, String? offlineFilePath}) {
+  void updateFirmWare(
+      {String? url, String? offlineFilePath, String? targetVersion}) {
     if (firmwareCheckResult == null && offlineFilePath == null && url == null) {
       if (globalKey.currentContext != null) {
         showStatus(
@@ -44,6 +44,7 @@ mixin OtaUpdateMixin on AppProviderState {
     }
 
     try {
+      // update qua BLE
       if (connectStatus == ConnectStatus.BLE &&
           bluetoothCharacteristic != null &&
           url != null) {
@@ -79,15 +80,48 @@ mixin OtaUpdateMixin on AppProviderState {
           context: globalKey.currentContext!,
           barrierDismissible: false,
           builder: (BuildContext context) {
-            return const Dialog(
-              child: Padding(
-                padding: EdgeInsets.all(12),
-                child: Row(
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.rectangle,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10.0,
+                      offset: Offset(0.0, 10.0),
+                    ),
+                  ],
+                ),
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(width: 20),
-                    Text("Đang gửi Firmware..."),
+                    SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3.5,
+                        color: CustomColor.primaryColor,
+                      ),
+                    ),
+                    SizedBox(width: 24),
+                    Text(
+                      "Sending Firmware...",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -166,7 +200,8 @@ mixin OtaUpdateMixin on AppProviderState {
           final permanentPath = '${directory.path}/fw_$fileName';
           final permanentFile = File(permanentPath);
           await permanentFile.writeAsBytes(response.bodyBytes);
-          final String exactVersion = fileName.replaceAll('.bin', '');
+          final String exactVersion =
+              targetVersion ?? fileName.replaceAll('.bin', '');
 
           final String hwFamily = hardwareVersion ??
               CheckFirmwareService.getFirmwareFamily(exactVersion);
@@ -194,25 +229,81 @@ mixin OtaUpdateMixin on AppProviderState {
             context: globalKey.currentContext!,
             barrierDismissible: false,
             builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Cập nhật thành công'),
-                content: const Text(
-                    'Thiết bị đã nhận bản cập nhật và đang khởi động lại.\n\n'
-                    'Vui lòng vào Cài đặt Wi-Fi của điện thoại để kết nối lại với mạng của thiết bị (nếu cần), sau đó quay lại màn hình Connect để tiếp tục sử dụng.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      disconnectTCP();
-                      final rootContext = globalKey.currentContext;
-                      if (rootContext != null) {
-                        Navigator.of(rootContext)
-                            .popUntil((route) => route.isFirst);
-                      }
-                    },
-                    child: const Text('Đã hiểu'),
+              return Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10.0,
+                        offset: Offset(0.0, 10.0),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Update Successful',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'The device has received the update and is currently restarting.\n'
+                        'Please reconnect to the device\'s Wi-Fi network in your phone settings, then return to the Connect screen to continue.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: CustomColor.primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            disconnectTCP();
+                            final rootContext = globalKey.currentContext;
+                            if (rootContext != null) {
+                              Navigator.of(rootContext)
+                                  .popUntil((route) => route.isFirst);
+                            }
+                          },
+                          child: const Text(
+                            'Got it',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           );
@@ -476,8 +567,11 @@ mixin OtaUpdateMixin on AppProviderState {
                                         onPressed: () {
                                           Navigator.of(ctx).pop();
                                           updateFirmWare(
-                                              offlineFilePath: autoFallbackFile,
-                                              url: url);
+                                            offlineFilePath: autoFallbackFile,
+                                            url: url,
+                                            targetVersion: firmwareCheckResult
+                                                ?.latestVersion,
+                                          );
                                         },
                                         child: const Text(
                                           'Update',
@@ -500,8 +594,8 @@ mixin OtaUpdateMixin on AppProviderState {
             if (globalKey.currentContext != null) {
               SnackbarHelper.showSuccess(
                 globalKey.currentContext!,
-                'Tuyệt vời',
-                'Thiết bị đang sử dụng phiên bản Firmware mới nhất hiện có trong điện thoại.',
+                '',
+                'The device is using the latest Firmware version',
               );
             }
           }
@@ -646,9 +740,13 @@ mixin OtaUpdateMixin on AppProviderState {
                           Navigator.of(ctx).pop();
                           if (result.isOffline) {
                             // result.updateUrl lúc này là đường dẫn file cục bộ, không phải URL server
-                            updateFirmWare(offlineFilePath: result.updateUrl);
+                            updateFirmWare(
+                                offlineFilePath: result.updateUrl,
+                                targetVersion: result.latestVersion);
                           } else {
-                            updateFirmWare(url: result.updateUrl);
+                            updateFirmWare(
+                                url: result.updateUrl,
+                                targetVersion: result.latestVersion);
                           }
                         },
                         child: const Text(
@@ -816,13 +914,16 @@ mixin OtaUpdateMixin on AppProviderState {
                                         if (filePath != null &&
                                             await File(filePath).exists()) {
                                           updateFirmWare(
-                                              offlineFilePath: filePath);
+                                              offlineFilePath: filePath,
+                                              targetVersion: fw['version']);
                                           return;
                                         }
                                       }
                                     }
                                   }
-                                  updateFirmWare(url: fw['update_url']);
+                                  updateFirmWare(
+                                      url: fw['update_url'],
+                                      targetVersion: fw['version']);
                                 }
                               },
                               child: Text(

@@ -75,5 +75,5 @@ abstract class AppProviderState extends ChangeNotifier {
   void disconnectTCP();
   Future<void> disconnectBLE();
   Future<void> checkCurrentFirmware();
-  void updateFirmWare({String? url, String? offlineFilePath});
+  void updateFirmWare({String? url, String? offlineFilePath, String? targetVersion});
 }

@@ -29,7 +29,6 @@ class ProfileScreen extends StatelessWidget {
                   style: CustomTextStyle.h4Bold,
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.only(left: 48),
                 child: Text(
@@ -117,17 +116,6 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              // const SizedBox(height: 10),
-              // Container(
-              //   alignment: Alignment.center,
-              //   margin:
-              //       const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              //   padding: const EdgeInsets.symmetric(vertical: 12),
-              //   decoration: BoxDecoration(
-              //       color: CustomColor.neutralWhite90,
-              //       borderRadius: BorderRadius.circular(12)),
-              //   child: const Text('Log out'),
-              // )
             ],
           ),
         ),
@@ -207,19 +195,19 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
     if (context.mounted) {
       if (successCount > 0) {
         final message = useApi
-            ? 'Đã tải xong $successCount file FW mới nhất từ server!'
-            : 'Đã tải xong $successCount file FW dự phòng!';
-        SnackbarHelper.showSuccess(context, 'Hoàn tất', message);
+            ? 'Successfully downloaded $successCount latest FW files from the server!'
+            : 'Successfully downloaded $successCount backup FW files!';
+        SnackbarHelper.showSuccess(context, 'Success', message);
       } else {
-        SnackbarHelper.showError(context, 'Tải thất bại',
-            'Không tải được file nào. Vui lòng kiểm tra kết nối mạng!');
+        SnackbarHelper.showError(context, 'Download Failed',
+            'No files were downloaded. Please check your network connection!');
       }
     }
   } catch (e) {
     if (context.mounted) Navigator.pop(context); // Tắt dialog
     if (context.mounted) {
-      SnackbarHelper.showError(
-          context, 'Lỗi kết nối', 'Vui lòng kiểm tra lại kết nối Internet!');
+      SnackbarHelper.showError(context, 'Connection Error',
+          'Please check your Internet connection!');
     }
   }
 }

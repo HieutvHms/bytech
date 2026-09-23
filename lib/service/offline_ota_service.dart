@@ -259,7 +259,6 @@ class OfflineOTAService {
       final file = File(filePath);
       if (!await file.exists()) continue;
 
-      // Không lấy version từ fileName (AV01_NEW_HW_20260921) nữa vì nó bị chênh lệch số
       double fileVersionNum = extractVersionNumber(savedVersion);
 
       print(
@@ -363,44 +362,41 @@ class OfflineOTAService {
       final magicByte = bytes[0].toRadixString(16).toUpperCase();
       print('Offline OTA: Magic Byte = 0x$magicByte');
       if (bytes[0] != 0xE9) {
-        throw Exception(
-            "File nhị phân ESP32 không hợp lệ (Magic Byte 0x$magicByte khác 0xE9)!");
+        print(
+            "CẢNH BÁO: File nhị phân có Magic Byte 0x$magicByte khác 0xE9 (ESP32 chuẩn). Có thể là do header tùy chỉnh (vd: AV03_BYT). Vẫn tiếp tục đẩy file...");
       }
     }
+    bool isPushingComplete = false; // Thêm cờ đánh dấu
 
     try {
-      // 1. Dùng StreamedRequest để gửi file thô (Raw Binary)
       final request = http.StreamedRequest('POST', url);
       request.contentLength = bytes.length;
       request.headers['Connection'] = 'close';
       request.headers['Content-Type'] = 'application/octet-stream';
 
       final client = http.Client();
-
-      // Bắt đầu gửi HTTP Headers
       final responseFuture =
           client.send(request).timeout(const Duration(seconds: 120));
 
-      // 2. CHỜ 2 GIÂY TRƯỚC KHI GỬI BODY
       print(
           'Offline OTA: Sent headers. Waiting 2s for ESP32 to erase flash...');
       await Future.delayed(const Duration(seconds: 2));
 
-      // 3. GỬI FILE TỪ TỪ (Chunking)
       print('Offline OTA: Start pushing body chunks...');
       try {
-        int chunkSize = 4096; // Gửi từng khối 4KB
+        int chunkSize = 4096;
         for (int i = 0; i < bytes.length; i += chunkSize) {
           int end =
               (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
           request.sink.add(bytes.sublist(i, end));
-
-          // Nghỉ 20ms mỗi 4KB để ESP32 kịp ghi vào Flash (tránh tràn LwIP)
           await Future.delayed(const Duration(milliseconds: 20));
         }
       } finally {
         request.sink.close();
       }
+
+      // ĐÁNH DẤU LÀ ĐÃ GỬI XONG TOÀN BỘ BYTES
+      isPushingComplete = true;
 
       print('Offline OTA: All bytes sent. Waiting for response...');
       var streamedResponse = await responseFuture;
@@ -416,77 +412,21 @@ class OfflineOTAService {
       final errorStr = e.toString().toLowerCase();
       print('Offline OTA: Chi tiết lỗi khi push: $e');
 
-      // Bỏ qua lỗi ngắt kết nối (SocketException/Connection reset)
-      // vì ESP32 thường reboot quá nhanh làm đứt kết nối trước khi kịp gửi HTTP 200.
-      if (!errorStr.contains('connection abort') &&
-          !errorStr.contains('connection reset') &&
-          !errorStr.contains('socket closed') &&
-          !errorStr.contains('clientexception')) {
-        rethrow;
+      // CHỈ BỎ QUA LỖI RỚT MẠNG KHI VÀ CHỈ KHI ĐÃ GỬI XONG FILE
+      if (isPushingComplete &&
+          (errorStr.contains('connection abort') ||
+              errorStr.contains('connection reset') ||
+              errorStr.contains('socket closed') ||
+              errorStr.contains('software caused connection abort') ||
+              errorStr.contains('clientexception'))) {
+        print(
+            'Offline OTA: Mất kết nối khi push (mạch đang reboot). Đã đẩy file thành công!');
+        return; // Thoát ra và báo thành công
       }
 
-      print(
-          'Offline OTA: Mất kết nối khi push (mạch đang reboot). Đã đẩy file thành công!');
+      // Còn nếu lỗi xảy ra lúc chưa gửi xong (ví dụ mất sóng, ko tìm thấy IP) thì văng lỗi thật
+      rethrow;
     }
-
-    // KHÔNG TỰ ĐỘNG VERIFY NỮA!
-    // Lý do: Khi mạch reboot, WiFi của mạch sẽ tắt. Điện thoại Android sẽ tự động
-    // ngắt kết nối và nhảy sang WiFi nhà (hoặc 4G). Nếu cố tình verify lúc này,
-    // App sẽ request nhầm vào Router nhà (192.168.1.1) và bị báo 404 Not Found,
-    // dẫn đến báo lỗi giả (mặc dù nạp thành công).
-    // => Cứ báo thành công để UI hiện thông báo yêu cầu người dùng kết nối lại WiFi.
-  }
-
-  /// Đợi mạch khởi động lại rồi gọi GET /status kiểm tra field "FW"
-  /// có bằng đúng [expectedVersion] hay không.
-  static Future<bool> _verifyFirmwareApplied(
-      String ip, String expectedVersion) async {
-    const maxAttempts = 6;
-    const delayBetweenAttempts = Duration(seconds: 5);
-
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      await Future.delayed(delayBetweenAttempts);
-      try {
-        final response = await http
-            .get(Uri.parse('http://$ip/status'))
-            .timeout(const Duration(seconds: 3));
-
-        if (response.statusCode != 200) {
-          print(
-              'Offline OTA: Verify lần $attempt - HTTP ${response.statusCode}, thử lại...');
-          continue;
-        }
-
-        final jsonData = json.decode(response.body);
-        if (jsonData is! Map<String, dynamic> || jsonData['FW'] == null) {
-          print(
-              'Offline OTA: Verify lần $attempt - response không hợp lệ, thử lại...');
-          continue;
-        }
-
-        final currentFw = jsonData['FW'].toString();
-        print(
-            'Offline OTA: Verify lần $attempt - FW hiện tại: $currentFw (mong đợi: $expectedVersion)');
-
-        if (currentFw == expectedVersion) {
-          print('Offline OTA: Xác nhận update THÀNH CÔNG (FW = $currentFw)');
-          return true;
-        } else {
-          // Mạch đã online lại (trả lời /status) nhưng FW không đổi -> update thất bại thật
-          print(
-              'Offline OTA: Mạch đã online lại nhưng FW chưa đổi -> update THẤT BẠI');
-          return false;
-        }
-      } catch (e) {
-        print(
-            'Offline OTA: Verify lần $attempt chưa kết nối được (mạch có thể đang reboot): $e');
-        // tiếp tục vòng lặp, thử lại lần sau
-      }
-    }
-
-    print(
-        'Offline OTA: Hết ${maxAttempts * delayBetweenAttempts.inSeconds}s chờ verify, không xác nhận được kết quả update.');
-    return false;
   }
 
   static Future<void> controlDeviceViaHttp(

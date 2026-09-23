@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:new_renitek/providers/mixins/app_provider_state.dart';
 import 'package:new_renitek/new_screen/webview_screen.dart';
 
@@ -52,6 +54,19 @@ class NewControllerScreen extends StatelessWidget {
           style: CustomTextStyle.h4Medium,
         ),
         actions: [
+          IconButton(
+            icon:
+                const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
+            tooltip: 'Test Flash Local .bin',
+            onPressed: () async {
+              FilePickerResult? result = await FilePicker.pickFiles();
+              if (result != null && result.files.single.path != null) {
+                Provider.of<AppProvider>(context, listen: false).updateFirmWare(
+                  offlineFilePath: result.files.single.path!,
+                );
+              }
+            },
+          ),
           if (provider.connectStatus == ConnectStatus.SOCKET)
             IconButton(
               icon: const Icon(Icons.language, color: CustomColor.neutralBlack),
@@ -104,7 +119,8 @@ class NewControllerScreen extends StatelessWidget {
               builder: (ctx, snapshot) {
                 final isHttpControl =
                     provider.connectStatus == ConnectStatus.SOCKET &&
-                        (provider.socketTCP == null || provider.tcpIP == '192.168.1.1');
+                        (provider.socketTCP == null ||
+                            provider.tcpIP == '192.168.1.1');
                 final canMoveIn =
                     isHttpControl || snapshot.data?.canMoveIn() == true;
                 final canMoveOut =
@@ -737,7 +753,7 @@ class InputInfoWidget extends StatelessWidget {
   }
 }
 
-class ControlerButton extends StatelessWidget {
+class ControlerButton extends StatefulWidget {
   const ControlerButton({
     super.key,
     required this.title,
@@ -756,51 +772,80 @@ class ControlerButton extends StatelessWidget {
   final bool enable;
 
   @override
+  State<ControlerButton> createState() => _ControlerButtonState();
+}
+
+class _ControlerButtonState extends State<ControlerButton> {
+  DateTime? _pointerDownTime;
+  Timer? _stopTimer;
+  DateTime? _lastDownTime;
+
+  void _handlePointerDown() {
+    final now = DateTime.now();
+    if (_lastDownTime != null &&
+        now.difference(_lastDownTime!).inMilliseconds < 400) {
+      return; // Bỏ qua nếu bấm quá nhanh (dưới 400ms)
+    }
+    _lastDownTime = now;
+
+    if (widget.enable && widget.onLongPressStart != null) {
+      _stopTimer?.cancel();
+      _pointerDownTime = now;
+      widget.onLongPressStart!();
+    }
+  }
+
+  void _handlePointerUpOrCancel() {
+    if (widget.enable && widget.onLongPressEnd != null) {
+      if (_pointerDownTime != null) {
+        final now = DateTime.now();
+        final diff = now.difference(_pointerDownTime!).inMilliseconds;
+        if (diff < 300) {
+          // Delay STOP command to ensure firmware can process START properly
+          _stopTimer = Timer(Duration(milliseconds: 300 - diff), () {
+            if (mounted) widget.onLongPressEnd!();
+          });
+        } else {
+          widget.onLongPressEnd!();
+        }
+      } else {
+        widget.onLongPressEnd!();
+      }
+      _pointerDownTime = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque, // Giúp vùng bắt chạm rộng và nhạy hơn
-      onTap: () {
-        if (enable) {
-          onTap();
-        }
-      },
-      // Khi bắt đầu giữ ngón tay
-      onLongPressStart: (_) {
-        if (enable && onLongPressStart != null) {
-          onLongPressStart!();
-        }
-      },
-      // Khi nhấc ngón tay ra sau khi giữ
-      onLongPressEnd: (_) {
-        if (enable && onLongPressEnd != null) {
-          onLongPressEnd!();
-        }
-      },
-      // Khi thao tác nhấn giữ bị hủy (ví dụ có cuộc gọi đến hoặc vuốt ra ngoài hẳn)
-      onLongPressCancel: () {
-        if (enable && onLongPressEnd != null) {
-          onLongPressEnd!();
-        }
-      },
+    return Listener(
+      onPointerDown: (e) => _handlePointerDown(),
+      onPointerUp: (e) => _handlePointerUpOrCancel(),
+      onPointerCancel: (e) => _handlePointerUpOrCancel(),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: enable
+              color: widget.enable
                   ? CustomColor.primaryColor
                   : CustomColor.neutralBlack50,
             ),
             child: Icon(
-              iconData,
+              widget.iconData,
               color: CustomColor.neutralWhite,
               size: 48,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            title,
+            widget.title,
             style: CustomTextStyle.bodyMedium
                 .copyWith(color: CustomColor.neutralBlack50),
           )
