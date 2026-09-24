@@ -54,19 +54,19 @@ class NewControllerScreen extends StatelessWidget {
           style: CustomTextStyle.h4Medium,
         ),
         actions: [
-          IconButton(
-            icon:
-                const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
-            tooltip: 'Test Flash Local .bin',
-            onPressed: () async {
-              FilePickerResult? result = await FilePicker.pickFiles();
-              if (result != null && result.files.single.path != null) {
-                Provider.of<AppProvider>(context, listen: false).updateFirmWare(
-                  offlineFilePath: result.files.single.path!,
-                );
-              }
-            },
-          ),
+          // IconButton(
+          //   icon:
+          //       const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
+          //   tooltip: 'Test Flash Local .bin',
+          //   onPressed: () async {
+          //     FilePickerResult? result = await FilePicker.pickFiles();
+          //     if (result != null && result.files.single.path != null) {
+          //       Provider.of<AppProvider>(context, listen: false).updateFirmWare(
+          //         offlineFilePath: result.files.single.path!,
+          //       );
+          //     }
+          //   },
+          // ),
           if (provider.connectStatus == ConnectStatus.SOCKET)
             IconButton(
               icon: const Icon(Icons.language, color: CustomColor.neutralBlack),
@@ -97,7 +97,7 @@ class NewControllerScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 32),
+            const SizedBox(height: 12),
             Text(
               'Information',
               style: CustomTextStyle.bodyMedium
@@ -107,7 +107,7 @@ class NewControllerScreen extends StatelessWidget {
             ConnectDeviceWidget(
               deviceName: deviceParam.deviceName,
             ),
-            const SizedBox(height: 42),
+            const SizedBox(height: 24),
             Text(
               'Control',
               style: CustomTextStyle.bodyMedium

@@ -53,7 +53,7 @@ abstract class AppProviderState extends ChangeNotifier {
   final mdnsService = MdnsService();
   final socketService = SocketService.instance;
   String? version = "Not found";
-  
+
   String? get hardwareVersion {
     if (version == null || version == 'Not found' || !version!.contains('-')) {
       return null;
@@ -75,5 +75,6 @@ abstract class AppProviderState extends ChangeNotifier {
   void disconnectTCP();
   Future<void> disconnectBLE();
   Future<void> checkCurrentFirmware();
-  void updateFirmWare({String? url, String? offlineFilePath, String? targetVersion});
+  void updateFirmWare(
+      {String? url, String? offlineFilePath, String? targetVersion});
 }

@@ -117,8 +117,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             height: MediaQuery.of(context).size.height * 0.5,
                             child: ListView.separated(
                               itemBuilder: (ctx, index) {
-                                print('UI: Building item $index');
-
                                 // Tính toán tên thiết bị hiển thị chuẩn
                                 final originalName =
                                     provider.bleDeviceList[index].name;

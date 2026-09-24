@@ -47,7 +47,7 @@ mixin BleManagerMixin on AppProviderState {
       },
     );
 
-    Timer(const Duration(seconds: 10), () {
+    Timer(const Duration(seconds: 5), () {
       scanSubscription?.cancel();
       bleStatusStream.add(BLEStatus.INITIAL);
       notifyListeners();

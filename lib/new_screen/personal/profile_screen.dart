@@ -134,7 +134,7 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
         children: [
           CircularProgressIndicator(),
           SizedBox(width: 16),
-          Expanded(child: Text('Đang tải dữ liệu. Vui lòng đợi...')),
+          Expanded(child: Text('Downloading data. Please wait...')),
         ],
       ),
     ),
@@ -146,9 +146,9 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
         : await CheckFirmwareService.getBackupFirmwares();
 
     if (firmwares.isEmpty) {
-      if (context.mounted) Navigator.pop(context); // Tắt dialog
+      if (context.mounted) Navigator.pop(context);
       if (context.mounted) {
-        SnackbarHelper.showInfo(context, 'Thông báo', 'Không tìm thấy FW nào.');
+        SnackbarHelper.showInfo(context, 'Notice', 'No firmware found.');
       }
       return;
     }
@@ -161,8 +161,7 @@ Future<void> _downloadFirmwares(BuildContext context, bool useApi) async {
       final hwType = (fw['hardware'] ?? fw['version'] ?? fileName)
           .toString()
           .replaceAll('.bin', '');
-      final exactVersion =
-          (fw['version'] ?? hwType).toString(); // THÊM DÒNG NÀY
+      final exactVersion = (fw['version'] ?? hwType).toString();
 
       final dir = await getApplicationDocumentsDirectory();
       final localPath = '${dir.path}/$fileName';

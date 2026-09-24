@@ -48,18 +48,115 @@ mixin OtaUpdateMixin on AppProviderState {
       if (connectStatus == ConnectStatus.BLE &&
           bluetoothCharacteristic != null &&
           url != null) {
-        final updateCommand = getFirmwareUpdateCommand(url);
-        ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
-            value: updateCommand);
-        isExpertMode = false;
-        notifyListeners();
-        if (globalKey.currentContext != null) {
-          showStatus(
-            buildContext: globalKey.currentContext!,
-            message: 'Firmware update command sent via BLE.',
-            succcess: true,
-          );
-        }
+        final updateCommand = OtaUpdateMixin.getFirmwareUpdateCommand(url);
+
+        print("====== OTA BLE UPDATE ======");
+        print("URL: $url");
+        print("Command Bytes: $updateCommand");
+        print(
+            "Command String: ${utf8.decode(updateCommand, allowMalformed: true)}");
+        print("============================");
+
+        ble
+            .writeCharacteristicWithResponse(bluetoothCharacteristic!,
+                value: updateCommand)
+            .then((_) {
+          isExpertMode = false;
+          notifyListeners();
+
+          if (globalKey.currentContext != null) {
+            showDialog(
+              context: globalKey.currentContext!,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10.0,
+                          offset: Offset(0.0, 10.0),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Update Initiated',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'The device has received the update command and is currently downloading the firmware. This process may take 1-3 minutes.\n\n'
+                          'The device will restart automatically upon completion',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: CustomColor.primaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              // Pop ra màn hình chính, vì đằng nào thiết bị cũng sẽ ngắt kết nối
+                              final rootContext = globalKey.currentContext;
+                              if (rootContext != null) {
+                                Navigator.of(rootContext)
+                                    .popUntil((route) => route.isFirst);
+                              }
+                            },
+                            child: const Text(
+                              'Got it',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }
+        }).catchError((e) {
+          if (globalKey.currentContext != null) {
+            showStatus(
+              buildContext: globalKey.currentContext!,
+              message: 'Failed to send command via BLE: $e',
+              succcess: false,
+            );
+          }
+        });
         return;
       }
 
@@ -163,7 +260,7 @@ mixin OtaUpdateMixin on AppProviderState {
                   .replaceAll('.bin', '');
               return (url, version);
             }
-            throw Exception('Đường dẫn không hợp lệ và không phải URL: $url');
+            throw Exception('Invalid path and not a URL: $url');
           }
 
           if (version != null) {
@@ -172,7 +269,7 @@ mixin OtaUpdateMixin on AppProviderState {
             if (fallbackData != null && fallbackData['url'] == url) {
               final cachedFile = File(fallbackData['localFilePath']!);
               if (await cachedFile.exists()) {
-                print('Đã có sẵn file trong máy, bỏ qua download!');
+                print('File already exists on device, skipping download!');
                 return (
                   fallbackData['localFilePath']!,
                   fallbackData['version'] ??
@@ -186,14 +283,14 @@ mixin OtaUpdateMixin on AppProviderState {
           if (globalKey.currentContext != null) {
             showStatus(
               buildContext: globalKey.currentContext!,
-              message: 'Đang tải firmware từ server...',
+              message: 'Downloading firmware from server...',
               succcess: true,
             );
           }
           final response = await http.get(Uri.parse(url));
           if (response.statusCode != 200) {
             throw Exception(
-                'Không tải được file từ server: HTTP ${response.statusCode}');
+                'Failed to download file from server: HTTP ${response.statusCode}');
           }
           final directory = await getApplicationDocumentsDirectory();
           final fileName = Uri.parse(url).pathSegments.last;
@@ -211,7 +308,7 @@ mixin OtaUpdateMixin on AppProviderState {
 
           return (permanentPath, exactVersion);
         } else {
-          throw Exception('Không có file hoặc URL để cập nhật');
+          throw Exception('No file or URL to update');
         }
       }
 
@@ -317,19 +414,20 @@ mixin OtaUpdateMixin on AppProviderState {
           showDialog(
             context: globalKey.currentContext!,
             builder: (BuildContext context) {
+              final isCfosError = e.toString().toLowerCase().contains('cfos');
               return AlertDialog(
-                title: const Text('Cập nhật thất bại',
+                title: const Text('Update Failed',
                     style: TextStyle(color: Colors.red)),
-                content: Text(
-                    'Đã hết thời gian chờ hoặc có lỗi xảy ra trong quá trình nạp Firmware xuống mạch.\n\n'
-                    'Chi tiết lỗi:\n$e\n\n'
-                    'Vui lòng khởi động lại mạch và thử lại.'),
+                content: Text(isCfosError
+                    ? 'An error occurred during the update process. Please restart the device and try again.'
+                    : 'The connection timed out or an error occurred while updating the firmware.\n\n'
+                        'Please restart the device and try again.'),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: const Text('Đóng'),
+                    child: const Text('Close'),
                   ),
                 ],
               );
@@ -387,7 +485,7 @@ mixin OtaUpdateMixin on AppProviderState {
             listFirmwares = await CheckFirmwareService.getBackupFirmwares();
           } catch (e) {
             // Không có Internet (VD: đang ở WiFi AP riêng của mạch) -> dùng cache cục bộ
-            print('Không lấy được firmware từ server, dùng cache cục bộ: $e');
+            print('Unable to get firmware from server, using local cache: $e');
             listFirmwares = await OfflineOTAService.getCachedBackupFirmwares();
           }
 
@@ -396,7 +494,7 @@ mixin OtaUpdateMixin on AppProviderState {
               SnackbarHelper.showError(
                 globalKey.currentContext!,
                 '',
-                'Không xác định được phần cứng và chưa có firmware nào lưu sẵn trong máy.\nVui lòng kết nối Internet ít nhất 1 lần để tải firmware về trước.',
+                'Unable to identify hardware and no firmware is cached on the device.\nPlease connect to the Internet at least once to download the firmware.',
               );
             }
             return null;
@@ -434,7 +532,7 @@ mixin OtaUpdateMixin on AppProviderState {
             showStatus(
               buildContext: globalKey.currentContext!,
               message:
-                  'Không thể kiểm tra bản cập nhật: Thiếu địa chỉ MAC của mạch!',
+                  'Unable to check for updates: Missing device MAC address!',
               succcess: false,
             );
           }
@@ -483,7 +581,7 @@ mixin OtaUpdateMixin on AppProviderState {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 const Text(
-                                  'Cập Nhật Firmware',
+                                  'Firmware Update',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 19,
@@ -501,7 +599,7 @@ mixin OtaUpdateMixin on AppProviderState {
                                       color: Colors.grey[700],
                                     ),
                                     children: [
-                                      const TextSpan(text: 'Tìm thấy bản '),
+                                      const TextSpan(text: 'Found version '),
                                       TextSpan(
                                         text:
                                             fileVersion, // HIỂN THỊ VERSION THẬT THAY VÌ TÊN FILE
@@ -623,13 +721,13 @@ mixin OtaUpdateMixin on AppProviderState {
       context: globalKey.currentContext!,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('Lỗi kết nối mạng'),
+          title: const Text('Network Error'),
           content: const Text(
-              'Không có Internet để kiểm tra mạch này.\nBạn có muốn chọn bản cập nhật đã lưu sẵn trong máy không?'),
+              'No Internet connection to check this device.\nDo you want to select a locally cached update?'),
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Hủy')),
+                child: const Text('Cancel')),
             TextButton(
               onPressed: () async {
                 Navigator.of(ctx).pop();
@@ -637,7 +735,7 @@ mixin OtaUpdateMixin on AppProviderState {
                     await CheckFirmwareService.getBackupFirmwares();
                 _showFallbackFirmwareDialog(listFirmwares);
               },
-              child: const Text('Chọn Firmware Cứu Hộ'),
+              child: const Text('Select Fallback Firmware'),
             ),
           ],
         );
@@ -645,7 +743,7 @@ mixin OtaUpdateMixin on AppProviderState {
     );
   }
 
-  List<int> getFirmwareUpdateCommand(String url) {
+  static List<int> getFirmwareUpdateCommand(String url) {
     List<int> command = [];
     command.addAll(utf8.encode('#5:$url!'));
     return command;
@@ -669,7 +767,7 @@ mixin OtaUpdateMixin on AppProviderState {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
-                  'Cập Nhật Firmware',
+                  'Firmware Update',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 19,
@@ -687,7 +785,7 @@ mixin OtaUpdateMixin on AppProviderState {
                       color: Colors.grey[700],
                     ),
                     children: [
-                      const TextSpan(text: 'Có bản cập nhật mới: '),
+                      const TextSpan(text: 'New update available: '),
                       TextSpan(
                         text: result.latestVersion,
                         style: const TextStyle(
@@ -695,7 +793,7 @@ mixin OtaUpdateMixin on AppProviderState {
                           color: Colors.black87,
                         ),
                       ),
-                      const TextSpan(text: '\nBản hiện tại của mạch:\n'),
+                      const TextSpan(text: '\nCurrent device version:\n'),
                       TextSpan(
                         text: result.currentVersion,
                         style: const TextStyle(
@@ -703,8 +801,7 @@ mixin OtaUpdateMixin on AppProviderState {
                           color: Colors.redAccent,
                         ),
                       ),
-                      const TextSpan(
-                          text: '\nBạn có muốn cập nhật ngay không?'),
+                      const TextSpan(text: '\nDo you want to update now?'),
                     ],
                   ),
                 ),
@@ -809,7 +906,7 @@ mixin OtaUpdateMixin on AppProviderState {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Chọn firmware cập nhật',
+                        'Select firmware update',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -818,7 +915,7 @@ mixin OtaUpdateMixin on AppProviderState {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${listFirmwares.length} phiên bản khả dụng',
+                        '${listFirmwares.length} available versions',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
@@ -887,16 +984,16 @@ mixin OtaUpdateMixin on AppProviderState {
                                   showDialog(
                                     context: ctx,
                                     builder: (alertCtx) => AlertDialog(
-                                      title: const Text('Không có Internet',
+                                      title: const Text('No Internet',
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold)),
                                       content: const Text(
-                                          'Bạn đang kết nối trực tiếp với Wi-Fi của mạch nên không có mạng Internet.\n\nVui lòng ngắt kết nối với mạch, bật mạng (4G/Wi-Fi) để tải bản dự phòng này về ứng dụng, sau đó kết nối lại mạch để nạp.'),
+                                          'You are directly connected to the device\'s Wi-Fi network, which has no Internet access.\n\nPlease disconnect from the device, turn on your Internet (4G/Wi-Fi) to download this fallback version to the app, then reconnect to the device to flash it.'),
                                       actions: [
                                         TextButton(
                                           onPressed: () =>
                                               Navigator.pop(alertCtx),
-                                          child: const Text('Đóng'),
+                                          child: const Text('Close'),
                                         )
                                       ],
                                     ),
@@ -927,7 +1024,7 @@ mixin OtaUpdateMixin on AppProviderState {
                                 }
                               },
                               child: Text(
-                                isDownloaded ? 'Chọn' : 'Tải về',
+                                isDownloaded ? 'Select' : 'Download',
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w500),
                               ),
@@ -951,7 +1048,7 @@ mixin OtaUpdateMixin on AppProviderState {
                       ),
                       onPressed: () => Navigator.of(ctx).pop(),
                       child: const Text(
-                        'Hủy',
+                        'Cancel',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
