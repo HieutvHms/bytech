@@ -10,6 +10,10 @@ import 'package:new_renitek/providers/mixins/app_provider_state.dart'
     show ConnectStatus, MDNSStatus;
 import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:app_settings/app_settings.dart';
+import 'package:new_renitek/service/wifi_iot_service.dart';
+import 'package:new_renitek/utils/dialog_helper.dart';
 
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
@@ -19,6 +23,288 @@ class ConnectScreen extends StatefulWidget {
 }
 
 class _ConnectScreenState extends State<ConnectScreen> {
+  bool _isWifiExpanded = false;
+
+  void _handleScanWifiAP(BuildContext context, AppProvider provider) async {
+    bool isWifiEnabled = await WifiIotService.checkIfWifiEnabled();
+    if (!isWifiEnabled) {
+      if (context.mounted) {
+        DialogHelper.showCustomDialog(
+          context: context,
+          title: 'WiFi is Off',
+          content: const Text(
+            "Please turn on WiFi to scan for new devices.",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.5),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: Builder(
+                    builder: (btnCtx) => OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        side: BorderSide(color: Colors.grey[300]!),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(btnCtx),
+                      child: const Text('Cancel',
+                          style: TextStyle(fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Builder(
+                    builder: (btnCtx) => FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: CustomColor.primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(btnCtx);
+                        AppSettings.openAppSettings(type: AppSettingsType.wifi);
+                      },
+                      child: const Text('Open Setting',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      }
+      return;
+    }
+
+    provider.scanDeviceWifiAP();
+    if (!context.mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
+        return Container(
+          padding: const EdgeInsets.only(top: 16, bottom: 32),
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                child: Text("Select Device AP to connect",
+                    style: CustomTextStyle.h5Medium),
+              ),
+              const Divider(),
+              Expanded(
+                child: Consumer<AppProvider>(
+                  builder: (ctx, apConsumer, _) {
+                    if (apConsumer.isScanningDeviceWifi) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (apConsumer.deviceWifiList.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('No unconfigured devices found.'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => apConsumer.scanDeviceWifiAP(),
+                              child: const Text('Rescan'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: apConsumer.deviceWifiList.length,
+                      separatorBuilder: (c, i) => const Divider(height: 1),
+                      itemBuilder: (c, i) {
+                        final network = apConsumer.deviceWifiList[i];
+                        return ListTile(
+                          title: Text(network.ssid ?? "Unknown",
+                              style: CustomTextStyle.bodyMedium,
+                              overflow: TextOverflow.ellipsis),
+                          subtitle:
+                              const Text("Tap to connect phone to device"),
+                          trailing: const Icon(Icons.wifi),
+                          onTap: () {
+                            TextEditingController pwController =
+                                TextEditingController();
+                            bool obscurePwd = true;
+                            DialogHelper.showCustomDialog(
+                              context: bottomSheetContext,
+                              content: StatefulBuilder(
+                                builder: (context, setState) {
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.wifi_lock,
+                                              color: CustomColor.primaryColor),
+                                          const SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                                network.ssid ?? "Unknown",
+                                                style: CustomTextStyle.h5Medium,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextField(
+                                              controller: pwController,
+                                              obscureText: obscurePwd,
+                                              decoration: InputDecoration(
+                                                hintText: 'Mật khẩu WiFi',
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                suffixIcon: IconButton(
+                                                  icon: Icon(obscurePwd
+                                                      ? Icons.visibility_off
+                                                      : Icons.visibility),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      obscurePwd = !obscurePwd;
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Builder(
+                                              builder: (btnCtx) =>
+                                                  OutlinedButton(
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor:
+                                                      Colors.grey[700],
+                                                  side: BorderSide(
+                                                      color: Colors.grey[300]!),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(vertical: 8),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                  ),
+                                                ),
+                                                onPressed: () =>
+                                                    Navigator.pop(btnCtx),
+                                                child: const Text('Cancel',
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w500)),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Builder(
+                                              builder: (btnCtx) => FilledButton(
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      CustomColor.primaryColor,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(vertical: 8),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.pop(btnCtx);
+                                                  DialogHelper.showCustomDialog(
+                                                    context: bottomSheetContext,
+                                                    barrierDismissible: false,
+                                                    content: const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                  );
+                                                  apConsumer
+                                                      .connectToDeviceWifiAP(
+                                                          network.ssid ?? "",
+                                                          pwController.text)
+                                                      .then((success) {
+                                                    if (bottomSheetContext
+                                                        .mounted) {
+                                                      Navigator.pop(
+                                                          bottomSheetContext); // close loading
+                                                    }
+                                                    if (success &&
+                                                        bottomSheetContext
+                                                            .mounted) {
+                                                      Navigator.pop(
+                                                          bottomSheetContext); // close bottom sheet
+                                                    }
+                                                  });
+                                                },
+                                                child: const Text('Connect',
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white)),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -245,19 +531,20 @@ class _ConnectScreenState extends State<ConnectScreen> {
                 collapsedBackgroundColor: CustomColor.neutralWhite,
                 backgroundColor: CustomColor.neutralWhite,
                 onExpansionChanged: (value) {
+                  setState(() => _isWifiExpanded = value);
                   if (value == true) {
                     provider.scanLocalService();
                   }
                 },
-                title: const Row(
+                title: Row(
                   children: [
-                    CircleAvatar(
+                    const CircleAvatar(
                       backgroundImage: AssetImage(AssetConst.wifiIcon),
                       radius: 12,
                       backgroundColor: CustomColor.neutralWhite96,
                     ),
-                    SizedBox(width: 8),
-                    Expanded(
+                    const SizedBox(width: 8),
+                    const Expanded(
                       child: Text(
                         'Wifi connections',
                         style: CustomTextStyle.h5Medium,
@@ -265,6 +552,35 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (_isWifiExpanded && Platform.isAndroid)
+                      Consumer<AppProvider>(builder: (ctx, apConsumer, _) {
+                        return TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor:
+                                CustomColor.primaryColor.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: apConsumer.isScanningDeviceWifi
+                              ? null
+                              : () => _handleScanWifiAP(context, provider),
+                          child: apConsumer.isScanningDeviceWifi
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Text('Scan',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: CustomColor.primaryColor)),
+                        );
+                      }),
                   ],
                 ),
                 children: [
@@ -285,8 +601,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                     await provider
                                         .connectSocket(
                                       context,
-                                      consumer.localService[index].host ??
-                                          '192.168.1.1',
+                                      consumer.localService[index].host ?? "",
                                       //consumer.localService[index].port ?? 2000,
                                       23, // Cổng TCP thực sự của Firmware
                                       consumer.localService[index].name ?? "",
@@ -321,7 +636,9 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                     const Divider(),
                               );
                             } else {
-                              return const WifiWarning();
+                              return const Center(
+                                  child:
+                                      Text("No local network devices found"));
                             }
                           }),
                     ),

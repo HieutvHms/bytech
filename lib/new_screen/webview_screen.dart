@@ -33,60 +33,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
           },
           onPageFinished: (url) {
             setState(() => _isLoading = false);
-            // Inject JS to replace native 'Chọn tệp' with custom 'Choose File' button
-            _controller.runJavaScript('''
-              const fileInputs = document.querySelectorAll('input[type="file"]');
-              fileInputs.forEach(input => {
-                if (input.dataset.wrapped) return;
-                input.dataset.wrapped = "true";
-                
-                input.style.display = "none";
-                
-                const btn = document.createElement("button");
-                btn.type = "button"; // prevent form submission
-                btn.innerText = "Choose File";
-                btn.style.padding = "8px 16px";
-                btn.style.backgroundColor = "#2563eb";
-                btn.style.color = "white";
-                btn.style.border = "none";
-                btn.style.borderRadius = "6px";
-                btn.style.cursor = "pointer";
-                btn.style.fontFamily = "inherit";
-                btn.style.fontSize = "14px";
-                btn.style.fontWeight = "500";
-                
-                const textSpan = document.createElement("span");
-                textSpan.innerText = "No file chosen";
-                textSpan.style.marginLeft = "12px";
-                textSpan.style.fontFamily = "inherit";
-                textSpan.style.fontSize = "14px";
-                textSpan.style.color = "#4b5563";
-                
-                const wrapper = document.createElement("div");
-                wrapper.style.display = "flex";
-                wrapper.style.alignItems = "center";
-                wrapper.style.marginTop = "8px";
-                wrapper.style.marginBottom = "8px";
-                
-                input.parentNode.insertBefore(wrapper, input);
-                wrapper.appendChild(input);
-                wrapper.appendChild(btn);
-                wrapper.appendChild(textSpan);
-                
-                btn.onclick = (e) => {
-                  e.preventDefault();
-                  input.click();
-                };
-                
-                input.addEventListener("change", (e) => {
-                  if (e.target.files.length > 0) {
-                    textSpan.innerText = e.target.files[0].name;
-                  } else {
-                    textSpan.innerText = "No file chosen";
-                  }
-                });
-              });
-            ''');
           },
           onProgress: (progress) {
             setState(() => _loadingProgress = progress);

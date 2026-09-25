@@ -8,8 +8,8 @@ import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 final screenList = [
-  const NewHomeScreen2(),
   const ConnectScreen(),
+  const NewHomeScreen2(),
   const ProfileScreen(),
 ];
 final GlobalKey<NavigatorState> globalKey = GlobalKey<NavigatorState>();
@@ -56,16 +56,16 @@ class RootState extends State<Root> {
           onTap: changeTab,
           items: const [
             BottomNavigationBarItem(
+              icon: ImageIcon(AssetImage(AssetConst.connectIcon)),
+              label: 'Connections',
+            ),
+            BottomNavigationBarItem(
               icon: ImageIcon(AssetImage(AssetConst.homeIcon)),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: ImageIcon(AssetImage(AssetConst.connectIcon)),
-              label: 'Connect',
-            ),
-            BottomNavigationBarItem(
               icon: ImageIcon(AssetImage(AssetConst.profileIcon)),
-              label: 'Profile',
+              label: 'Setting',
             ),
           ],
         ),

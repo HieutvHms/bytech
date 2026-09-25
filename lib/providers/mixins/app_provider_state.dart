@@ -29,6 +29,8 @@ abstract class AppProviderState extends ChangeNotifier {
   ConnectStatus? connectStatus;
   List<Wifi> wifiList = [];
   List<nsd.Service> localService = [];
+  List<dynamic> deviceWifiList = [];
+  bool isScanningDeviceWifi = false;
   Socket? socketTCP;
   String? wifiApMac;
   String tcpIP = "";
@@ -59,9 +61,9 @@ abstract class AppProviderState extends ChangeNotifier {
       return null;
     }
     final parts = version!.split('-');
-    if (parts.length >= 2) {
-      final hw = '${parts[0]}_${parts[1]}';
-      if (hw == 'AV01_NEW_HW' || hw == 'AV03_NEW_HW') {
+    if (parts.isNotEmpty) {
+      final hw = parts[0];
+      if (hw == 'NT400R02' || hw == 'NT600R02') {
         return hw;
       }
     }

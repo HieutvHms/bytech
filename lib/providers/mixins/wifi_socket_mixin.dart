@@ -10,13 +10,48 @@ import 'package:new_renitek/models/wifi.dart';
 import 'package:new_renitek/providers/mixins/app_provider_state.dart';
 import 'package:new_renitek/root.dart';
 import 'package:new_renitek/service/offline_ota_service.dart';
-import 'package:new_renitek/utils/connectivity_extention.dart';
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/utils/snackbar_helper.dart';
 import 'package:new_renitek/utils/show_status.dart';
 import 'package:nsd/nsd.dart' as nsd;
 
+import 'package:new_renitek/service/wifi_iot_service.dart';
+
 mixin WifiSocketMixin on AppProviderState {
+  Future<void> scanDeviceWifiAP() async {
+    isScanningDeviceWifi = true;
+    deviceWifiList = [];
+    notifyListeners();
+
+    try {
+      deviceWifiList =
+          await WifiIotService.scanForDeviceWifi(prefixes: ["AV", "Vuelogic"]);
+    } catch (e) {
+      print("Error in scanDeviceWifiAP: $e");
+    }
+
+    isScanningDeviceWifi = false;
+    notifyListeners();
+  }
+
+  Future<bool> connectToDeviceWifiAP(String ssid, String password) async {
+    bool success = await WifiIotService.connectToWifi(ssid, password: password);
+    if (success) {
+      // Sau khi kết nối thành công, bắt đầu dò mDNS
+      scanLocalService();
+      return true;
+    } else {
+      if (globalKey.currentContext != null) {
+        showStatus(
+          buildContext: globalKey.currentContext!,
+          message: 'Failed to connect to device WiFi',
+          succcess: false,
+        );
+      }
+      return false;
+    }
+  }
+
   @override
   void disconnectTCP() {
     socketTCP?.destroy();
@@ -45,15 +80,13 @@ mixin WifiSocketMixin on AppProviderState {
   }
 
   void scanLocalService() async {
-    final isConnected = await isConnectedInternet();
-    if (!isConnected) {
-      mdnsStatusStream.add(MDNSStatus.NO_CONNECT);
-      return;
-    }
     try {
       localService = [];
       notifyListeners();
       mdnsStatusStream.add(MDNSStatus.SCANING);
+
+      // Force Android to route traffic over the current WiFi even without internet
+      await WifiIotService.forceWifiUsage();
 
       final discovery = (await mdnsService.startDiscoveryMDNS());
 

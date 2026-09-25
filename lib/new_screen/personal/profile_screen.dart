@@ -21,39 +21,34 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               const Center(
                 child: Text(
-                  'Profile',
+                  'Settings',
                   textAlign: TextAlign.center,
                   style: CustomTextStyle.h4Bold,
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 48),
+                padding: const EdgeInsets.only(left: 24),
                 child: Text(
                   'Device',
-                  style: CustomTextStyle.captionMedium
+                  style: CustomTextStyle.bodyMedium
                       .copyWith(color: CustomColor.neutralBlack50),
                 ),
               ),
+              const SizedBox(height: 12),
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 36),
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Upgrade firmware',
-                      style: CustomTextStyle.bodyMedium,
-                    ),
-                    const Divider(
-                      thickness: 0.3,
-                    ),
                     Consumer<AppProvider>(
                       builder: (context, provider, child) {
                         return Row(
@@ -61,7 +56,7 @@ class ProfileScreen extends StatelessWidget {
                           children: [
                             const Expanded(
                               child: Text(
-                                'Expert Mode',
+                                'BLE Mode',
                                 style: CustomTextStyle.bodyMedium,
                               ),
                             ),

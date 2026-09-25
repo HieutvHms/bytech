@@ -1,6 +1,15 @@
 PODS:
+  - app_settings (5.1.1):
+    - FlutterMacOS
+  - connectivity_plus (0.0.1):
+    - FlutterMacOS
+  - file_picker (0.0.1):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - nsd_macos (0.0.1):
+    - FlutterMacOS
+  - path_provider_foundation (0.0.1):
+    - Flutter
     - FlutterMacOS
   - Protobuf (3.29.6)
   - reactive_ble_mobile (0.0.1):
@@ -12,12 +21,23 @@ PODS:
     - Flutter
     - FlutterMacOS
   - SwiftProtobuf (1.38.1)
+  - url_launcher_macos (0.0.1):
+    - FlutterMacOS
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
+  - app_settings (from `Flutter/ephemeral/.symlinks/plugins/app_settings/macos`)
+  - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos`)
+  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - nsd_macos (from `Flutter/ephemeral/.symlinks/plugins/nsd_macos/macos`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - reactive_ble_mobile (from `Flutter/ephemeral/.symlinks/plugins/reactive_ble_mobile/darwin`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - webview_flutter_wkwebview (from `Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -25,22 +45,40 @@ SPEC REPOS:
     - SwiftProtobuf
 
 EXTERNAL SOURCES:
+  app_settings:
+    :path: Flutter/ephemeral/.symlinks/plugins/app_settings/macos
+  connectivity_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos
+  file_picker:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   nsd_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/nsd_macos/macos
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   reactive_ble_mobile:
     :path: Flutter/ephemeral/.symlinks/plugins/reactive_ble_mobile/darwin
   shared_preferences_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
+  url_launcher_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
+  webview_flutter_wkwebview:
+    :path: Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin
 
 SPEC CHECKSUMS:
+  app_settings: cd21e176b56f8172043640ade81322a98896bff4
+  connectivity_plus: 4adf20a405e25b42b9c9f87feff8f4b6fde18a4e
+  file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   nsd_macos: a472240e770b92f6c6df1022403aa29c90d012e3
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   Protobuf: 8d5596f7468be5400861a6bbfb2dfe9d0d1cde34
   reactive_ble_mobile: ea97709e18fa6f0b0592909725d7ae7e1c595b64
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   SwiftProtobuf: 409d3aaec90e51b1705b1dd8065b56893450e77c
+  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
+  webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
 PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:new_renitek/providers/mixins/app_provider_state.dart';
 import 'package:new_renitek/new_screen/webview_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:flutter/material.dart';
 import 'package:new_renitek/const/asset_const.dart';
@@ -54,39 +55,51 @@ class NewControllerScreen extends StatelessWidget {
           style: CustomTextStyle.h4Medium,
         ),
         actions: [
-          // IconButton(
-          //   icon:
-          //       const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
-          //   tooltip: 'Test Flash Local .bin',
-          //   onPressed: () async {
-          //     FilePickerResult? result = await FilePicker.pickFiles();
-          //     if (result != null && result.files.single.path != null) {
-          //       Provider.of<AppProvider>(context, listen: false).updateFirmWare(
-          //         offlineFilePath: result.files.single.path!,
-          //       );
-          //     }
-          //   },
-          // ),
+          IconButton(
+            icon:
+                const Icon(Icons.upload_file, color: CustomColor.neutralBlack),
+            tooltip: 'Test Flash Local .bin',
+            onPressed: () async {
+              FilePickerResult? result = await FilePicker.pickFiles();
+              if (result != null && result.files.single.path != null) {
+                Provider.of<AppProvider>(context, listen: false).updateFirmWare(
+                  offlineFilePath: result.files.single.path!,
+                );
+              }
+            },
+          ),
           if (provider.connectStatus == ConnectStatus.SOCKET)
             IconButton(
               icon: const Icon(Icons.language, color: CustomColor.neutralBlack),
               tooltip: 'Open Web UI',
-              onPressed: () {
+              onPressed: () async {
                 final ip = provider.mdnsConnectedClient?.host ?? provider.tcpIP;
-                if (ip.isNotEmpty) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => WebViewScreen(
-                        url: 'http://$ip',
-                        title: 'Web UI - $ip',
-                      ),
-                    ),
-                  );
-                } else {
+                if (ip.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                         content: Text('Không tìm thấy địa chỉ IP của mạch!')),
                   );
+                  return;
+                }
+
+                final uri = Uri.parse('http://$ip');
+                final canLaunch = await canLaunchUrl(uri);
+
+                if (canLaunch) {
+                  await launchUrl(
+                    uri,
+                    mode: LaunchMode
+                        .externalApplication, // ép mở bằng browser ngoài (Chrome), không dùng in-app WebView
+                  );
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('Không thể mở trình duyệt cho địa chỉ $ip'),
+                      ),
+                    );
+                  }
                 }
               },
             ),

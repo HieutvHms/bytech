@@ -9,7 +9,6 @@ import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.d
 import 'package:new_renitek/providers/app_provider.dart';
 import 'package:new_renitek/providers/mixins/app_provider_state.dart'
     show ConnectStatus;
-import 'package:new_renitek/root.dart';
 import 'package:provider/provider.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
@@ -17,166 +16,67 @@ class NewHomeScreen2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
+    // final provider = Provider.of<AppProvider>(context);
     return Scaffold(
-      // key: globalKey,
-      body: Column(
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.4,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                ClipPath(
-                  clipper: WaveClipper(),
-                  child: Container(
-                    width: double.maxFinite,
-                    // color: Colors.amberAccent,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFF42ABE8),
-                          Color(0xFF0A6294),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 40,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 32),
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Image.asset(AssetConst.logo),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Welcome,',
-                                style: CustomTextStyle.bodyLight
-                                    .copyWith(color: Colors.white),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Mr.David',
-                                style: CustomTextStyle.h4Medium
-                                    .copyWith(color: Colors.white),
-                              ),
-                            ]),
-                        // Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            context
-                                .findAncestorStateOfType<RootState>()
-                                ?.changeTab(2);
-                          },
-                          child: const CircleAvatar(
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.person),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 30,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: CustomColor.neutralWhite,
-                    ),
-                    child: Consumer<AppProvider>(
-                      builder: (context, value, child) {
-                        if (value.bluetoothDevice != null &&
-                            provider.connectStatus == ConnectStatus.BLE) {
-                          return Row(
-                            children: [
-                              _info(value.saveDeviceList.length.toString(),
-                                  "Devices"),
-                              const SizedBox(
-                                width: 30,
-                              ),
-                              _info("1", "Connected"),
-                              const SizedBox(
-                                width: 30,
-                              ),
-                              _info(
-                                (value.saveDeviceList.length - 1).toString(),
-                                "Disconnected",
-                              ),
-                            ],
-                          );
-                        } else if (value.mdnsConnectedClient != null &&
-                            provider.connectStatus == ConnectStatus.SOCKET) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _info(value.saveDeviceList.length.toString(),
-                                  "Devices"),
-                              const SizedBox(
-                                width: 30,
-                              ),
-                              _info("1", "Connected"),
-                              const SizedBox(
-                                width: 30,
-                              ),
-                              _info(
-                                (value.saveDeviceList.length - 1).toString(),
-                                "Disconnected",
-                              ),
-                            ],
-                          );
-                        } else {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _info(value.saveDeviceList.length.toString(),
-                                  "Devices"),
-                              const SizedBox(
-                                width: 30,
-                              ),
-                              _info("0", "Connected"),
-                              const SizedBox(
-                                width: 30,
-                              ),
-                              _info(
-                                (value.saveDeviceList.length).toString(),
-                                "Disconnected",
-                              ),
-                            ],
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ),
+        // key: globalKey,
+        body: Stack(children: [
+      // Background ClipPath
+      ClipPath(
+        clipper: WaveClipper(),
+        child: Container(
+          height: MediaQuery.of(context).size.height *
+              0.22, // Đã giảm tiếp xuống 0.22 để ngắn hơn nữa
+          width: double.maxFinite,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF42ABE8),
+                Color(0xFF0A6294),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+        ),
+      ),
+      // Foreground Content
+      Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 20, left: 32, right: 32),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Image.asset(AssetConst.logo),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+                // GestureDetector(
+                //   onTap: () {
+                //     context.findAncestorStateOfType<RootState>()?.changeTab(2);
+                //   },
+                //   child:
+                //       const Icon(Icons.settings, color: Colors.white, size: 24),
+                // )
+              ],
+            ),
+          ),
+          // Khoảng trống để đẩy danh sách xuống dưới phần nền xanh (ClipPath)
+          SizedBox(height: MediaQuery.of(context).size.height * 0.12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
                 Text(
                   "All devices",
-                  style: CustomTextStyle.h5Medium.copyWith(
-                    color: CustomColor.neutralBlack50,
-                  ),
+                  style: CustomTextStyle.h5Medium,
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 4),
           Expanded(
             child: Consumer<AppProvider>(
               builder: (context, value, child) {
@@ -218,23 +118,23 @@ class NewHomeScreen2 extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ]));
   }
 
-  Widget _info(String title, String info) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: CustomTextStyle.h3Medium,
-        ),
-        Text(
-          info,
-          style: CustomTextStyle.bodyLight,
-        ),
-      ],
-    );
-  }
+  // Widget _info(String title, String info) {
+  //   return Column(
+  //     children: [
+  //       Text(
+  //         title,
+  //         style: CustomTextStyle.h3Medium,
+  //       ),
+  //       Text(
+  //         info,
+  //         style: CustomTextStyle.bodyLight,
+  //       ),
+  //     ],
+  //   );
+  // }
 }
 
 Widget _deviceCard(
@@ -572,14 +472,14 @@ class WaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    path.lineTo(
-      0,
-      size.height / 2,
-    );
-    path.quadraticBezierTo(
-        size.width * 0.55, size.height, size.width, size.height * 0.7);
+    // Bắt đầu vẽ từ góc trên bên trái, đi xuống một đoạn
+    path.lineTo(0, size.height * 0.6);
 
-    path.lineTo(size.width, size.height);
+    // Uốn cong phần dưới cho mượt
+    path.quadraticBezierTo(
+        size.width * 0.3, size.height, size.width, size.height * 0.7);
+
+    // Kéo thẳng lên góc trên bên phải
     path.lineTo(size.width, 0);
     path.close();
     return path;

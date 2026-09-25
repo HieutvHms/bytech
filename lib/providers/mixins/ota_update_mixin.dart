@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:new_renitek/utils/dialog_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:new_renitek/const/custom_color.dart';
 import 'package:new_renitek/providers/mixins/app_provider_state.dart';
@@ -65,87 +66,50 @@ mixin OtaUpdateMixin on AppProviderState {
           notifyListeners();
 
           if (globalKey.currentContext != null) {
-            showDialog(
+            DialogHelper.showCustomDialog(
               context: globalKey.currentContext!,
               barrierDismissible: false,
-              builder: (BuildContext context) {
-                return Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  elevation: 0,
-                  backgroundColor: Colors.transparent,
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10.0,
-                          offset: Offset(0.0, 10.0),
-                        ),
-                      ],
+              title: 'Update Initiated',
+              content: const Text(
+                'The device has received the update command and is currently downloading the firmware. This process may take 1-3 minutes.\n\n'
+                'The device will restart automatically upon completion',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
+              ),
+              actions: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: CustomColor.primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Update Initiated',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'The device has received the update command and is currently downloading the firmware. This process may take 1-3 minutes.\n\n'
-                          'The device will restart automatically upon completion',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black54,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: CustomColor.primaryColor,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              // Pop ra màn hình chính, vì đằng nào thiết bị cũng sẽ ngắt kết nối
-                              final rootContext = globalKey.currentContext;
-                              if (rootContext != null) {
-                                Navigator.of(rootContext)
-                                    .popUntil((route) => route.isFirst);
-                              }
-                            },
-                            child: const Text(
-                              'Got it',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    onPressed: () {
+                      Navigator.pop(globalKey.currentContext!);
+                      final rootContext = globalKey.currentContext;
+                      if (rootContext != null) {
+                        Navigator.of(rootContext)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
+                    child: const Text(
+                      'Got it',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                );
-              },
+                ),
+              ],
             );
           }
         }).catchError((e) {
@@ -173,57 +137,32 @@ mixin OtaUpdateMixin on AppProviderState {
       }
 
       if (globalKey.currentContext != null) {
-        showDialog(
+        DialogHelper.showCustomDialog(
           context: globalKey.currentContext!,
           barrierDismissible: false,
-          builder: (BuildContext context) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.rectangle,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10.0,
-                      offset: Offset(0.0, 10.0),
-                    ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3.5,
-                        color: CustomColor.primaryColor,
-                      ),
-                    ),
-                    SizedBox(width: 24),
-                    Text(
-                      "Sending Firmware...",
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
+          content: const Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3.5,
+                  color: CustomColor.primaryColor,
                 ),
               ),
-            );
-          },
+              SizedBox(width: 24),
+              Text(
+                "Sending Firmware...",
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
         );
       }
 
@@ -322,87 +261,51 @@ mixin OtaUpdateMixin on AppProviderState {
         notifyListeners();
 
         if (globalKey.currentContext != null) {
-          showDialog(
+          DialogHelper.showCustomDialog(
             context: globalKey.currentContext!,
             barrierDismissible: false,
-            builder: (BuildContext context) {
-              return Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.rectangle,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10.0,
-                        offset: Offset(0.0, 10.0),
-                      ),
-                    ],
+            title: 'Update Successful',
+            content: const Text(
+              'The device has received the update and is currently restarting.\n'
+              'Please reconnect to the device\'s Wi-Fi network in your phone settings, then return to the Connect screen to continue.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: CustomColor.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Update Successful',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'The device has received the update and is currently restarting.\n'
-                        'Please reconnect to the device\'s Wi-Fi network in your phone settings, then return to the Connect screen to continue.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: CustomColor.primaryColor,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            disconnectTCP();
-                            final rootContext = globalKey.currentContext;
-                            if (rootContext != null) {
-                              Navigator.of(rootContext)
-                                  .popUntil((route) => route.isFirst);
-                            }
-                          },
-                          child: const Text(
-                            'Got it',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  onPressed: () {
+                    Navigator.pop(globalKey.currentContext!);
+                    disconnectTCP();
+                    final rootContext = globalKey.currentContext;
+                    if (rootContext != null) {
+                      Navigator.of(rootContext)
+                          .popUntil((route) => route.isFirst);
+                    }
+                  },
+                  child: const Text(
+                    'Got it',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              );
-            },
+              ),
+            ],
           );
         }
       }).catchError((e) {
@@ -411,27 +314,47 @@ mixin OtaUpdateMixin on AppProviderState {
           Navigator.pop(globalKey.currentContext!);
 
           // Hiện Dialog báo lỗi / timeout
-          showDialog(
+          final isCfosError = e.toString().toLowerCase().contains('cfos');
+          DialogHelper.showCustomDialog(
             context: globalKey.currentContext!,
-            builder: (BuildContext context) {
-              final isCfosError = e.toString().toLowerCase().contains('cfos');
-              return AlertDialog(
-                title: const Text('Update Failed',
-                    style: TextStyle(color: Colors.red)),
-                content: Text(isCfosError
-                    ? 'An error occurred during the update process. Please restart the device and try again.'
-                    : 'The connection timed out or an error occurred while updating the firmware.\n\n'
-                        'Please restart the device and try again.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Close'),
+            title: 'Update Failed',
+            content: Text(
+              isCfosError
+                  ? 'An error occurred during the update process. Please restart the device and try again.'
+                  : 'The connection timed out or an error occurred while updating the firmware.\n\n'
+                      'Please restart the device and try again.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ],
-              );
-            },
+                  onPressed: () {
+                    Navigator.pop(globalKey.currentContext!);
+                  },
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         }
       });
@@ -567,125 +490,90 @@ mixin OtaUpdateMixin on AppProviderState {
 
             if (fileVersion != version) {
               if (globalKey.currentContext != null) {
-                showDialog(
-                    context: globalKey.currentContext!,
-                    builder: (ctx) {
-                      return Dialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                DialogHelper.showCustomDialog(
+                  context: globalKey.currentContext!,
+                  title: 'Firmware Update',
+                  content: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        height: 1.45,
+                        color: Colors.grey[700],
+                      ),
+                      children: [
+                        const TextSpan(text: 'Found version '),
+                        TextSpan(
+                          text: fileVersion, // HIỂN THỊ VERSION THẬT THAY VÌ TÊN FILE
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'Firmware Update',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                RichText(
-                                  textAlign: TextAlign.center,
-                                  text: TextSpan(
-                                    style: TextStyle(
-                                      fontSize: 14.5,
-                                      height: 1.45,
-                                      color: Colors.grey[700],
-                                    ),
-                                    children: [
-                                      const TextSpan(text: 'Found version '),
-                                      TextSpan(
-                                        text:
-                                            fileVersion, // HIỂN THỊ VERSION THẬT THAY VÌ TÊN FILE
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const TextSpan(
-                                          text:
-                                              ' đã lưu sẵn trong điện thoại.\nBản hiện tại của mạch:\n'),
-                                      TextSpan(
-                                        text: version ?? 'Không xác định',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.redAccent,
-                                        ),
-                                      ),
-                                      const TextSpan(
-                                          text:
-                                              '\nBạn có muốn nạp ngay không?'),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.grey[700],
-                                          side: BorderSide(
-                                              color: Colors.grey[300]!),
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        onPressed: () =>
-                                            Navigator.of(ctx).pop(),
-                                        child: const Text(
-                                          'Later',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w500),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: FilledButton(
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor:
-                                              CustomColor.primaryColor,
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.of(ctx).pop();
-                                          updateFirmWare(
-                                            offlineFilePath: autoFallbackFile,
-                                            url: url,
-                                            targetVersion: firmwareCheckResult
-                                                ?.latestVersion,
-                                          );
-                                        },
-                                        child: const Text(
-                                          'Update',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ],
+                        ),
+                        const TextSpan(
+                            text: ' đã lưu sẵn trong điện thoại.\nBản hiện tại của mạch:\n'),
+                        TextSpan(
+                          text: version ?? 'Không xác định',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                        const TextSpan(text: '\nBạn có muốn nạp ngay không?'),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.grey[700],
+                              side: BorderSide(color: Colors.grey[300]!),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          ));
-                    });
+                            onPressed: () => Navigator.of(globalKey.currentContext!).pop(),
+                            child: const Text(
+                              'Later',
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: CustomColor.primaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(globalKey.currentContext!).pop();
+                              updateFirmWare(
+                                offlineFilePath: autoFallbackFile,
+                                url: url,
+                                targetVersion: firmwareCheckResult?.latestVersion,
+                              );
+                            },
+                            child: const Text(
+                              'Update',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  ],
+                );
               }
             }
           } else {
@@ -717,29 +605,62 @@ mixin OtaUpdateMixin on AppProviderState {
 
   void _showNoInternetFallbackPrompt() {
     if (globalKey.currentContext == null) return;
-    showDialog(
+    DialogHelper.showCustomDialog(
       context: globalKey.currentContext!,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Network Error'),
-          content: const Text(
-              'No Internet connection to check this device.\nDo you want to select a locally cached update?'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancel')),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                final listFirmwares =
-                    await CheckFirmwareService.getBackupFirmwares();
-                _showFallbackFirmwareDialog(listFirmwares);
-              },
-              child: const Text('Select Fallback Firmware'),
+      title: 'Network Error',
+      content: const Text(
+        'No Internet connection to check this device.\nDo you want to select a locally cached update?',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.black54,
+          height: 1.5,
+        ),
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.grey[700],
+                  side: BorderSide(color: Colors.grey[300]!),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(globalKey.currentContext!).pop(),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w500)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: CustomColor.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () async {
+                  Navigator.of(globalKey.currentContext!).pop();
+                  final listFirmwares = await CheckFirmwareService.getBackupFirmwares();
+                  _showFallbackFirmwareDialog(listFirmwares);
+                },
+                child: const Text(
+                  'Select',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -752,116 +673,92 @@ mixin OtaUpdateMixin on AppProviderState {
   void _showOnlineUpdateDialog(FirmwareCheckResult result) {
     if (globalKey.currentContext == null) return;
 
-    showDialog(
+    DialogHelper.showCustomDialog(
       context: globalKey.currentContext!,
       barrierDismissible: false,
-      builder: (ctx) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+      title: 'Firmware Update',
+      content: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: TextStyle(
+            fontSize: 14.5,
+            height: 1.45,
+            color: Colors.grey[700],
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  'Firmware Update',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      height: 1.45,
-                      color: Colors.grey[700],
-                    ),
-                    children: [
-                      const TextSpan(text: 'New update available: '),
-                      TextSpan(
-                        text: result.latestVersion,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const TextSpan(text: '\nCurrent device version:\n'),
-                      TextSpan(
-                        text: result.currentVersion,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.redAccent,
-                        ),
-                      ),
-                      const TextSpan(text: '\nDo you want to update now?'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.grey[700],
-                          side: BorderSide(color: Colors.grey[300]!),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Later',
-                            style: TextStyle(fontWeight: FontWeight.w500)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: CustomColor.primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          if (result.isOffline) {
-                            // result.updateUrl lúc này là đường dẫn file cục bộ, không phải URL server
-                            updateFirmWare(
-                                offlineFilePath: result.updateUrl,
-                                targetVersion: result.latestVersion);
-                          } else {
-                            updateFirmWare(
-                                url: result.updateUrl,
-                                targetVersion: result.latestVersion);
-                          }
-                        },
-                        child: const Text(
-                          'Update',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          children: [
+            const TextSpan(text: 'New update available: '),
+            TextSpan(
+              text: result.latestVersion,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
             ),
-          ),
-        );
-      },
+            const TextSpan(text: '\nCurrent device version:\n'),
+            TextSpan(
+              text: result.currentVersion,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Colors.redAccent,
+              ),
+            ),
+            const TextSpan(text: '\nDo you want to update now?'),
+          ],
+        ),
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.grey[700],
+                  side: BorderSide(color: Colors.grey[300]!),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(globalKey.currentContext!).pop(),
+                child: const Text('Later',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: CustomColor.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(globalKey.currentContext!).pop();
+                  if (result.isOffline) {
+                    // result.updateUrl lúc này là đường dẫn file cục bộ, không phải URL server
+                    updateFirmWare(
+                        offlineFilePath: result.updateUrl,
+                        targetVersion: result.latestVersion);
+                  } else {
+                    updateFirmWare(
+                        url: result.updateUrl,
+                        targetVersion: result.latestVersion);
+                  }
+                },
+                child: const Text(
+                  'Update',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -981,22 +878,41 @@ mixin OtaUpdateMixin on AppProviderState {
                               ),
                               onPressed: () async {
                                 if (!isDownloaded && socketTCP != null) {
-                                  showDialog(
+                                  DialogHelper.showCustomDialog(
                                     context: ctx,
-                                    builder: (alertCtx) => AlertDialog(
-                                      title: const Text('No Internet',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold)),
-                                      content: const Text(
-                                          'You are directly connected to the device\'s Wi-Fi network, which has no Internet access.\n\nPlease disconnect from the device, turn on your Internet (4G/Wi-Fi) to download this fallback version to the app, then reconnect to the device to flash it.'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(alertCtx),
-                                          child: const Text('Close'),
-                                        )
-                                      ],
+                                    title: 'No Internet',
+                                    content: const Text(
+                                      'You are directly connected to the device\'s Wi-Fi network, which has no Internet access.\n\nPlease disconnect from the device, turn on your Internet (4G/Wi-Fi) to download this fallback version to the app, then reconnect to the device to flash it.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                        height: 1.5,
+                                      ),
                                     ),
+                                    actions: [
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: FilledButton(
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: CustomColor.primaryColor,
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          onPressed: () => Navigator.pop(ctx),
+                                          child: const Text(
+                                            'Close',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   );
                                   return;
                                 }
