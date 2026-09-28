@@ -99,15 +99,20 @@ class WifiIotService {
   static Future<void> disconnectWifi() async {
     if (Platform.isIOS) return;
     try {
+      // Bắt buộc phải nhả quyền "Ép dùng WiFi" ra trước khi ngắt kết nối.
+      // Nếu không, Android vẫn giữ App kẹt ở luồng mạng cũ, gây mất mạng Internet
+      // cho đến khi Kill App (tắt hẳn ứng dụng).
+      await WiFiForIoTPlugin.forceWifiUsage(false);
       await WiFiForIoTPlugin.disconnect();
     } catch (e) {
       print("Error disconnecting WiFi: $e");
     }
   }
-  static Future<void> forceWifiUsage() async {
+
+  static Future<void> forceWifiUsage(bool useWifi) async {
     if (Platform.isIOS) return;
     try {
-      await WiFiForIoTPlugin.forceWifiUsage(true);
+      await WiFiForIoTPlugin.forceWifiUsage(useWifi);
     } catch (e) {
       print("Error forcing WiFi usage: $e");
     }

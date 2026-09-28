@@ -91,33 +91,35 @@ class SnackbarHelper {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      Icon(icon, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: CustomTextStyle.bodyMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                  Icon(icon, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (title.isNotEmpty)
+                          Text(
+                            title,
+                            style: CustomTextStyle.bodyMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (message.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      message,
-                      style: CustomTextStyle.bodyMedium
-                          .copyWith(color: Colors.white),
+                        if (title.isNotEmpty && message.isNotEmpty)
+                          const SizedBox(height: 4),
+                        if (message.isNotEmpty)
+                          Text(
+                            message,
+                            style: CustomTextStyle.bodyMedium
+                                .copyWith(color: Colors.white),
+                          ),
+                      ],
                     ),
-                  ]
+                  ),
                 ],
               ),
             ),

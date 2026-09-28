@@ -56,6 +56,7 @@ mixin WifiSocketMixin on AppProviderState {
   void disconnectTCP() {
     socketTCP?.destroy();
     socketTCP = null;
+    WifiIotService.forceWifiUsage(false);
     notifyListeners();
   }
 
@@ -86,7 +87,7 @@ mixin WifiSocketMixin on AppProviderState {
       mdnsStatusStream.add(MDNSStatus.SCANING);
 
       // Force Android to route traffic over the current WiFi even without internet
-      await WifiIotService.forceWifiUsage();
+      // await WifiIotService.forceWifiUsage(true);
 
       final discovery = (await mdnsService.startDiscoveryMDNS());
 
@@ -116,6 +117,7 @@ mixin WifiSocketMixin on AppProviderState {
     try {
       disconnectBLE();
       tcpIP = ip;
+      hasAutoCheckedFirmware = false;
 
       var isSocketConnected = false;
       Object? socketError;
@@ -142,24 +144,22 @@ mixin WifiSocketMixin on AppProviderState {
           MdnsConnectedClient(name: name, host: ip, port: port);
 
       if (globalKey.currentContext != null) {
-        showStatus(
-          buildContext: globalKey.currentContext!,
-          message: "Connect success",
-          succcess: true,
+        SnackbarHelper.showSuccess(
+          globalKey.currentContext!,
+          '',
+          'Connect success',
         );
       }
       connectStatus = ConnectStatus.SOCKET;
 
       if (!hasAutoCheckedFirmware) {
         hasAutoCheckedFirmware = true;
-        checkCurrentFirmware();
+        Future.delayed(const Duration(seconds: 3), () {
+          checkCurrentFirmware();
+        });
       }
 
       notifyListeners();
-
-      Timer(const Duration(seconds: 2), () {
-        checkCurrentFirmware();
-      });
     } catch (e) {
       print('LỖI KẾT NỐI SOCKET TỚI WI-FI AP: $e');
 

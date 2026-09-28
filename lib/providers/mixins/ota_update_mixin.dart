@@ -152,7 +152,7 @@ mixin OtaUpdateMixin on AppProviderState {
                   color: CustomColor.primaryColor,
                 ),
               ),
-              SizedBox(width: 24),
+              SizedBox(width: 14),
               Text(
                 "Sending Firmware...",
                 style: TextStyle(
@@ -401,32 +401,33 @@ mixin OtaUpdateMixin on AppProviderState {
       final connectivityResult = await Connectivity().checkConnectivity();
       bool apiCallSucceeded = false;
 
-      if (!connectivityResult.contains(ConnectivityResult.none)) {
-        if (hardwareVersion == null) {
-          List<Map<String, dynamic>> listFirmwares = [];
-          try {
-            listFirmwares = await CheckFirmwareService.getBackupFirmwares();
-          } catch (e) {
-            // Không có Internet (VD: đang ở WiFi AP riêng của mạch) -> dùng cache cục bộ
-            print('Unable to get firmware from server, using local cache: $e');
-            listFirmwares = await OfflineOTAService.getCachedBackupFirmwares();
-          }
+      // Xử lý khi mạch không xác định HW
+      if (hardwareVersion == null) {
+        List<Map<String, dynamic>> listFirmwares = [];
+        try {
+          listFirmwares = await CheckFirmwareService.getBackupFirmwares();
+        } catch (e) {
+          // Không có Internet -> dùng cache cục bộ
+          print('Unable to get firmware from server, using local cache: $e');
+          listFirmwares = await OfflineOTAService.getCachedBackupFirmwares();
+        }
 
-          if (listFirmwares.isEmpty) {
-            if (globalKey.currentContext != null) {
-              SnackbarHelper.showError(
-                globalKey.currentContext!,
-                '',
-                'Unable to identify hardware and no firmware is cached on the device.\nPlease connect to the Internet at least once to download the firmware.',
-              );
-            }
-            return null;
+        if (listFirmwares.isEmpty) {
+          if (globalKey.currentContext != null) {
+            SnackbarHelper.showError(
+              globalKey.currentContext!,
+              '',
+              'Unable to identify hardware and no firmware is cached on the device.\nPlease connect to the Internet at least once to download the firmware.',
+            );
           }
-
-          _showFallbackFirmwareDialog(listFirmwares);
           return null;
         }
 
+        _showFallbackFirmwareDialog(listFirmwares);
+        return null;
+      }
+
+      if (!connectivityResult.contains(ConnectivityResult.none)) {
         if (deviceMac.isNotEmpty && !deviceMac.contains('.')) {
           final result = await CheckFirmwareService.checkFirmware(
             mac: deviceMac,
@@ -504,14 +505,15 @@ mixin OtaUpdateMixin on AppProviderState {
                       children: [
                         const TextSpan(text: 'Found version '),
                         TextSpan(
-                          text: fileVersion, // HIỂN THỊ VERSION THẬT THAY VÌ TÊN FILE
+                          text: fileVersion,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             color: Colors.black87,
                           ),
                         ),
                         const TextSpan(
-                            text: ' đã lưu sẵn trong điện thoại.\nBản hiện tại của mạch:\n'),
+                            text:
+                                ' đã lưu sẵn trong điện thoại.\nBản hiện tại của mạch:\n'),
                         TextSpan(
                           text: version ?? 'Không xác định',
                           style: const TextStyle(
@@ -536,7 +538,8 @@ mixin OtaUpdateMixin on AppProviderState {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: () => Navigator.of(globalKey.currentContext!).pop(),
+                            onPressed: () =>
+                                Navigator.of(globalKey.currentContext!).pop(),
                             child: const Text(
                               'Later',
                               style: TextStyle(fontWeight: FontWeight.w500),
@@ -558,7 +561,8 @@ mixin OtaUpdateMixin on AppProviderState {
                               updateFirmWare(
                                 offlineFilePath: autoFallbackFile,
                                 url: url,
-                                targetVersion: firmwareCheckResult?.latestVersion,
+                                targetVersion:
+                                    firmwareCheckResult?.latestVersion,
                               );
                             },
                             child: const Text(
@@ -631,7 +635,8 @@ mixin OtaUpdateMixin on AppProviderState {
                   ),
                 ),
                 onPressed: () => Navigator.of(globalKey.currentContext!).pop(),
-                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w500)),
+                child: const Text('Cancel',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
               ),
             ),
             const SizedBox(width: 12),
@@ -646,7 +651,8 @@ mixin OtaUpdateMixin on AppProviderState {
                 ),
                 onPressed: () async {
                   Navigator.of(globalKey.currentContext!).pop();
-                  final listFirmwares = await CheckFirmwareService.getBackupFirmwares();
+                  final listFirmwares =
+                      await CheckFirmwareService.getBackupFirmwares();
                   _showFallbackFirmwareDialog(listFirmwares);
                 },
                 child: const Text(
@@ -895,10 +901,13 @@ mixin OtaUpdateMixin on AppProviderState {
                                         width: double.infinity,
                                         child: FilledButton(
                                           style: FilledButton.styleFrom(
-                                            backgroundColor: CustomColor.primaryColor,
-                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            backgroundColor:
+                                                CustomColor.primaryColor,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 10),
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                           ),
                                           onPressed: () => Navigator.pop(ctx),

@@ -82,25 +82,15 @@ class NewControllerScreen extends StatelessWidget {
                   return;
                 }
 
-                final uri = Uri.parse('http://$ip');
-                final canLaunch = await canLaunchUrl(uri);
-
-                if (canLaunch) {
-                  await launchUrl(
-                    uri,
-                    mode: LaunchMode
-                        .externalApplication, // ép mở bằng browser ngoài (Chrome), không dùng in-app WebView
-                  );
-                } else {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content:
-                            Text('Không thể mở trình duyệt cho địa chỉ $ip'),
-                      ),
-                    );
-                  }
-                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WebViewScreen(
+                      url: 'http://$ip',
+                      title: 'Web UI',
+                    ),
+                  ),
+                );
               },
             ),
         ],

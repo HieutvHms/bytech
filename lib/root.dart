@@ -29,7 +29,7 @@ class RootState extends State<Root> {
     OfflineOTAService.syncFirmwareBackground();
   }
 
-  int currentTab = 1;
+  int currentTab = 0;
 
   void changeTab(int tabIndex) {
     currentTab = tabIndex;

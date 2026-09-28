@@ -74,7 +74,9 @@ mixin DeviceControlMixin on AppProviderState {
         OfflineOTAService.saveDevice(mac, version ?? "0.0.0");
       }
 
-      if (!hasAutoCheckedFirmware) {
+      // Chỉ tự động check firmware từ BLE data stream
+      // Khi kết nối WiFi/SOCKET, wifi_socket_mixin đã xử lý việc này rồi
+      if (!hasAutoCheckedFirmware && connectStatus == ConnectStatus.BLE) {
         hasAutoCheckedFirmware = true;
         checkCurrentFirmware();
       }
