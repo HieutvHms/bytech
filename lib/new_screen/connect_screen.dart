@@ -147,150 +147,181 @@ class _ConnectScreenState extends State<ConnectScreen> {
                           subtitle:
                               const Text("Tap to connect phone to device"),
                           trailing: const Icon(Icons.wifi),
-                          onTap: () {
-                            TextEditingController pwController =
-                                TextEditingController();
-                            bool obscurePwd = true;
-                            DialogHelper.showCustomDialog(
-                              context: bottomSheetContext,
-                              content: StatefulBuilder(
-                                builder: (context, setState) {
-                                  return Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(Icons.wifi_lock,
-                                              color: CustomColor.primaryColor),
-                                          const SizedBox(width: 8),
-                                          Flexible(
-                                            child: Text(
-                                                network.ssid ?? "Unknown",
-                                                style: CustomTextStyle.h5Medium,
-                                                overflow:
-                                                    TextOverflow.ellipsis),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextField(
-                                              controller: pwController,
-                                              obscureText: obscurePwd,
-                                              decoration: InputDecoration(
-                                                hintText: 'Mật khẩu WiFi',
-                                                border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                          onTap: () async {
+                            final ssid = network.ssid ?? "";
+
+                            void showPasswordDialog([String initialPwd = '']) {
+                              TextEditingController pwController =
+                                  TextEditingController(text: initialPwd);
+                              bool obscurePwd = true;
+                              DialogHelper.showCustomDialog(
+                                context: bottomSheetContext,
+                                content: StatefulBuilder(
+                                  builder: (context, setState) {
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.wifi_lock,
+                                                color: CustomColor.primaryColor),
+                                            const SizedBox(width: 8),
+                                            Flexible(
+                                              child: Text(
+                                                  ssid.isEmpty ? "Unknown" : ssid,
+                                                  style: CustomTextStyle.h5Medium,
+                                                  overflow:
+                                                      TextOverflow.ellipsis),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: pwController,
+                                                obscureText: obscurePwd,
+                                                decoration: InputDecoration(
+                                                  hintText: 'Mật khẩu WiFi',
+                                                  border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(12),
+                                                  ),
+                                                  suffixIcon: IconButton(
+                                                    icon: Icon(obscurePwd
+                                                        ? Icons.visibility_off
+                                                        : Icons.visibility),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        obscurePwd = !obscurePwd;
+                                                      });
+                                                    },
+                                                  ),
                                                 ),
-                                                suffixIcon: IconButton(
-                                                  icon: Icon(obscurePwd
-                                                      ? Icons.visibility_off
-                                                      : Icons.visibility),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Builder(
+                                                builder: (btnCtx) =>
+                                                    OutlinedButton(
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.grey[700],
+                                                    side: BorderSide(
+                                                        color: Colors.grey[300]!),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(vertical: 8),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                  ),
+                                                  onPressed: () =>
+                                                      Navigator.pop(btnCtx),
+                                                  child: const Text('Cancel',
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w500)),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Builder(
+                                                builder: (btnCtx) => FilledButton(
+                                                  style: FilledButton.styleFrom(
+                                                    backgroundColor:
+                                                        CustomColor.primaryColor,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(vertical: 8),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                  ),
                                                   onPressed: () {
-                                                    setState(() {
-                                                      obscurePwd = !obscurePwd;
+                                                    Navigator.pop(btnCtx);
+                                                    DialogHelper.showCustomDialog(
+                                                      context: bottomSheetContext,
+                                                      barrierDismissible: false,
+                                                      content: const Center(
+                                                        child:
+                                                            CircularProgressIndicator(),
+                                                      ),
+                                                    );
+                                                    apConsumer
+                                                        .connectToDeviceWifiAP(
+                                                            ssid,
+                                                            pwController.text)
+                                                        .then((success) {
+                                                      if (bottomSheetContext
+                                                          .mounted) {
+                                                        Navigator.pop(
+                                                            bottomSheetContext); // close loading
+                                                      }
+                                                      if (success &&
+                                                          bottomSheetContext
+                                                              .mounted) {
+                                                        Navigator.pop(
+                                                            bottomSheetContext); // close bottom sheet
+                                                      }
                                                     });
                                                   },
+                                                  child: const Text('Connect',
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.white)),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Builder(
-                                              builder: (btnCtx) =>
-                                                  OutlinedButton(
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor:
-                                                      Colors.grey[700],
-                                                  side: BorderSide(
-                                                      color: Colors.grey[300]!),
-                                                  padding: const EdgeInsets
-                                                      .symmetric(vertical: 8),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                  ),
-                                                ),
-                                                onPressed: () =>
-                                                    Navigator.pop(btnCtx),
-                                                child: const Text('Cancel',
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w500)),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Builder(
-                                              builder: (btnCtx) => FilledButton(
-                                                style: FilledButton.styleFrom(
-                                                  backgroundColor:
-                                                      CustomColor.primaryColor,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(vertical: 8),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                  ),
-                                                ),
-                                                onPressed: () {
-                                                  Navigator.pop(btnCtx);
-                                                  DialogHelper.showCustomDialog(
-                                                    context: bottomSheetContext,
-                                                    barrierDismissible: false,
-                                                    content: const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                  );
-                                                  apConsumer
-                                                      .connectToDeviceWifiAP(
-                                                          network.ssid ?? "",
-                                                          pwController.text)
-                                                      .then((success) {
-                                                    if (bottomSheetContext
-                                                        .mounted) {
-                                                      Navigator.pop(
-                                                          bottomSheetContext); // close loading
-                                                    }
-                                                    if (success &&
-                                                        bottomSheetContext
-                                                            .mounted) {
-                                                      Navigator.pop(
-                                                          bottomSheetContext); // close bottom sheet
-                                                    }
-                                                  });
-                                                },
-                                                child: const Text('Connect',
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white)),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            );
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              );
+                            }
+
+                            final savedPwd = await WifiIotService.getSavedWifiPassword(ssid);
+                            
+                            if (savedPwd != null && savedPwd.isNotEmpty) {
+                              DialogHelper.showCustomDialog(
+                                context: bottomSheetContext,
+                                barrierDismissible: false,
+                                content: const Center(child: CircularProgressIndicator()),
+                              );
+                              
+                              final success = await apConsumer.connectToDeviceWifiAP(ssid, savedPwd);
+                              
+                              if (bottomSheetContext.mounted) {
+                                Navigator.pop(bottomSheetContext); // close loading
+                              }
+                              
+                              if (success) {
+                                if (bottomSheetContext.mounted) {
+                                  Navigator.pop(bottomSheetContext); // close bottom sheet
+                                }
+                              } else {
+                                // Nếu mật khẩu cũ sai (kết nối thất bại), mở bảng nhập lại mk
+                                showPasswordDialog(savedPwd);
+                              }
+                            } else {
+                              showPasswordDialog();
+                            }
                           },
                         );
                       },

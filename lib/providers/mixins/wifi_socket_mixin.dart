@@ -11,6 +11,7 @@ import 'package:new_renitek/providers/mixins/app_provider_state.dart';
 import 'package:new_renitek/root.dart';
 import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:new_renitek/const/ble_const.dart';
+import 'package:new_renitek/service/storage_service.dart';
 import 'package:new_renitek/utils/snackbar_helper.dart';
 import 'package:new_renitek/utils/show_status.dart';
 import 'package:nsd/nsd.dart' as nsd;
@@ -37,6 +38,8 @@ mixin WifiSocketMixin on AppProviderState {
   Future<bool> connectToDeviceWifiAP(String ssid, String password) async {
     bool success = await WifiIotService.connectToWifi(ssid, password: password);
     if (success) {
+      // Lưu mật khẩu
+      await WifiIotService.saveWifiPassword(ssid, password);
       // Sau khi kết nối thành công, bắt đầu dò mDNS
       scanLocalService();
       return true;
@@ -98,6 +101,7 @@ mixin WifiSocketMixin on AppProviderState {
                 .any((element) => element.deviceName == service.name)) {
               saveDeviceList.add(SavedDeviceModel(
                   deviceName: service.name ?? "", deviceType: DeviceType.MDNS));
+              StorageService.saveDeviceList(saveDeviceList);
             }
             if (!localService.any((element) => element.host == service.host)) {
               localService.add(service);
@@ -142,6 +146,12 @@ mixin WifiSocketMixin on AppProviderState {
 
       mdnsConnectedClient =
           MdnsConnectedClient(name: name, host: ip, port: port);
+
+      if (!saveDeviceList.any((element) => element.deviceName == name)) {
+        saveDeviceList.add(
+            SavedDeviceModel(deviceName: name, deviceType: DeviceType.MDNS));
+        StorageService.saveDeviceList(saveDeviceList);
+      }
 
       if (globalKey.currentContext != null) {
         SnackbarHelper.showSuccess(

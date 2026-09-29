@@ -9,6 +9,7 @@ import 'package:new_renitek/new_screen/controller_screen/new_controller_screen.d
 import 'package:new_renitek/providers/app_provider.dart';
 import 'package:new_renitek/providers/mixins/app_provider_state.dart'
     show ConnectStatus;
+import 'package:new_renitek/utils/snackbar_helper.dart';
 import 'package:provider/provider.dart';
 
 class NewHomeScreen2 extends StatelessWidget {
@@ -164,11 +165,11 @@ Widget _deviceCard(
           );
         } else {
           // Chưa kết nối -> Hiện thông báo (SnackBar) nhắc nhở
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Vui lòng kết nối với thiết bị $deviceName trước!'),
-              duration: const Duration(seconds: 2),
-            ),
+          SnackbarHelper.showInfo(
+            context,
+            'Chưa kết nối',
+            'Vui lòng kết nối với thiết bị $deviceName trước!',
+            duration: const Duration(seconds: 2),
           );
         }
       },

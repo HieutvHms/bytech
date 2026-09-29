@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:wifi_iot/wifi_iot.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WifiIotService {
-  /// Yêu cầu quyền vị trí (bắt buộc trên Android để quét WiFi)
   static Future<bool> requestLocationPermission() async {
     if (Platform.isIOS) return false;
     final status = await Permission.locationWhenInUse.request();
@@ -70,20 +70,20 @@ class WifiIotService {
     if (Platform.isIOS) return false;
 
     try {
-      // 1. Thử xóa mạng cũ trước khi kết nối (tránh lỗi cache sai pass của OS)
+      // xóa mạng cũ trước khi kết nối
       await WiFiForIoTPlugin.removeWifiNetwork(ssid);
 
-      // 2. Kết nối
+      // Kết nối
       bool result = await WiFiForIoTPlugin.connect(
         ssid,
         password: password.isNotEmpty ? password : null,
         security:
             password.isNotEmpty ? NetworkSecurity.WPA : NetworkSecurity.NONE,
         joinOnce: true,
-        withInternet: false, // Bắt buộc cho IoT AP
+        withInternet: false,
       );
 
-      // 3. Ép Android định tuyến dữ liệu qua WiFi này (Rất quan trọng trên Android 10+ vì WiFi ko có internet)
+      // Ép Android định tuyến dữ liệu qua WiFi này
       if (result) {
         await WiFiForIoTPlugin.forceWifiUsage(true);
         await Future.delayed(const Duration(seconds: 3));
@@ -116,5 +116,18 @@ class WifiIotService {
     } catch (e) {
       print("Error forcing WiFi usage: $e");
     }
+  }
+
+  // --- Hỗ trợ lưu mật khẩu WiFi để lần sau tự động kết nối ---
+  static const String _wifiPwdPrefix = "WIFI_PWD_";
+
+  static Future<void> saveWifiPassword(String ssid, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_wifiPwdPrefix$ssid', password);
+  }
+
+  static Future<String?> getSavedWifiPassword(String ssid) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('$_wifiPwdPrefix$ssid');
   }
 }

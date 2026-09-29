@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import '../utils/snackbar_helper.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -97,10 +98,19 @@ class _WebViewScreenState extends State<WebViewScreen> {
           },
           onDownloadStartRequest: (controller, downloadRequest) async {
             final url = downloadRequest.url.toString();
-            final fileName = downloadRequest.suggestedFilename ?? "config.txt";
+            String fileName =
+                downloadRequest.suggestedFilename ?? "downloaded_file";
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Đang tải $fileName...')),
+            // Nếu là Blob, WebView của Android sẽ lấy cái chuỗi ID ngẫu nhiên của Blob làm tên file.
+            // Do đó chúng ta ép nó trở về đúng tên config.txt
+            if (url.startsWith('blob:')) {
+              fileName = "config.txt";
+            }
+
+            SnackbarHelper.showInfo(
+              context,
+              'Tải xuống',
+              'Đang tải $fileName...',
             );
 
             try {
@@ -165,18 +175,18 @@ class _WebViewScreenState extends State<WebViewScreen> {
               await file.writeAsBytes(fileBytes);
 
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'Đã lưu thành công $fileName vào thư mục Download!'),
-                    duration: const Duration(seconds: 5),
-                  ),
+                SnackbarHelper.showSuccess(
+                  context,
+                  'Thành công',
+                  'Đã lưu thành công $fileName vào thư mục Download!',
                 );
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lỗi khi lưu file: $e')),
+                SnackbarHelper.showError(
+                  context,
+                  'Lỗi',
+                  'Lỗi khi lưu file: $e',
                 );
               }
             }

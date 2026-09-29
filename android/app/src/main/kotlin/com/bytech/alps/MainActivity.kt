@@ -1,4 +1,4 @@
-package com.example.new_renitek
+package com.bytech.alps
 
 import io.flutter.embedding.android.FlutterActivity
 

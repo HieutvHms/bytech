@@ -24,12 +24,16 @@ class AppProvider extends AppProviderState
   }
 
   void getSaveDevice() async {
-    final result = await StorageService.getDeviceList();
-    saveDeviceList = result;
+    try {
+      final result = await StorageService.getDeviceList();
+      saveDeviceList = result;
 
-    isLatestFirmware = await StorageService.getIsLatestFirmware();
-    isExpertMode = await StorageService.getExpertMode();
-
+      isLatestFirmware = await StorageService.getIsLatestFirmware();
+      isExpertMode = await StorageService.getExpertMode();
+    } catch (e) {
+      print('Error loading saved devices: $e');
+      saveDeviceList = [];
+    }
     notifyListeners();
   }
 
