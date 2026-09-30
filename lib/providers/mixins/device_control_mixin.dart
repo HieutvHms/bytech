@@ -9,15 +9,17 @@ import 'package:new_renitek/root.dart';
 import 'package:new_renitek/service/offline_ota_service.dart';
 import 'package:new_renitek/utils/convert_data.dart';
 import 'package:new_renitek/utils/get_command_byte.dart';
-import 'package:new_renitek/utils/show_status.dart';
+import 'package:new_renitek/utils/snackbar_helper.dart';
 
 mixin DeviceControlMixin on AppProviderState {
   void controlMotor(ControlType controlType) async {
     try {
+      //throw TimeoutException("Test UI Timeout");
+      //throw const SocketException("Test UI Socket");
       if (connectStatus == ConnectStatus.BLE &&
           bluetoothCharacteristic != null) {
         final commandBytes = getCommandByte(controlType);
-        ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
+        await ble.writeCharacteristicWithResponse(bluetoothCharacteristic!,
             value: commandBytes);
       } else if (connectStatus == ConnectStatus.SOCKET &&
           socketTCP != null &&
@@ -43,10 +45,10 @@ mixin DeviceControlMixin on AppProviderState {
         thongBao = "Lost connection to the device";
       }
       if (globalKey.currentContext != null) {
-        showStatus(
-          buildContext: globalKey.currentContext!,
-          message: thongBao,
-          succcess: false,
+        SnackbarHelper.showError(
+          globalKey.currentContext!,
+          'Control device failure',
+          thongBao,
         );
       }
     }

@@ -423,7 +423,6 @@ class OfflineOTAService {
             'Offline OTA: Mất kết nối khi push (mạch đang reboot). Đã đẩy file thành công!');
         return; // Thoát ra và báo thành công
       }
-
       // Còn nếu lỗi xảy ra lúc chưa gửi xong (ví dụ mất sóng, ko tìm thấy IP) thì văng lỗi thật
       rethrow;
     }
@@ -443,7 +442,8 @@ class OfflineOTAService {
       final String jsonBody = jsonEncode(bodyMap);
       final List<int> bodyBytes = utf8.encode(jsonBody);
 
-      print('HTTP Control: Sending POST request to $url with body: $jsonBody');
+      print(
+          'HTTP Control: Sending POST request to $url (Port: ${url.port}) with body: $jsonBody');
 
       var response = await http
           .post(
@@ -455,7 +455,7 @@ class OfflineOTAService {
             },
             body: bodyBytes,
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 1));
 
       if (response.statusCode != 200) {
         throw Exception("HTTP Error: ${response.statusCode}");

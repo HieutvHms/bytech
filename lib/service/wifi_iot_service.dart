@@ -24,7 +24,12 @@ class WifiIotService {
 
   /// Quét danh sách WiFi xung quanh
   static Future<Result<List<WifiNetwork>>> scanForDeviceWifi(
-      {List<String> prefixes = const ["AV", "Vuelogic"]}) async {
+      {List<String> prefixes = const [
+        "AV",
+        "Vuelogic",
+        "NT",
+        "bytech"
+      ]}) async {
     if (Platform.isIOS) {
       return Result.success([]);
     }

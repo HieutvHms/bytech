@@ -25,8 +25,8 @@ mixin WifiSocketMixin on AppProviderState {
     notifyListeners();
 
     try {
-      final result =
-          await WifiIotService.scanForDeviceWifi(prefixes: ["AV", "Vuelogic"]);
+      final result = await WifiIotService.scanForDeviceWifi(
+          prefixes: ["AV", "Vuelogic", "NT", "bytech"]);
 
       if (result.isSuccess) {
         deviceWifiList = result.data;
@@ -190,8 +190,8 @@ mixin WifiSocketMixin on AppProviderState {
       if (globalKey.currentContext != null) {
         SnackbarHelper.showError(
           globalKey.currentContext!,
-          'Lỗi kết nối',
-          'Không thể kết nối đến mạch điều khiển',
+          'Connection Error',
+          'Could not connect to the device',
           duration: const Duration(seconds: 7),
         );
       }
