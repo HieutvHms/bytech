@@ -95,14 +95,14 @@ class _ConnectScreenState extends State<ConnectScreen> {
       ),
       builder: (bottomSheetContext) {
         return Container(
-          padding: const EdgeInsets.only(top: 16, bottom: 32),
+          padding: const EdgeInsets.only(top: 10, bottom: 24),
           height: MediaQuery.of(context).size.height * 0.6,
           child: Column(
             children: [
               Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
                   color: Colors.grey[400],
                   borderRadius: BorderRadius.circular(2),
@@ -125,7 +125,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('No unconfigured devices found.'),
+                            const Text('No unconfigured devices found'),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () => apConsumer.scanDeviceWifiAP(),
@@ -168,12 +168,16 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                               MainAxisAlignment.center,
                                           children: [
                                             const Icon(Icons.wifi_lock,
-                                                color: CustomColor.primaryColor),
+                                                color:
+                                                    CustomColor.primaryColor),
                                             const SizedBox(width: 8),
                                             Flexible(
                                               child: Text(
-                                                  ssid.isEmpty ? "Unknown" : ssid,
-                                                  style: CustomTextStyle.h5Medium,
+                                                  ssid.isEmpty
+                                                      ? "Unknown"
+                                                      : ssid,
+                                                  style:
+                                                      CustomTextStyle.h5Medium,
                                                   overflow:
                                                       TextOverflow.ellipsis),
                                             ),
@@ -190,7 +194,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                                   hintText: 'Mật khẩu WiFi',
                                                   border: OutlineInputBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(12),
+                                                        BorderRadius.circular(
+                                                            12),
                                                   ),
                                                   suffixIcon: IconButton(
                                                     icon: Icon(obscurePwd
@@ -198,7 +203,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                                         : Icons.visibility),
                                                     onPressed: () {
                                                       setState(() {
-                                                        obscurePwd = !obscurePwd;
+                                                        obscurePwd =
+                                                            !obscurePwd;
                                                       });
                                                     },
                                                   ),
@@ -214,14 +220,17 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                               child: Builder(
                                                 builder: (btnCtx) =>
                                                     OutlinedButton(
-                                                  style: OutlinedButton.styleFrom(
+                                                  style:
+                                                      OutlinedButton.styleFrom(
                                                     foregroundColor:
                                                         Colors.grey[700],
                                                     side: BorderSide(
-                                                        color: Colors.grey[300]!),
+                                                        color:
+                                                            Colors.grey[300]!),
                                                     padding: const EdgeInsets
                                                         .symmetric(vertical: 8),
-                                                    shape: RoundedRectangleBorder(
+                                                    shape:
+                                                        RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               12),
@@ -239,13 +248,15 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Builder(
-                                                builder: (btnCtx) => FilledButton(
+                                                builder: (btnCtx) =>
+                                                    FilledButton(
                                                   style: FilledButton.styleFrom(
-                                                    backgroundColor:
-                                                        CustomColor.primaryColor,
+                                                    backgroundColor: CustomColor
+                                                        .primaryColor,
                                                     padding: const EdgeInsets
                                                         .symmetric(vertical: 8),
-                                                    shape: RoundedRectangleBorder(
+                                                    shape:
+                                                        RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               12),
@@ -253,8 +264,10 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                                   ),
                                                   onPressed: () {
                                                     Navigator.pop(btnCtx);
-                                                    DialogHelper.showCustomDialog(
-                                                      context: bottomSheetContext,
+                                                    DialogHelper
+                                                        .showCustomDialog(
+                                                      context:
+                                                          bottomSheetContext,
                                                       barrierDismissible: false,
                                                       content: const Center(
                                                         child:
@@ -296,24 +309,29 @@ class _ConnectScreenState extends State<ConnectScreen> {
                               );
                             }
 
-                            final savedPwd = await WifiIotService.getSavedWifiPassword(ssid);
-                            
+                            final savedPwd =
+                                await WifiIotService.getSavedWifiPassword(ssid);
+
                             if (savedPwd != null && savedPwd.isNotEmpty) {
                               DialogHelper.showCustomDialog(
                                 context: bottomSheetContext,
                                 barrierDismissible: false,
-                                content: const Center(child: CircularProgressIndicator()),
+                                content: const Center(
+                                    child: CircularProgressIndicator()),
                               );
-                              
-                              final success = await apConsumer.connectToDeviceWifiAP(ssid, savedPwd);
-                              
+
+                              final success = await apConsumer
+                                  .connectToDeviceWifiAP(ssid, savedPwd);
+
                               if (bottomSheetContext.mounted) {
-                                Navigator.pop(bottomSheetContext); // close loading
+                                Navigator.pop(
+                                    bottomSheetContext); // close loading
                               }
-                              
+
                               if (success) {
                                 if (bottomSheetContext.mounted) {
-                                  Navigator.pop(bottomSheetContext); // close bottom sheet
+                                  Navigator.pop(
+                                      bottomSheetContext); // close bottom sheet
                                 }
                               } else {
                                 // Nếu mật khẩu cũ sai (kết nối thất bại), mở bảng nhập lại mk

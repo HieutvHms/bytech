@@ -3,6 +3,8 @@ import 'package:wifi_iot/wifi_iot.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:new_renitek/core/error/failure.dart';
+
 class WifiIotService {
   static Future<bool> requestLocationPermission() async {
     if (Platform.isIOS) return false;
@@ -21,35 +23,32 @@ class WifiIotService {
   }
 
   /// Quét danh sách WiFi xung quanh
-  static Future<List<WifiNetwork>> scanForDeviceWifi(
+  static Future<Result<List<WifiNetwork>>> scanForDeviceWifi(
       {List<String> prefixes = const ["AV", "Vuelogic"]}) async {
     if (Platform.isIOS) {
-      return []; // iOS không hỗ trợ quét danh sách WiFi
+      return Result.success([]);
     }
 
     bool hasPermission = await requestLocationPermission();
     if (!hasPermission) {
-      print("Permission denied. Cannot scan for WiFi.");
-      return [];
+      return Result.error(Failure(
+          'Quyền vị trí bị từ chối. Vui lòng cấp quyền để quét thiết bị.'));
     }
 
     try {
       bool isWifiEnabled = await WiFiForIoTPlugin.isEnabled();
       if (!isWifiEnabled) {
-        print("WiFi is disabled. Returning empty list without prompting.");
-        return [];
+        return Result.error(
+            Failure('WiFi đang bị tắt. Vui lòng bật WiFi để quét.'));
       }
-    } catch (e) {
-      print("Could not check WiFi status: $e");
-      return [];
-    }
+    } catch (e) {}
 
     try {
       // Bắt đầu quét mạng
       List<WifiNetwork> wifiList = await WiFiForIoTPlugin.loadWifiList();
 
       // Lọc các WiFi có tên bắt đầu bằng các prefix (Ví dụ: AV01, Vuelogic...)
-      return wifiList.where((wifi) {
+      final filteredList = wifiList.where((wifi) {
         if (wifi.ssid == null || wifi.ssid!.isEmpty) return false;
         String ssidUpper = wifi.ssid!.toUpperCase();
         for (String prefix in prefixes) {
@@ -59,9 +58,11 @@ class WifiIotService {
         }
         return false;
       }).toList();
+
+      return Result.success(filteredList);
     } catch (e) {
-      print("Error scanning WiFi: $e");
-      return [];
+      return Result.error(
+          Failure('Đã xảy ra sự cố kỹ thuật khi quét WiFi: $e'));
     }
   }
 
@@ -90,7 +91,6 @@ class WifiIotService {
       }
       return result;
     } catch (e) {
-      print("Error connecting to WiFi $ssid: $e");
       return false;
     }
   }
@@ -104,18 +104,14 @@ class WifiIotService {
       // cho đến khi Kill App (tắt hẳn ứng dụng).
       await WiFiForIoTPlugin.forceWifiUsage(false);
       await WiFiForIoTPlugin.disconnect();
-    } catch (e) {
-      print("Error disconnecting WiFi: $e");
-    }
+    } catch (e) {}
   }
 
   static Future<void> forceWifiUsage(bool useWifi) async {
     if (Platform.isIOS) return;
     try {
       await WiFiForIoTPlugin.forceWifiUsage(useWifi);
-    } catch (e) {
-      print("Error forcing WiFi usage: $e");
-    }
+    } catch (e) {}
   }
 
   // --- Hỗ trợ lưu mật khẩu WiFi để lần sau tự động kết nối ---

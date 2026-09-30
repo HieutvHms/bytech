@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:new_renitek/const/ble_const.dart';
 import 'package:new_renitek/const/enum.dart';
 import 'package:new_renitek/models/data_bulletin.dart';
@@ -33,10 +36,16 @@ mixin DeviceControlMixin on AppProviderState {
         }
       }
     } catch (e) {
+      String thongBao = "Control device failure";
+      if (e is TimeoutException) {
+        thongBao = "Device is responding too slowly";
+      } else if (e is SocketException) {
+        thongBao = "Lost connection to the device";
+      }
       if (globalKey.currentContext != null) {
         showStatus(
           buildContext: globalKey.currentContext!,
-          message: "Control device failure",
+          message: thongBao,
           succcess: false,
         );
       }

@@ -453,8 +453,7 @@ class OfflineOTAService {
               'Content-Length': bodyBytes.length.toString(),
               'Connection': 'close',
             },
-            body:
-                bodyBytes, // Gửi raw bytes để tránh Dart tự thêm charset=utf-8 vào header
+            body: bodyBytes,
           )
           .timeout(const Duration(seconds: 3));
 

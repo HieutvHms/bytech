@@ -25,10 +25,22 @@ mixin WifiSocketMixin on AppProviderState {
     notifyListeners();
 
     try {
-      deviceWifiList =
+      final result =
           await WifiIotService.scanForDeviceWifi(prefixes: ["AV", "Vuelogic"]);
+
+      if (result.isSuccess) {
+        deviceWifiList = result.data;
+      } else {
+        if (globalKey.currentContext != null) {
+          SnackbarHelper.showError(
+            globalKey.currentContext!,
+            'Lỗi Quét WiFi',
+            result.failure.message,
+          );
+        }
+      }
     } catch (e) {
-      print("Error in scanDeviceWifiAP: $e");
+      print("System Error in scanDeviceWifiAP: $e");
     }
 
     isScanningDeviceWifi = false;
