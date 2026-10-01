@@ -57,10 +57,10 @@ mixin WifiSocketMixin on AppProviderState {
       return true;
     } else {
       if (globalKey.currentContext != null) {
-        showStatus(
-          buildContext: globalKey.currentContext!,
-          message: 'Failed to connect to device WiFi',
-          succcess: false,
+        SnackbarHelper.showError(
+          globalKey.currentContext!,
+          'Connection Failed',
+          'Failed to connect to device WiFi',
         );
       }
       return false;

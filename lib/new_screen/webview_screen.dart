@@ -171,14 +171,56 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 await downloadDir.create(recursive: true);
               }
 
-              final file = File('${downloadDir.path}/$fileName');
-              await file.writeAsBytes(fileBytes);
+              File file = File('${downloadDir.path}/$fileName');
+              int counter = 1;
+
+              // Tách phần tên và phần mở rộng (vd: "config" và ".txt")
+              String nameWithoutExt = fileName;
+              String ext = '';
+              final dotIndex = fileName.lastIndexOf('.');
+              if (dotIndex != -1) {
+                nameWithoutExt = fileName.substring(0, dotIndex);
+                ext = fileName.substring(dotIndex);
+              }
+
+              bool isSaved = false;
+              String lastError = "";
+
+              // Vòng lặp thử lưu file (tối đa 50 lần để tránh infinite loop)
+              while (!isSaved && counter <= 50) {
+                try {
+                  // Do cơ chế Scoped Storage của Android, file.exists() đôi khi trả về false
+                  // dù file thực sự đang tồn tại (do khác chủ sở hữu).
+                  // Nên ta cứ chủ động kiểm tra exists() trước:
+                  if (await file.exists()) {
+                    throw Exception("File đã tồn tại");
+                  }
+
+                  // Cố gắng ghi file. Nếu bị OS chặn (Errno 17 hoặc 13), lệnh này sẽ văng lỗi (catch)
+                  await file.writeAsBytes(fileBytes);
+                  isSaved = true; // Lưu thành công
+                } catch (e) {
+                  lastError = e.toString();
+                  // Bị lỗi (tồn tại file hoặc cấm quyền), ta đổi tên file và thử lại
+                  file = File(
+                      '${downloadDir.path}/$nameWithoutExt ($counter)$ext');
+                  counter++;
+                }
+              }
+
+              if (!isSaved) {
+                throw Exception(
+                    "Không thể ghi file sau nhiều lần thử. Lỗi cuối: $lastError");
+              }
+
+              // Lấy tên file cuối cùng sau khi lưu để thông báo cho người dùng
+              final finalFileName = file.uri.pathSegments.last;
 
               if (mounted) {
                 SnackbarHelper.showSuccess(
                   context,
                   'Thành công',
-                  'Đã lưu thành công $fileName vào thư mục Download!',
+                  'Đã lưu thành công $finalFileName vào thư mục Download!',
                 );
               }
             } catch (e) {

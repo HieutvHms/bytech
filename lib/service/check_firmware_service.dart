@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -95,8 +98,7 @@ class CheckFirmwareService {
             'Offline OTA: Dùng firmware cache theo dòng máy cho $currentVersion');
         print(
             'Offline OTA: => File được chọn: ${fallbackFile['localFilePath']}');
-        print(
-            'Offline OTA: => Version của file: ${fallbackFile['version']}');
+        print('Offline OTA: => Version của file: ${fallbackFile['version']}');
         return FirmwareCheckResult(
           deviceMac: mac,
           currentVersion: currentVersion,
@@ -124,6 +126,53 @@ class CheckFirmwareService {
   static Future<List<Map<String, dynamic>>> getBackupFirmwares() async {
     final data = await _fetchFirmwareVersions();
     return _parseBackupFirmwares(data);
+  }
+
+  static Future<int> downloadAndCacheFirmwares(bool useApi) async {
+    final firmwares =
+        useApi ? await getNewestFirmwares() : await getBackupFirmwares();
+
+    if (firmwares.isEmpty) {
+      return -1; // -1 means no firmware found
+    }
+
+    int successCount = 0;
+    for (final fw in firmwares) {
+      final url = fw['url'] ?? fw['update_url'] ?? '';
+      if (url.isEmpty) continue;
+      final fileName = Uri.parse(url).pathSegments.last;
+      final hwType = (fw['hardware'] ?? fw['version'] ?? fileName)
+          .toString()
+          .replaceAll('.bin', '');
+      final exactVersion = (fw['version'] ?? hwType).toString();
+
+      final dir = await getApplicationDocumentsDirectory();
+      final localPath = '${dir.path}/$fileName';
+
+      // Kiểm tra xem file đã tồn tại trong máy chưa
+      if (await File(localPath).exists()) {
+        await OfflineOTAService.saveDynamicHardwareMapping(
+            hwType, exactVersion, url, localPath);
+        successCount++;
+        continue;
+      }
+
+      try {
+        final res =
+            await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+        if (res.statusCode == 200) {
+          await File(localPath).writeAsBytes(res.bodyBytes);
+          await OfflineOTAService.saveDynamicHardwareMapping(
+              hwType, exactVersion, url, localPath);
+          successCount++;
+        }
+      } catch (e) {
+        print('Lỗi tải $fileName: $e');
+        // Tiếp tục thử tải file khác nếu có
+      }
+    }
+
+    return successCount;
   }
 
   static Future<Map<String, dynamic>> _fetchFirmwareVersions() async {
