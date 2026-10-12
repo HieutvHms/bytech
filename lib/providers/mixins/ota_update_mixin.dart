@@ -401,32 +401,7 @@ mixin OtaUpdateMixin on AppProviderState {
       final connectivityResult = await Connectivity().checkConnectivity();
       bool apiCallSucceeded = false;
 
-      // Xử lý khi mạch không xác định HW
-      if (hardwareVersion == null) {
-        List<Map<String, dynamic>> listFirmwares = [];
-        try {
-          listFirmwares = await CheckFirmwareService.getBackupFirmwares();
-        } catch (e) {
-          // Không có Internet -> dùng cache cục bộ
-          print('Unable to get firmware from server, using local cache: $e');
-          listFirmwares = await OfflineOTAService.getCachedBackupFirmwares();
-        }
-
-        if (listFirmwares.isEmpty) {
-          if (globalKey.currentContext != null) {
-            SnackbarHelper.showError(
-              globalKey.currentContext!,
-              '',
-              'Unable to identify hardware and no firmware is cached on the device.\nPlease connect to the Internet at least once to download the firmware.',
-            );
-          }
-          return null;
-        }
-
-        _showFallbackFirmwareDialog(listFirmwares);
-        return null;
-      }
-
+      // 1. Ưu tiên kiểm tra Online trước nếu có Internet
       if (!connectivityResult.contains(ConnectivityResult.none)) {
         if (deviceMac.isNotEmpty && !deviceMac.contains('.')) {
           final result = await CheckFirmwareService.checkFirmware(
@@ -435,6 +410,19 @@ mixin OtaUpdateMixin on AppProviderState {
           );
 
           if (result != null) {
+            // BLE không thể nạp file offline cục bộ
+            if (connectStatus == ConnectStatus.BLE && result.isOffline) {
+              if (globalKey.currentContext != null) {
+                showStatus(
+                  buildContext: globalKey.currentContext!,
+                  message:
+                      'Please connect to Internet to check for updates via Bluetooth.',
+                  succcess: false,
+                );
+              }
+              return null;
+            }
+
             apiCallSucceeded = true;
             firmwareCheckResult = result;
             if (!result.noUpdate) {
@@ -464,6 +452,7 @@ mixin OtaUpdateMixin on AppProviderState {
         }
       }
 
+      // 2. Xử lý khi không gọi được API Online (mất mạng hoặc đang ở Wi-Fi AP nội bộ)
       if (!apiCallSucceeded) {
         if (connectStatus == ConnectStatus.BLE) {
           if (globalKey.currentContext != null) {
@@ -474,6 +463,32 @@ mixin OtaUpdateMixin on AppProviderState {
               succcess: false,
             );
           }
+          return null;
+        }
+
+        // Xử lý khi mạch không xác định HW (chỉ áp dụng cho chế độ Offline / Wi-Fi AP)
+        if (hardwareVersion == null) {
+          List<Map<String, dynamic>> listFirmwares = [];
+          try {
+            listFirmwares = await CheckFirmwareService.getBackupFirmwares();
+          } catch (e) {
+            // Không có Internet -> dùng cache cục bộ
+            print('Unable to get firmware from server, using local cache: $e');
+            listFirmwares = await OfflineOTAService.getCachedBackupFirmwares();
+          }
+
+          if (listFirmwares.isEmpty) {
+            if (globalKey.currentContext != null) {
+              SnackbarHelper.showError(
+                globalKey.currentContext!,
+                '',
+                'Unable to identify hardware and no firmware is cached on the device.\nPlease connect to the Internet at least once to download the firmware.',
+              );
+            }
+            return null;
+          }
+
+          _showFallbackFirmwareDialog(listFirmwares);
           return null;
         }
 

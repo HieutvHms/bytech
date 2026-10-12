@@ -4,6 +4,7 @@ import 'dart:convert';
 
 enum ControlType { GO_IN, GO_OUT, STOP }
 
+// Hàm gửi đi
 class BLERequestConst {
   static List<int> ID_PAYLOAD_DIVIVDER = utf8.encode(':');
   static List<int> DASH = utf8.encode('-');
@@ -27,6 +28,7 @@ class BLERequestConst {
       utf8.encode('#5:http://27.71.226.192:2602/AV03_NEW_HW.bin!');
 }
 
+// Hàm nhận về
 class BLERespondConst {
   static const String RESPOND_HEADER_ID = '\$';
   static const String FIRMWARE_VERSION_ID = '0';

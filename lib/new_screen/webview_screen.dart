@@ -228,7 +228,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 SnackbarHelper.showError(
                   context,
                   'Lỗi',
-                  'Lỗi khi lưu file: $e',
+                  'Không thể lưu file, vui lòng kiểm tra lại quyền truy cập bộ nhớ hoặc thử lại sau.',
                 );
               }
             }

@@ -29,7 +29,7 @@ DataBulletTin? getDataBulletin(List<int> rawData) {
   if (subIndex != -1) {
     payLoad = payLoad.substring(0, subIndex);
   } else {
-    // Dữ liệu bị cắt cụt hoặc thiếu dấu !, bỏ qua để không bị crash
+    // Dữ liệu bị cắt cụt hoặc thiếu dấu , bỏ qua để không bị crash
     print("Warning: Missing '!' footer in payload, skipping.");
     return null;
   }
