@@ -30,8 +30,29 @@ class CheckFirmwareService {
           final updateUrl = (response['update_url'] as String?) ?? "";
           final deviceMac = response['mac'] as String;
           bool noUpdate = response['no_update'] as bool? ?? false;
-          if (updateUrl.isEmpty || currentVersion.trim() == serverVersion.trim()) {
-            noUpdate = true;
+
+          List<Map<String, dynamic>>? availableVersions;
+          if (response['versions'] is List) {
+            final list = response['versions'] as List;
+            availableVersions = list
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList();
+          }
+
+          // Case 3: BE không nhận ra version này (không có update_url nhưng no_update=false)
+          // Nếu server có trả về danh sách phiên bản có sẵn (versions) -> hiển thị để người dùng chọn
+          if (updateUrl.isEmpty && !noUpdate) {
+            if (availableVersions != null && availableVersions.isNotEmpty) {
+              print(
+                  'Server returned ${availableVersions.length} available versions for user selection');
+              noUpdate = false;
+            } else {
+              print(
+                  'Warning: Server returned no_update=false but no update_url for version: $currentVersion');
+              print('  → Version not found in firmware_db on server');
+              noUpdate = true;
+            }
           }
 
           final result = FirmwareCheckResult(
@@ -40,6 +61,7 @@ class CheckFirmwareService {
             latestVersion: serverVersion,
             updateUrl: updateUrl,
             noUpdate: noUpdate,
+            availableVersions: availableVersions,
           );
 
           print('Firmware check successful (online):');
@@ -210,8 +232,7 @@ class CheckFirmwareService {
 
         result.add({
           'version': v,
-          'hardware': getFirmwareFamily(
-              v), // vẫn giữ để hiển thị UI, không dùng để lọc nữa
+          'hardware': getFirmwareFamily(v),
           'update_url': url,
           'url': url,
           'is_newest': true,
@@ -291,6 +312,7 @@ class FirmwareCheckResult {
   /// KHÔNG PHẢI URL — nơi tiêu thụ (updateFirmWare) phải nạp thẳng file này,
   /// không được gọi http.get(updateUrl) nữa.
   final bool isOffline;
+  final List<Map<String, dynamic>>? availableVersions;
 
   const FirmwareCheckResult({
     required this.deviceMac,
@@ -299,6 +321,7 @@ class FirmwareCheckResult {
     required this.updateUrl,
     required this.noUpdate,
     this.isOffline = false,
+    this.availableVersions,
   });
 
   Map<String, dynamic> toJson() => {

@@ -12,7 +12,6 @@ class LogsService {
   // static Future<http.Response> postLogs() async {
   //   try {
   //     final Uri url = Uri.parse('$baseUrl$logsEndpoint');
-
   //     final response = await http.post(
   //       url,
   //       headers: {

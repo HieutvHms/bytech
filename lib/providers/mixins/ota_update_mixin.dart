@@ -426,6 +426,12 @@ mixin OtaUpdateMixin on AppProviderState {
             apiCallSucceeded = true;
             firmwareCheckResult = result;
             if (!result.noUpdate) {
+              if (result.availableVersions != null &&
+                  result.availableVersions!.isNotEmpty &&
+                  result.updateUrl.isEmpty) {
+                _showFallbackFirmwareDialog(result.availableVersions!);
+                return result;
+              }
               _showOnlineUpdateDialog(result);
               return result;
             } else {
@@ -783,9 +789,43 @@ mixin OtaUpdateMixin on AppProviderState {
     );
   }
 
+  /// Lọc danh sách firmware chỉ giữ lại những bản thuộc cùng dòng mạch với thiết bị hiện tại
+  /// VD: Nếu mạch là AV01 hoặc NT400 -> chỉ hiển thị các bản NT400
+  ///     Nếu mạch là AV03 hoặc NT600 -> chỉ hiển thị các bản NT600
+  List<Map<String, dynamic>> _filterFirmwaresByCurrentDevice(
+      List<Map<String, dynamic>> firmwares) {
+    if (version == null || version == 'Not found') return firmwares;
+    final currentUpper = version!.toUpperCase();
+
+    final is400Family =
+        currentUpper.contains('AV01') || currentUpper.contains('NT400');
+    final is600Family =
+        currentUpper.contains('AV03') || currentUpper.contains('NT600');
+
+    if (!is400Family && !is600Family) return firmwares;
+
+    final filtered = firmwares.where((fw) {
+      final fwVersion = (fw['version'] as String? ?? '').toUpperCase();
+      final fwUrl = (fw['update_url'] as String? ?? '').toUpperCase();
+      final fwCombined = '$fwVersion $fwUrl';
+
+      if (is400Family) {
+        return fwCombined.contains('NT400') || fwCombined.contains('AV01');
+      }
+      if (is600Family) {
+        return fwCombined.contains('NT600') || fwCombined.contains('AV03');
+      }
+      return false;
+    }).toList();
+
+    return filtered.isNotEmpty ? filtered : firmwares;
+  }
+
   void _showFallbackFirmwareDialog(
       List<Map<String, dynamic>> listFirmwares) async {
     if (globalKey.currentContext == null) return;
+
+    final displayFirmwares = _filterFirmwaresByCurrentDevice(listFirmwares);
 
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(OfflineOTAService.otaFallbackKey);
@@ -819,7 +859,7 @@ mixin OtaUpdateMixin on AppProviderState {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -833,10 +873,10 @@ mixin OtaUpdateMixin on AppProviderState {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${listFirmwares.length} available versions',
+                        'Current: ${version ?? "Unknown"} • ${displayFirmwares.length} available versions',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.black54,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
@@ -851,16 +891,18 @@ mixin OtaUpdateMixin on AppProviderState {
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,
-                    itemCount: listFirmwares.length,
+                    itemCount: displayFirmwares.length,
                     separatorBuilder: (_, __) => const Divider(
                       height: 1,
                       thickness: 1,
                       color: Color(0xFFEEEEEE),
                     ),
                     itemBuilder: (context, index) {
-                      final fw = listFirmwares[index];
+                      final fw = displayFirmwares[index];
                       final isDownloaded =
                           downloadedUrls.contains(fw['update_url']);
+                      final isHighlighted =
+                          connectStatus == ConnectStatus.BLE || isDownloaded;
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(
@@ -880,18 +922,20 @@ mixin OtaUpdateMixin on AppProviderState {
                             ),
                             OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: isDownloaded
+                                foregroundColor: isHighlighted
                                     ? CustomColor.primaryColor
                                     : Colors.black87,
-                                backgroundColor: isDownloaded
-                                    ? CustomColor.primaryColor.withOpacity(0.05)
+                                backgroundColor: isHighlighted
+                                    ? CustomColor.primaryColor
+                                        .withValues(alpha: 0.08)
                                     : null,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 0),
                                 side: BorderSide(
-                                    color: isDownloaded
+                                    color: isHighlighted
                                         ? CustomColor.primaryColor
-                                        : Colors.grey[300]!),
+                                        : Colors.grey[300]!,
+                                    width: isHighlighted ? 1.2 : 1.0),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -964,7 +1008,9 @@ mixin OtaUpdateMixin on AppProviderState {
                                 }
                               },
                               child: Text(
-                                isDownloaded ? 'Select' : 'Download',
+                                connectStatus == ConnectStatus.BLE
+                                    ? 'Update'
+                                    : (isDownloaded ? 'Select' : 'Download'),
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w500),
                               ),
